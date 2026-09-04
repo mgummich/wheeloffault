@@ -9,6 +9,9 @@ RUN pnpm build
 
 FROM node:26-alpine
 ENV NODE_ENV=production PORT=3000 DATA_DIR=/data
+# Pull in OS security fixes and drop the npm CLI: the runtime only needs node.
+RUN apk upgrade --no-cache \
+ && rm -rf /usr/local/lib/node_modules /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack
 WORKDIR /app
 COPY --from=build /app/dist/web ./dist/web
 COPY --from=build /app/src/domain ./src/domain
