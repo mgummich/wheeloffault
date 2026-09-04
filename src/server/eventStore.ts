@@ -10,10 +10,16 @@ export class ConcurrencyError extends Error {
   }
 }
 
-export type EventStore = ReturnType<typeof openEventStore>;
+export type EventStore = {
+  load(streamId: string): Promise<StoredEvent[]>;
+  append(streamId: string, expectedVersion: number, events: DomainEvent[]): Promise<StoredEvent[]>;
+  streamsWithEvent(type: DomainEvent['type']): Promise<string[]>;
+  appliedMigrations(): Promise<string[]>;
+  close(): void | Promise<void>;
+};
 
 /** Opens (and migrates) the database. Use ':memory:' in tests. */
-export function openEventStore(path: string) {
+export function openEventStore(path: string): EventStore {
   const db = new DatabaseSync(path);
   db.exec('PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000;');
   migrate(db);
@@ -48,7 +54,7 @@ export function openEventStore(path: string) {
   });
 
   return {
-    load(streamId: string): StoredEvent[] {
+    async load(streamId: string): Promise<StoredEvent[]> {
       return (selectStream.all(streamId) as Row[]).map(toStored);
     },
 
@@ -56,7 +62,11 @@ export function openEventStore(path: string) {
      * Appends atomically at versions expectedVersion+1…; the UNIQUE constraint
      * turns a lost race into a ConcurrencyError instead of a fork in history.
      */
-    append(streamId: string, expectedVersion: number, events: DomainEvent[]): StoredEvent[] {
+    async append(
+      streamId: string,
+      expectedVersion: number,
+      events: DomainEvent[],
+    ): Promise<StoredEvent[]> {
       if (events.length === 0) return [];
       db.exec('BEGIN IMMEDIATE'); // throws itself if busy; nothing to roll back then
       try {
@@ -82,11 +92,11 @@ export function openEventStore(path: string) {
       }
     },
 
-    streamsWithEvent(type: DomainEvent['type']): string[] {
+    async streamsWithEvent(type: DomainEvent['type']): Promise<string[]> {
       return (selectStreamsByType.all(type) as { stream_id: string }[]).map((r) => r.stream_id);
     },
 
-    appliedMigrations(): string[] {
+    async appliedMigrations(): Promise<string[]> {
       return (
         db.prepare('SELECT id FROM schema_migrations ORDER BY id').all() as { id: string }[]
       ).map((r) => r.id);

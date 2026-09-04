@@ -22,8 +22,8 @@ export function createCommands(
 ) {
   const now = () => new Date().toISOString();
 
-  function loadTeam(teamId: string): TeamState {
-    const events = store.load(teamId);
+  async function loadTeam(teamId: string): Promise<TeamState> {
+    const events = await store.load(teamId);
     if (events.length === 0) throw new DomainError(`Team ${teamId} unbekannt`, 'not_found');
     return replay(events);
   }
@@ -38,10 +38,10 @@ export function createCommands(
     decision: (state: TeamState) => DomainEvent[] | Promise<DomainEvent[]>,
   ): Promise<TeamState> {
     for (let attempt = 0; ; attempt++) {
-      const state = loadTeam(teamId);
+      const state = await loadTeam(teamId);
       const events = await decision(state);
       try {
-        const stored = store.append(teamId, state.version, events);
+        const stored = await store.append(teamId, state.version, events);
         if (stored.length > 0) onAppended(teamId, stored);
         return replay(events, state);
       } catch (err) {
@@ -53,14 +53,15 @@ export function createCommands(
   return {
     loadTeam,
 
-    listTeams(): TeamState[] {
-      return store.streamsWithEvent('TeamCreated').map((id) => replay(store.load(id)));
+    async listTeams(): Promise<TeamState[]> {
+      const ids = await store.streamsWithEvent('TeamCreated');
+      return Promise.all(ids.map(async (id) => replay(await store.load(id))));
     },
 
-    createTeam(name: string): TeamState {
+    async createTeam(name: string): Promise<TeamState> {
       const teamId = randomUUID();
       const events = decide.createTeam(teamId, name, now());
-      const stored = store.append(teamId, 0, events);
+      const stored = await store.append(teamId, 0, events);
       onAppended(teamId, stored);
       return replay(events);
     },

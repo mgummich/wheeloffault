@@ -63,8 +63,8 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
 
   route('GET', '/api/health', (_req, res) => json(res, 200, { ok: true }));
 
-  route('GET', '/api/teams', (_req, res) => {
-    const list: TeamListEntry[] = commands.listTeams().map((t) => ({
+  route('GET', '/api/teams', async (_req, res) => {
+    const list: TeamListEntry[] = (await commands.listTeams()).map((t) => ({
       teamId: t.teamId,
       name: t.name,
       memberCount: t.members.filter((m) => m.active).length,
@@ -75,11 +75,11 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
 
   route('POST', '/api/teams', async (req, res) => {
     const body = asObject(await readJson(req));
-    json(res, 201, teamView(commands.createTeam(str(body, 'name', 100))));
+    json(res, 201, teamView(await commands.createTeam(str(body, 'name', 100))));
   });
 
-  route('GET', '/api/teams/:teamId', (_req, res, p) =>
-    json(res, 200, teamView(commands.loadTeam(id(p.teamId ?? '')))),
+  route('GET', '/api/teams/:teamId', async (_req, res, p) =>
+    json(res, 200, teamView(await commands.loadTeam(id(p.teamId ?? '')))),
   );
 
   route('POST', '/api/teams/:teamId/members', async (req, res, p) => {
@@ -119,8 +119,8 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
     );
   });
 
-  route('GET', '/api/teams/:teamId/members/:memberId/report', (_req, res, p) =>
-    json(res, 200, memberReport(commands.loadTeam(id(p.teamId ?? '')), id(p.memberId ?? ''))),
+  route('GET', '/api/teams/:teamId/members/:memberId/report', async (_req, res, p) =>
+    json(res, 200, memberReport(await commands.loadTeam(id(p.teamId ?? '')), id(p.memberId ?? ''))),
   );
 
   route('PUT', '/api/teams/:teamId/policy', async (req, res, p) => {
@@ -221,9 +221,9 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
     ),
   );
 
-  route('GET', '/api/teams/:teamId/events', (req, res, p) => {
+  route('GET', '/api/teams/:teamId/events', async (req, res, p) => {
     const teamId = id(p.teamId ?? '');
-    commands.loadTeam(teamId); // 404 for unknown teams
+    await commands.loadTeam(teamId); // 404 for unknown teams
     res.writeHead(200, {
       'content-type': 'text/event-stream',
       'cache-control': 'no-store',

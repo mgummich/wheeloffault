@@ -216,8 +216,7 @@ SSE-Nachricht lädt er `GET /api/teams/:id` neu.
 
 ## 7. Persistenz
 
-SQLite über `node:sqlite` (im Node-Standard, keine Abhängigkeit). Eine Datei,
-eine Tabelle, die zählt:
+SQLite über `node:sqlite` ist der Standard: eine Datei, eine Tabelle, die zählt:
 
 ```sql
 CREATE TABLE events (
@@ -235,11 +234,33 @@ Migrationen: nummerierte Einträge in `src/server/migrations.ts`, je in einer
 Transaktion angewendet, in `schema_migrations` protokolliert. Angewendete
 Migrationen werden nie editiert.
 
+Optional kann der gleiche Event-Store-Vertrag mit Postgres betrieben werden:
+
+```bash
+EVENT_STORE=postgres DATABASE_URL=postgres://... pnpm start
+```
+
+Die Domäne und Projektionen bleiben unverändert. Postgres speichert dieselben
+Events in derselben logischen Tabelle; `payload` ist dort `JSONB`, `position`
+ist `BIGSERIAL`. Nebenläufigkeit bleibt optimistisch über die lückenlose
+Stream-Version und `UNIQUE (stream_id, version)`. SQLite bleibt bewusst der
+Pfad ohne Infrastruktur.
+
 ## 8. Realtime
 
 Server-Sent Events. Der Server hält pro Team eine Menge offener Antworten
 und schreibt nach jedem erfolgreichen Append `event: appended`. Der Client
-lädt daraufhin den Team-Zustand neu. Kein WebSocket, keine Nachrichtenwarteschlange.
+lädt daraufhin den Team-Zustand neu. Kein WebSocket.
+
+Optional kann Redis als reines Broadcast-Fanout aktiviert werden:
+
+```bash
+REDIS_URL=redis://localhost:6379 pnpm start
+```
+
+Redis ist kein Cache und keine zweite Wahrheit. Ein Server publiziert nach
+persistierten Appends die Event-Metadaten, andere Instanzen liefern sie an
+ihre lokalen SSE-Clients aus.
 
 ## 9. Frontend
 

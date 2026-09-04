@@ -23,7 +23,7 @@ let base: string;
 
 beforeEach(async () => {
   ctx = boot();
-  await new Promise<void>((r) => ctx.http.server.listen(0, r));
+  await new Promise<void>((r) => ctx.http.server.listen(0, '127.0.0.1', r));
   base = `http://127.0.0.1:${(ctx.http.server.address() as AddressInfo).port}`;
 });
 
@@ -136,7 +136,7 @@ describe('API', () => {
 
     // "Restart": a fresh command layer + HTTP server over the same database.
     const restarted = createHttpServer(createCommands(ctx.store), null);
-    await new Promise<void>((r) => restarted.server.listen(0, r));
+    await new Promise<void>((r) => restarted.server.listen(0, '127.0.0.1', r));
     const port = (restarted.server.address() as AddressInfo).port;
     try {
       const res = await fetch(`http://127.0.0.1:${port}/api/teams/${team.teamId}`);

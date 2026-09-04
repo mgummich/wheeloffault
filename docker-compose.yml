@@ -1,0 +1,39 @@
+services:
+  schuldrad:
+    profiles: ['sqlite']
+    build: .
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - schuldrad-data:/data
+
+  schuldrad-overengineered:
+    profiles: ['overengineered']
+    build: .
+    ports:
+      - '127.0.0.1:3000:3000'
+    environment:
+      EVENT_STORE: postgres
+      DATABASE_URL: postgres://schuldrad:schuldrad@postgres:5432/schuldrad
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    profiles: ['overengineered']
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: schuldrad
+      POSTGRES_USER: schuldrad
+      POSTGRES_PASSWORD: schuldrad
+    volumes:
+      - schuldrad-postgres:/var/lib/postgresql/data
+
+  redis:
+    profiles: ['overengineered']
+    image: redis:7-alpine
+
+volumes:
+  schuldrad-data:
+  schuldrad-postgres:
