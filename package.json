@@ -1,0 +1,44 @@
+{
+  "name": "schuldrad",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Selbst gehostetes Schuldrad: Wer ist diesmal schuldig?",
+  "engines": {
+    "node": ">=26"
+  },
+  "scripts": {
+    "dev": "concurrently -k \"pnpm dev:server\" \"pnpm dev:web\"",
+    "dev:server": "node --watch src/server/main.ts",
+    "dev:web": "vite",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "build": "vite build",
+    "start": "node src/server/main.ts",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm build",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.12",
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.4.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "concurrently": "^9.2.0",
+    "fast-check": "^4.9.0",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.2",
+    "vitest": "^5.0.0"
+  },
+  "packageManager": "pnpm@11.24.0"
+}

@@ -1,0 +1,290 @@
+import type { AddressInfo } from 'node:net';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { verifySpin } from '../domain/fairness/draw.ts';
+import type { StoredEvent } from '../domain/events.ts';
+import type { MemberReport } from '../domain/projections/report.ts';
+import { createCommands } from './commands.ts';
+import { openEventStore } from './eventStore.ts';
+import { createHttpServer } from './http.ts';
+import type { SpinView, TeamView } from './views.ts';
+
+/** Boots the real HTTP server on an in-memory store; tests talk plain HTTP. */
+function boot() {
+  const store = openEventStore(':memory:');
+  let broadcast: (teamId: string, events: StoredEvent[]) => void = () => {};
+  const commands = createCommands(store, (t, e) => broadcast(t, e));
+  const http = createHttpServer(commands, null);
+  broadcast = http.broadcast;
+  return { store, http };
+}
+
+let ctx: ReturnType<typeof boot>;
+let base: string;
+
+beforeEach(async () => {
+  ctx = boot();
+  await new Promise<void>((r) => ctx.http.server.listen(0, r));
+  base = `http://127.0.0.1:${(ctx.http.server.address() as AddressInfo).port}`;
+});
+
+afterEach(async () => {
+  await new Promise<void>((r) => ctx.http.server.close(() => r()));
+  ctx.store.close();
+});
+
+async function call<T>(
+  method: string,
+  path: string,
+  body?: unknown,
+): Promise<{ status: number; body: T }> {
+  const res = await fetch(base + path, {
+    method,
+    headers: { 'content-type': 'application/json' },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  return { status: res.status, body: (await res.json()) as T };
+}
+
+async function teamWith(names: string[]): Promise<TeamView> {
+  const created = await call<TeamView>('POST', '/api/teams', { name: 'Team Fahrplan' });
+  expect(created.status).toBe(201);
+  const withMembers = await call<TeamView>('POST', `/api/teams/${created.body.teamId}/members`, {
+    names,
+  });
+  expect(withMembers.status).toBe(200);
+  return withMembers.body;
+}
+
+async function fullSpin(teamId: string, spinId = crypto.randomUUID(), clientSeed = 'e2e') {
+  const commit = await call<SpinView>('POST', `/api/teams/${teamId}/spins`, { spinId });
+  expect(commit.status).toBe(201);
+  const reveal = await call<SpinView>('POST', `/api/teams/${teamId}/spins/${spinId}/reveal`, {
+    clientSeed,
+  });
+  expect(reveal.status).toBe(200);
+  return { commit: commit.body, reveal: reveal.body };
+}
+
+describe('API', () => {
+  it('creates a team, adds members (deduplicated), deactivates, spins, reveals, reports', async () => {
+    const team = await teamWith(['Anna', 'Bob', ' anna ', 'Cem']);
+    expect(team.members.map((m) => m.name)).toEqual(['Anna', 'Bob', 'Cem']);
+    const bob = team.members[1];
+    if (!bob) throw new Error('no bob');
+    const deactivated = await call<TeamView>(
+      'POST',
+      `/api/teams/${team.teamId}/members/${bob.memberId}/deactivate`,
+    );
+    expect(deactivated.body.members[1]?.active).toBe(false);
+
+    const { commit, reveal } = await fullSpin(team.teamId);
+    expect(commit.reveal).toBeNull();
+    expect(commit.participants.map((p) => p.memberId)).not.toContain(bob.memberId);
+    expect(JSON.stringify(commit)).not.toContain('serverSeed');
+    expect(reveal.reveal?.selectedMemberId).toBeDefined();
+    expect(reveal.reveal?.selectedMemberId).not.toBe(bob.memberId);
+
+    const proof = {
+      nonce: reveal.nonce,
+      commitment: reveal.commitment,
+      participants: reveal.participants,
+      ...(reveal.reveal ?? { serverSeed: '', clientSeed: '', digest: '', selectedMemberId: '' }),
+    };
+    expect((await verifySpin(proof)).ok).toBe(true);
+
+    const view = await call<TeamView>('GET', `/api/teams/${team.teamId}`);
+    expect(view.body.statistics.totalSpins).toBe(1);
+    expect(view.body.pendingSpin).toBeNull();
+    const winner = reveal.reveal?.selectedMemberId ?? '';
+    const report = await call<MemberReport>(
+      'GET',
+      `/api/teams/${team.teamId}/members/${winner}/report`,
+    );
+    expect(report.body.totalSelections).toBe(1);
+    expect(report.body.achievements.map((a) => a.id)).toContain('erste-fahrt');
+    expect(view.body.statistics.hallOfShame[0]?.memberId).toBe(winner);
+  });
+
+  it('a retried commit never creates a second spin; a second concurrent spin is refused', async () => {
+    const team = await teamWith(['Anna', 'Bob']);
+    const spinId = crypto.randomUUID();
+    const [a, b] = await Promise.all([
+      call<SpinView>('POST', `/api/teams/${team.teamId}/spins`, { spinId }),
+      call<SpinView>('POST', `/api/teams/${team.teamId}/spins`, { spinId }),
+    ]);
+    expect([a.status, b.status]).toEqual([201, 201]);
+    expect(a.body.commitment).toBe(b.body.commitment);
+    const other = await call<{ error: string; spinId: string }>(
+      'POST',
+      `/api/teams/${team.teamId}/spins`,
+      { spinId: 'other' },
+    );
+    expect(other.status).toBe(409);
+    expect(other.body.spinId).toBe(spinId);
+    const view = await call<TeamView>('GET', `/api/teams/${team.teamId}`);
+    expect(view.body.spins).toHaveLength(1);
+    expect(view.body.pendingSpin?.spinId).toBe(spinId);
+    // The secret must not leak anywhere in the team view while the spin is pending.
+    expect(JSON.stringify(view.body)).not.toContain('serverSeed');
+  });
+
+  it('a pending spin survives a server restart and can be revealed from the persisted commit', async () => {
+    const team = await teamWith(['Anna', 'Bob', 'Cem']);
+    const spinId = crypto.randomUUID();
+    const commit = await call<SpinView>('POST', `/api/teams/${team.teamId}/spins`, { spinId });
+    expect(commit.status).toBe(201);
+
+    // "Restart": a fresh command layer + HTTP server over the same database.
+    const restarted = createHttpServer(createCommands(ctx.store), null);
+    await new Promise<void>((r) => restarted.server.listen(0, r));
+    const port = (restarted.server.address() as AddressInfo).port;
+    try {
+      const res = await fetch(`http://127.0.0.1:${port}/api/teams/${team.teamId}`);
+      const view = (await res.json()) as TeamView;
+      expect(view.pendingSpin?.spinId).toBe(spinId);
+      const reveal = await fetch(
+        `http://127.0.0.1:${port}/api/teams/${team.teamId}/spins/${spinId}/reveal`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ clientSeed: 'after-restart' }),
+        },
+      );
+      expect(reveal.status).toBe(200);
+      const spin = (await reveal.json()) as SpinView;
+      expect(spin.commitment).toBe(commit.body.commitment);
+      if (!spin.reveal) throw new Error('no reveal');
+      expect(
+        (
+          await verifySpin({
+            nonce: spin.nonce,
+            commitment: spin.commitment,
+            participants: spin.participants,
+            ...spin.reveal,
+          })
+        ).ok,
+      ).toBe(true);
+    } finally {
+      await new Promise<void>((r) => restarted.server.close(() => r()));
+    }
+  });
+
+  it('reveal is idempotent for the same client seed and refuses another', async () => {
+    const team = await teamWith(['Anna', 'Bob']);
+    const spinId = crypto.randomUUID();
+    await call('POST', `/api/teams/${team.teamId}/spins`, { spinId });
+    const [r1, r2] = await Promise.all([
+      call<SpinView>('POST', `/api/teams/${team.teamId}/spins/${spinId}/reveal`, {
+        clientSeed: 'x',
+      }),
+      call<SpinView>('POST', `/api/teams/${team.teamId}/spins/${spinId}/reveal`, {
+        clientSeed: 'x',
+      }),
+    ]);
+    expect([r1.status, r2.status]).toEqual([200, 200]);
+    expect(r1.body.reveal).toEqual(r2.body.reveal);
+    const r3 = await call('POST', `/api/teams/${team.teamId}/spins/${spinId}/reveal`, {
+      clientSeed: 'y',
+    });
+    expect(r3.status).toBe(409);
+  });
+
+  it('concurrent member additions all land (optimistic retry)', async () => {
+    const team = await teamWith([]);
+    await Promise.all(
+      ['A', 'B', 'C', 'D', 'E'].map((n) =>
+        call('POST', `/api/teams/${team.teamId}/members`, { name: n }),
+      ),
+    );
+    const view = await call<TeamView>('GET', `/api/teams/${team.teamId}`);
+    expect(view.body.members.map((m) => m.name).sort()).toEqual(['A', 'B', 'C', 'D', 'E']);
+  });
+
+  it('appeals: upheld appeal removes the selection from the statistics', async () => {
+    const team = await teamWith(['Anna', 'Bob']);
+    const { reveal } = await fullSpin(team.teamId);
+    const appealed = await call<TeamView>(
+      'POST',
+      `/api/teams/${team.teamId}/spins/${reveal.spinId}/appeal`,
+      { reason: 'War im Urlaub' },
+    );
+    expect(appealed.body.statistics.openAppeals).toBe(1);
+    const upheld = await call<TeamView>(
+      'POST',
+      `/api/teams/${team.teamId}/spins/${reveal.spinId}/appeal/uphold`,
+    );
+    expect(upheld.body.statistics.officialSpins).toBe(0);
+    expect(upheld.body.statistics.overturnedSpins).toBe(1);
+    const again = await call(
+      'POST',
+      `/api/teams/${team.teamId}/spins/${reveal.spinId}/appeal/reject`,
+    );
+    expect(again.status).toBe(409);
+  });
+
+  it('policy: immunity is visible in the commit and consumed', async () => {
+    const team = await teamWith(['Anna', 'Bob']);
+    const anna = team.members[0]?.memberId ?? '';
+    const bob = team.members[1]?.memberId ?? '';
+    await call('POST', `/api/teams/${team.teamId}/members/${anna}/immunity`, {
+      reason: 'Fahrgastrecht',
+    });
+    const { commit, reveal } = await fullSpin(team.teamId);
+    expect(commit.participants).toEqual(
+      [
+        { memberId: anna, weight: 0 },
+        { memberId: bob, weight: 1000 },
+      ].sort((a, b) => (a.memberId < b.memberId ? -1 : 1)),
+    );
+    expect(reveal.reveal?.selectedMemberId).toBe(bob);
+    const view = await call<TeamView>('GET', `/api/teams/${team.teamId}`);
+    expect(view.body.immunities).toEqual([]);
+  });
+
+  it('validates input and policy', async () => {
+    const team = await teamWith(['Anna']);
+    expect((await call('POST', '/api/teams', { name: '' })).status).toBe(400);
+    expect(
+      (await call('POST', `/api/teams/${team.teamId}/members`, { name: 'x'.repeat(101) })).status,
+    ).toBe(400);
+    expect((await call('POST', `/api/teams/${team.teamId}/spins`, { spinId: '../x' })).status).toBe(
+      400,
+    );
+    expect((await call('PUT', `/api/teams/${team.teamId}/policy`, { pity: {} })).status).toBe(400);
+    expect((await call('GET', '/api/teams/nope')).status).toBe(404);
+    expect((await call('GET', '/api/teams/%E0%A4%A')).status).toBe(400);
+    expect(
+      (
+        await call('PUT', `/api/teams/${team.teamId}/policy`, {
+          ...team.policy,
+          manual: { enabled: true, factors: { ghost: 500 } },
+        })
+      ).status,
+    ).toBe(400);
+    const res = await fetch(`${base}/api/teams`, { method: 'POST', body: '{not json' });
+    expect(res.status).toBe(400);
+    const ok = await call<TeamView>('PUT', `/api/teams/${team.teamId}/policy`, {
+      ...team.policy,
+      pity: { enabled: true, percentPerSpin: 10 },
+    });
+    expect(ok.status).toBe(200);
+    expect(ok.body.policy.pity).toEqual({ enabled: true, percentPerSpin: 10 });
+  });
+
+  it('streams appended events over SSE', async () => {
+    const team = await teamWith(['Anna']);
+    const res = await fetch(`${base}/api/teams/${team.teamId}/events`);
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('no body');
+    await call('POST', `/api/teams/${team.teamId}/members`, { name: 'Bob' });
+    let text = '';
+    while (!text.includes('MemberJoined')) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      text += new TextDecoder().decode(value);
+    }
+    expect(text).toContain('event: appended');
+    expect(text).toContain('"type":"MemberJoined"');
+    await reader.cancel();
+  });
+});

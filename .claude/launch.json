@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "schuldrad",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["src/server/main.ts"],
+      "port": 3000
+    }
+  ]
+}

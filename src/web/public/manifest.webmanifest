@@ -1,0 +1,11 @@
+{
+  "name": "Schuldrad",
+  "short_name": "Schuldrad",
+  "description": "Wer ist diesmal schuldig? Nachvollziehbar, protokolliert, pünktlich.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#282d37",
+  "lang": "de",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}
