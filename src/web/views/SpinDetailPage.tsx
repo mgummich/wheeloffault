@@ -8,7 +8,6 @@ import { href } from '../route.ts';
 type Props = {
   team: TeamView;
   setTeam: (t: TeamView) => void;
-  reload: () => Promise<void>;
   spinId: string;
 };
 

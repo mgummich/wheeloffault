@@ -3,7 +3,7 @@ import type { FairnessPolicy } from '../../domain/fairness/policy.ts';
 import type { TeamView } from '../../server/views.ts';
 import { api, errorMessage } from '../api.ts';
 
-type Props = { team: TeamView; setTeam: (t: TeamView) => void; reload: () => Promise<void> };
+type Props = { team: TeamView; setTeam: (t: TeamView) => void };
 
 export function FairnessPage({ team, setTeam }: Props) {
   const [policy, setPolicy] = useState<FairnessPolicy>(team.policy);

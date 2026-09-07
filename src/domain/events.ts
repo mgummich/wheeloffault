@@ -55,8 +55,6 @@ export type EventBody =
   | { type: 'ImmunityConsumed'; memberId: string; spinId: string }
   | { type: 'ImmunityRevoked'; memberId: string };
 
-export type EventType = EventBody['type'];
-
 export type DomainEvent = EventBody & {
   /** ISO 8601 timestamp, set when the event is created. */
   at: string;

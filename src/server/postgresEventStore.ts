@@ -20,7 +20,7 @@ export async function openPostgresEventStore(connectionString: string): Promise<
   const toStored = (row: PgRow): StoredEvent => {
     const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
     return {
-      ...(upcast({ ...payload, type: row.type, at: row.at }) as DomainEvent),
+      ...upcast({ ...payload, type: row.type, at: row.at }),
       streamId: row.stream_id,
       version: row.version,
       position: Number(row.position),

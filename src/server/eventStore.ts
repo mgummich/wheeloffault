@@ -47,7 +47,7 @@ export function openEventStore(path: string): EventStore {
   };
 
   const toStored = (row: Row): StoredEvent => ({
-    ...(upcast({ ...JSON.parse(row.payload), type: row.type, at: row.at }) as DomainEvent),
+    ...upcast({ ...JSON.parse(row.payload), type: row.type, at: row.at }),
     streamId: row.stream_id,
     version: row.version,
     position: row.position,
