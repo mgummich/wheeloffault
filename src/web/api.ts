@@ -11,7 +11,7 @@ export const api = serverMode ? serverApi : createSessionApi();
 export function rememberTeam(teamId: string, name: string) {
   try {
     const list = recentTeams().filter((team) => team.teamId !== teamId);
-    sessionStorage.setItem(
+    localStorage.setItem(
       'schuldrad.recent',
       JSON.stringify([{ teamId, name }, ...list].slice(0, 8)),
     );
@@ -22,7 +22,7 @@ export function rememberTeam(teamId: string, name: string) {
 
 export function recentTeams(): { teamId: string; name: string }[] {
   try {
-    return JSON.parse(sessionStorage.getItem('schuldrad.recent') ?? '[]') as {
+    return JSON.parse(localStorage.getItem('schuldrad.recent') ?? '[]') as {
       teamId: string;
       name: string;
     }[];

@@ -28,7 +28,7 @@ describe('API mode', () => {
   it('keeps static builds local without contacting a server', async () => {
     vi.stubEnv('VITE_API_MODE', '');
     const data = new Map<string, string>();
-    vi.stubGlobal('sessionStorage', {
+    vi.stubGlobal('localStorage', {
       getItem: (key: string) => data.get(key) ?? null,
       setItem: (key: string, value: string) => data.set(key, value),
     });
