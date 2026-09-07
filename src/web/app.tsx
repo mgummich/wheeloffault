@@ -23,7 +23,8 @@ export function App() {
       </main>
       <footer className="footer">
         Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben
-        ohne Gewähr, außer den Schuldsprüchen.
+        ohne Gewähr, außer den Schuldsprüchen.{' '}
+        <a href={`${import.meta.env.BASE_URL}docs/`}>Dokumentation</a>
       </footer>
     </>
   );
