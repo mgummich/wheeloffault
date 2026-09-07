@@ -41,12 +41,14 @@ Browser ist buchstäblich dieselbe Funktion wie auf dem Server.
 ```
 Team          Container für alles. Ein Event-Stream pro Team.
 Member        Person im Team. Wird nie gelöscht, nur deaktiviert.
-Pool          Benannte Teilmenge der Members (z. B. „Backend“, „Daily“).
+Pool          Benannte Teilmenge der Members (z. B. „Backend“, „Daily“). Umbenennbar,
+              löschbar; die Ziehungshistorie eines gelöschten Pools bleibt erhalten.
 Spin          Eine Ziehung: Commit (Server bindet Seed + Gewichte) → Reveal (Ergebnis).
 FairnessPolicy Aktive Gewichtsmodifikatoren samt Parametern. Sichtbar im UI.
 WeightModifier Pure Funktion  (weights, context) → weights.
 Appeal        Einspruch gegen eine Schuld; Ergebnis „stattgegeben“ oder „abgelehnt“.
 Immunity      Einmaliger Schutz: Gewicht 0 bei der nächsten Ziehung, wird dabei verbraucht.
+              Kann vor dem Verbrauch widerrufen werden.
 ```
 
 ### Events (persistierter Vertrag, `src/domain/events.ts`)
@@ -58,6 +60,8 @@ MemberDeactivated        { memberId }
 MemberReactivated        { memberId }
 PoolCreated              { poolId, name }
 PoolMembershipChanged    { poolId, memberIds }
+PoolRenamed              { poolId, name }
+PoolDeleted              { poolId }
 FairnessPolicyChanged    { policy }
 SpinCommitted            { spinId, poolId, nonce, commitment, participants:[{memberId, weight}], modifiers:[...], serverSeed }
 SpinRevealed             { spinId, serverSeed, clientSeed, digest, selectedMemberId }
@@ -66,6 +70,7 @@ AppealUpheld             { spinId }
 AppealRejected           { spinId }
 ImmunityGranted          { memberId, reason }
 ImmunityConsumed         { memberId, spinId }
+ImmunityRevoked          { memberId }
 ```
 
 Jedes Event hat zusätzlich `type`, `at` (ISO-Zeit) und – in der Datenbank –
@@ -193,10 +198,13 @@ GET  /api/teams/:id                          TeamView (state + statistics)
 POST /api/teams/:id/members     { name }  |  { names: [...] }   Liste einfügen
 POST /api/teams/:id/members/:mid/deactivate
 POST /api/teams/:id/members/:mid/reactivate
-POST /api/teams/:id/members/:mid/immunity   { reason }
-PUT  /api/teams/:id/policy      FairnessPolicy
-POST /api/teams/:id/pools       { name, memberIds }
-PUT  /api/teams/:id/pools/:pid  { memberIds }
+POST   /api/teams/:id/members/:mid/immunity   { reason }
+DELETE /api/teams/:id/members/:mid/immunity   widerruft die älteste Immunität
+PUT    /api/teams/:id/policy      FairnessPolicy
+POST   /api/teams/:id/pools       { name, memberIds }
+PUT    /api/teams/:id/pools/:pid  { memberIds }
+POST   /api/teams/:id/pools/:pid/rename  { name }
+DELETE /api/teams/:id/pools/:pid
 POST /api/teams/:id/spins       { spinId, poolId? }        → SpinCommitted-Daten   (409 bei offenem Spin)
 POST /api/teams/:id/spins/:sid/reveal { clientSeed }       → SpinRevealed-Daten
 POST /api/teams/:id/spins/:sid/appeal { reason }
@@ -215,8 +223,10 @@ Es gibt keine Authentifizierung. Schuldrad ist für ein vertrauenswürdiges
 Netz (Team-LAN, VPN) gedacht; wer es öffentlich betreibt, setzt einen
 Reverse Proxy mit Auth davor.
 
-Der Client hält keinen eigenen Domänenzustand. Nach jedem Command und jeder
-SSE-Nachricht lädt er `GET /api/teams/:id` neu.
+Der Client hält keinen eigenen Domänenzustand. Jede Mutation liefert den
+frischen `TeamView` zurück, den der Client direkt übernimmt; zusätzlich lädt
+er bei jeder SSE-Nachricht `GET /api/teams/:id` neu (das Echo des eigenen
+Appends ist ein harmloser Doppel-Fetch).
 
 ## 7. Persistenz
 
@@ -274,11 +284,26 @@ Route. Kein State-Management-Paket: `TeamView` vom Server + ein paar
 Ergebnis als Prop und dürfen keinen Domänenzustand besitzen. Sie sind
 überspringbar und respektieren `prefers-reduced-motion`.
 
+Wegweiser durch `src/web`:
+
+```
+api.ts           Fassade: wählt per VITE_API_MODE zwischen zwei Backends
+serverApi.ts     HTTP-Client; exportiert den gemeinsamen Vertrag `type Api`
+sessionApi.ts    In-Browser-Event-Store (sessionStorage) mit derselben Api
+apiError.ts      ApiError beider Backends + errorMessage() (deutsche Fehlertexte)
+draw.ts          performDraw(): Commit → Reveal inkl. 409-Wiederaufnahme
+useTeam.ts       Team laden, SSE-Refresh
+route.ts         Hash-Router; views/ die Seiten; wheel/ die Visualisierungen
+AnimPanel.tsx    Animationseinstellungen (localStorage via animSettings.ts)
+share.ts         Teams-Karte (Canvas-PNG) + ShareDialog.tsx (natives <dialog>)
+```
+
 PWA: `manifest.webmanifest` + handgeschriebener Service Worker
 (App-Shell-Cache; `/api` wird nie angefasst, Historie kommt immer vom Server).
 
 `src/web` importiert aus `src/server/views.ts` ausschließlich Typen
-(`TeamView`, `SpinView`) – das ist der HTTP-Vertrag, kein Serverstaat.
+(`TeamView`, `SpinView`) und die puren View-Funktionen – das ist der
+HTTP-Vertrag, kein Serverstaat (siehe Tabelle in Abschnitt 1).
 
 ## 10. Deployment
 
