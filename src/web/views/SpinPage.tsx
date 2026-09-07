@@ -1,8 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { randomHex } from '../../domain/fairness/draw.ts';
+import type { Pool } from '../../domain/team.ts';
 import type { SpinView, TeamView } from '../../server/views.ts';
-import { ApiError, api } from '../api.ts';
+import { AnimPanel } from '../AnimPanel.tsx';
+import { animSummary, useAnimSettings } from '../animSettings.ts';
+import { api, errorMessage } from '../api.ts';
+import { performDraw } from '../draw.ts';
+import { percent, probabilityOf, spinLabel } from '../format.ts';
+import { RevealName } from '../RevealName.tsx';
 import { href } from '../route.ts';
+import { ShareDialog } from '../ShareDialog.tsx';
+import {
+  BoardStage,
+  LineStage,
+  SignalStage,
+  StampStage,
+  TimetableStage,
+  TrainStage,
+} from '../wheel/stages.tsx';
 import { Wheel } from '../wheel/Wheel.tsx';
 
 type Props = { team: TeamView; setTeam: (t: TeamView) => void; reload: () => Promise<void> };
@@ -13,64 +27,36 @@ type Phase =
   | { kind: 'animating'; spin: SpinView }
   | { kind: 'announced'; spin: SpinView };
 
-/** A refresh mid-reveal must retry with the same client seed, otherwise the server (rightly) refuses. */
-function clientSeedFor(spinId: string): string {
-  const key = `schuldrad.clientSeed.${spinId}`;
-  try {
-    const existing = sessionStorage.getItem(key);
-    if (existing) return existing;
-    const seed = randomHex(16);
-    sessionStorage.setItem(key, seed);
-    return seed;
-  } catch {
-    return randomHex(16);
-  }
-}
-
 export function SpinPage({ team, reload }: Props) {
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [poolId, setPoolId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [settings, updateSettings] = useAnimSettings();
+  const [animOpen, setAnimOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; text: string; error: boolean }[]>([]);
+  const online = useOnline();
+
+  const toast = useCallback((text: string, isError = false) => {
+    const id = Date.now() + Math.random();
+    setToasts((t) => [...t.slice(-2), { id, text, error: isError }]);
+    setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 4200);
+  }, []);
 
   const nameOf = (id: string) => team.members.find((m) => m.memberId === id)?.name ?? id;
 
-  /** Commit → reveal → only then animate to the persisted result. */
+  /** Commit → reveal → only then animate to the persisted result (see performDraw). */
   const draw = useCallback(
     async (resumeSpinId?: string) => {
       if (phase.kind === 'drawing') return;
       setPhase({ kind: 'drawing' });
       setError(null);
       try {
-        let spinId = resumeSpinId ?? crypto.randomUUID();
-        if (!resumeSpinId) {
-          try {
-            await api.commitSpin(team.teamId, spinId, poolId || null);
-          } catch (err) {
-            // Someone (or a retry) already opened a spin: finish that one instead.
-            if (
-              err instanceof ApiError &&
-              err.status === 409 &&
-              typeof err.body.spinId === 'string'
-            ) {
-              spinId = err.body.spinId;
-            } else throw err;
-          }
-        }
-        let revealed: SpinView;
-        try {
-          revealed = await api.revealSpin(team.teamId, spinId, clientSeedFor(spinId));
-        } catch (err) {
-          // Another browser revealed first with its own client seed: the persisted result wins.
-          if (!(err instanceof ApiError && err.status === 409)) throw err;
-          const fresh = await api.getTeam(team.teamId);
-          const done = fresh.spins.find((s) => s.spinId === spinId && s.reveal);
-          if (!done) throw err;
-          revealed = done;
-        }
+        const revealed = await performDraw(api, team.teamId, poolId || null, resumeSpinId);
         setPhase({ kind: 'animating', spin: revealed });
         void reload();
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        setError(errorMessage(err));
         setPhase({ kind: 'idle' });
       }
     },
@@ -95,15 +81,85 @@ export function SpinPage({ team, reload }: Props) {
     [spin, selectedName],
   );
 
+  const announced = phase.kind === 'announced';
+
   useEffect(() => {
-    if (!result || phase.kind !== 'announced') return;
+    if (!result || !announced) return;
     document.title = `Schuldig: ${result.selectedName} · Schuldrad`;
     return () => {
       document.title = 'Schuldrad';
     };
-  }, [result, phase.kind]);
+  }, [result, announced]);
+
+  // Teams card auto-opens shortly after the announcement (setting-controlled, off by default).
+  useEffect(() => {
+    if (!announced || !settings.autoShare || !result?.reveal) return;
+    const t = setTimeout(() => setShareOpen(true), 1800);
+    return () => clearTimeout(t);
+  }, [announced, settings.autoShare, result]);
 
   const activeCount = team.members.filter((m) => m.active).length;
+  const eligibility = spinEligibility(team, poolId);
+  const drawnParticipants = wheelParticipants.filter((p) => p.weight > 0);
+  const poolLabel = poolId ? (team.pools.find((p) => p.poolId === poolId)?.name ?? null) : null;
+
+  const animating = phase.kind === 'animating';
+  const stageProps = {
+    participants: drawnParticipants,
+    result: animating || announced ? result : null,
+    announced,
+    poolLabel,
+    onFinished: finish,
+  };
+
+  const visualization =
+    settings.vis === 'wheel' ? (
+      <Wheel
+        participants={wheelParticipants}
+        result={animating || announced ? result : null}
+        announced={announced}
+        wheelStyle={settings.wheelStyle}
+        spinStyle={settings.spinStyle}
+        tickSound={settings.tickSound}
+        onFinished={finish}
+      />
+    ) : settings.vis === 'train' ? (
+      <TrainStage {...stageProps} />
+    ) : settings.vis === 'board' ? (
+      <BoardStage {...stageProps} />
+    ) : settings.vis === 'signal' ? (
+      <SignalStage {...stageProps} />
+    ) : settings.vis === 'stamp' ? (
+      <StampStage {...stageProps} />
+    ) : settings.vis === 'timetable' ? (
+      <TimetableStage {...stageProps} />
+    ) : (
+      <LineStage {...stageProps} />
+    );
+
+  const revealedSpin = result?.reveal ? { ...result, reveal: result.reveal } : null;
+  const pending = phase.kind === 'idle' ? team.pendingSpin : null;
+
+  // One persistent button across all phases so keyboard focus survives the
+  // idle → drawing → animating → announced transitions.
+  const action =
+    phase.kind === 'idle'
+      ? pending
+        ? { label: 'Ziehung abschließen', onClick: () => draw(pending.spinId), disabled: !online }
+        : {
+            label: 'Ziehung starten',
+            onClick: () => draw(),
+            disabled: eligibility.disabled || !online,
+          }
+      : phase.kind === 'drawing'
+        ? { label: 'Ergebnis wird festgelegt …', onClick: () => {}, disabled: true }
+        : phase.kind === 'animating'
+          ? { label: 'Überspringen', onClick: finish, disabled: false }
+          : {
+              label: 'Nächste Ziehung',
+              onClick: () => setPhase({ kind: 'idle' }),
+              disabled: false,
+            };
 
   return (
     <>
@@ -112,22 +168,43 @@ export function SpinPage({ team, reload }: Props) {
           <p className="label">Team</p>
           <h1>{team.name}</h1>
         </div>
-        <label className="field compact">
-          <span className="label">Gleis</span>
-          <select
-            value={poolId}
-            onChange={(e) => setPoolId(e.target.value)}
-            disabled={phase.kind !== 'idle'}
+        <div className="spin-controls">
+          <label className="field compact">
+            <span className="label">Gleis</span>
+            <select
+              value={poolId}
+              onChange={(e) => setPoolId(e.target.value)}
+              disabled={phase.kind !== 'idle'}
+            >
+              <option value="">Alle Aktiven ({activeCount})</option>
+              {team.pools.map((p) => (
+                <option key={p.poolId} value={p.poolId}>
+                  {poolOptionLabel(team, p)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="anim-toggle"
+            onClick={() => setAnimOpen((o) => !o)}
+            aria-expanded={animOpen}
+            aria-controls="sr-anim-panel"
           >
-            <option value="">Alle Aktiven ({activeCount})</option>
-            {team.pools.map((p) => (
-              <option key={p.poolId} value={p.poolId}>
-                {p.name} ({p.memberIds.length})
-              </option>
-            ))}
-          </select>
-        </label>
+            <span className={`chevron${animOpen ? ' open' : ''}`} aria-hidden="true" />
+            <span>Animation</span>
+            <span className="anim-summary">{animSummary(settings)}</span>
+          </button>
+        </div>
       </div>
+
+      {animOpen && <AnimPanel settings={settings} updateSettings={updateSettings} />}
+
+      <p className={eligibility.disabled ? 'notice' : 'muted spin-context'}>
+        {eligibility.message}
+        {poolId && ' '}
+        {poolId && <a href={href.teilnehmer(team.teamId)}>Gleis bearbeiten</a>}
+      </p>
 
       {activeCount === 0 && (
         <p className="notice">
@@ -135,74 +212,52 @@ export function SpinPage({ team, reload }: Props) {
         </p>
       )}
 
-      <Wheel
-        participants={wheelParticipants}
-        result={phase.kind === 'animating' || phase.kind === 'announced' ? result : null}
-        onFinished={finish}
-      />
+      {!online && (
+        <p className="notice error">
+          Offline – Fahrplandaten nicht verfügbar. Eine Ziehung braucht Verbindung.
+        </p>
+      )}
+
+      {visualization}
 
       {error && <p className="error-text">{error}</p>}
 
-      {phase.kind === 'idle' && team.pendingSpin && (
-        <div className="notice">
-          <p>
-            Ziehung SR {String(team.pendingSpin.nonce).padStart(4, '0')} läuft (festgelegt, noch
-            nicht aufgedeckt).
-          </p>
-          <button
-            type="button"
-            className="primary"
-            data-testid="spin-button"
-            onClick={() => draw(team.pendingSpin?.spinId)}
-          >
-            Ziehung abschließen
-          </button>
-        </div>
+      {pending && (
+        <p className="notice">
+          Zug {spinLabel(pending.nonce)} läuft (festgelegt, noch nicht aufgedeckt).
+        </p>
       )}
 
-      {phase.kind === 'idle' && !team.pendingSpin && (
-        <div className="actions center">
-          <button
-            type="button"
-            className="primary big"
-            data-testid="spin-button"
-            disabled={activeCount === 0}
-            onClick={() => draw()}
-          >
-            Ziehung starten
-          </button>
-        </div>
-      )}
+      <div className="actions center">
+        <button
+          type="button"
+          className={phase.kind === 'animating' ? '' : 'primary big'}
+          data-testid={phase.kind === 'animating' ? 'skip-animation' : 'spin-button'}
+          disabled={action.disabled}
+          onClick={action.onClick}
+        >
+          {action.label}
+        </button>
+      </div>
 
-      {phase.kind === 'drawing' && (
-        <p className="muted center">Ergebnis wird festgelegt und protokolliert …</p>
-      )}
+      {/* Permanently mounted live region: many AT combos never announce the
+          initial content of a freshly mounted node. */}
+      <p className="visually-hidden" aria-live="assertive" role="status">
+        {announced && result ? `Schuldig: ${result.selectedName}` : ''}
+      </p>
 
-      {phase.kind === 'animating' && (
-        <div className="actions center">
-          <button type="button" data-testid="skip-animation" onClick={finish}>
-            Überspringen
-          </button>
-        </div>
-      )}
-
-      {phase.kind === 'announced' && result?.reveal && (
-        <section className="announcement" aria-live="assertive">
+      {announced && result?.reveal && (
+        <section className={`announcement fx-${settings.resultFx}`} key={result.spinId}>
           <p className="label light">Nächster Halt</p>
           <p className="announcement-stop">Verantwortung</p>
           <p className="label light">Schuldig</p>
           <p className="announcement-name" data-testid="result-name">
-            {result.selectedName}
+            <span className="visually-hidden">{result.selectedName}</span>
+            <RevealName name={result.selectedName} mode={settings.reveal} spinId={result.spinId} />
           </p>
           <p className="announcement-meta">
-            Zug SR {String(result.nonce).padStart(4, '0')} · Wahrscheinlichkeit{' '}
-            {Math.round(
-              (100 *
-                (result.participants.find((p) => p.memberId === result.reveal?.selectedMemberId)
-                  ?.weight ?? 0)) /
-                result.participants.reduce((s, p) => s + p.weight, 0),
-            )}{' '}
-            %
+            Zug {spinLabel(result.nonce)} · Wahrscheinlichkeit{' '}
+            {percent(probabilityOf(result.participants, result.reveal.selectedMemberId))}
           </p>
           <div className="actions">
             <a
@@ -212,19 +267,59 @@ export function SpinPage({ team, reload }: Props) {
             >
               Schuldbericht öffnen
             </a>
+            <button type="button" className="ghost" onClick={() => setShareOpen(true)}>
+              Für Teams teilen
+            </button>
             <a className="button ghost" href={href.ziehung(team.teamId, result.spinId)}>
               Einspruch / Nachweis
             </a>
-            <button type="button" className="ghost" onClick={() => setPhase({ kind: 'idle' })}>
-              Nächste Ziehung
-            </button>
           </div>
         </section>
+      )}
+
+      {shareOpen && revealedSpin && (
+        <ShareDialog
+          teamName={team.name}
+          spin={revealedSpin}
+          selectedName={selectedName}
+          onClose={() => setShareOpen(false)}
+          onToast={toast}
+        />
+      )}
+
+      {toasts.length > 0 && (
+        <div className="toasts">
+          {toasts.map((t) => (
+            <div key={t.id} role="status" className={`toast${t.error ? ' toast-error' : ''}`}>
+              {t.text}
+            </div>
+          ))}
+        </div>
       )}
     </>
   );
 }
 
+function useOnline(): boolean {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return () => {
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+  }, []);
+  return online;
+}
+
+/**
+ * Idle-state preview of who would be on the wheel. Weights are only 1 (in)
+ * or 0 (immune) — policy modifiers apply at commit time, so the preview's
+ * equal segments deliberately ignore pity/cooldown/exhaustion.
+ */
 function previewParticipants(team: TeamView, poolId: string) {
   const pool = team.pools.find((p) => p.poolId === poolId);
   return team.members
@@ -234,4 +329,26 @@ function previewParticipants(team: TeamView, poolId: string) {
       name: m.name,
       weight: team.immunities.some((i) => i.memberId === m.memberId) ? 0 : 1,
     }));
+}
+
+export function poolOptionLabel(team: TeamView, pool: Pool): string {
+  const active = team.members.filter((m) => m.active && pool.memberIds.includes(m.memberId)).length;
+  return `${pool.name} (${active} aktiv)`;
+}
+
+export function spinEligibility(team: TeamView, poolId: string) {
+  const pool = team.pools.find((p) => p.poolId === poolId);
+  const eligibleCount = team.members.filter(
+    (m) => m.active && (!pool || pool.memberIds.includes(m.memberId)),
+  ).length;
+  const inactiveInPool = pool
+    ? team.members.filter((m) => !m.active && pool.memberIds.includes(m.memberId)).length
+    : 0;
+  const participant = eligibleCount === 1 ? 'aktiver Teilnehmer' : 'aktive Teilnehmer';
+  const inactiveNote = inactiveInPool > 0 ? `, ${inactiveInPool} abgemeldet` : '';
+  const message = pool
+    ? `${pool.name}: ${eligibleCount} ${participant} im Lostopf${inactiveNote}.`
+    : `${eligibleCount} ${participant} im Lostopf.`;
+
+  return { eligibleCount, disabled: eligibleCount === 0, message };
 }

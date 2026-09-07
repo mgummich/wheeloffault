@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { MemberReport } from '../../domain/projections/report.ts';
 import type { TeamView } from '../../server/views.ts';
-import { api } from '../api.ts';
-import { dateTime, num, num2, percent, relativeTime } from '../format.ts';
+import { api, errorMessage } from '../api.ts';
+import { dateTime, num, num2, percent, relativeTime, spinLabel } from '../format.ts';
 import { href } from '../route.ts';
 
 export function ReportPage({ team, memberId }: { team: TeamView; memberId: string }) {
@@ -16,7 +16,7 @@ export function ReportPage({ team, memberId }: { team: TeamView; memberId: strin
     api
       .memberReport(teamId, memberId)
       .then(setReport)
-      .catch((e: Error) => setError(e.message));
+      .catch((e: unknown) => setError(errorMessage(e)));
   }, [teamId, version, memberId]);
 
   if (error) return <p className="error-text">{error}</p>;
@@ -116,9 +116,7 @@ export function ReportPage({ team, memberId }: { team: TeamView; memberId: strin
             {report.history.map((h) => (
               <tr key={h.spinId} data-testid="history-row">
                 <td>
-                  <a href={href.ziehung(team.teamId, h.spinId)}>
-                    SR {String(h.nonce).padStart(4, '0')}
-                  </a>
+                  <a href={href.ziehung(team.teamId, h.spinId)}>{spinLabel(h.nonce)}</a>
                 </td>
                 <td>{dateTime(h.at)}</td>
                 <td className="num">{percent(h.probability)}</td>

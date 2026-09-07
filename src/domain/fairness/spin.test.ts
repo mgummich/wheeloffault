@@ -1,8 +1,8 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { addMembers, deactivateMember, grantImmunity } from '../decisions.ts';
+import { addMembers, deactivateMember, grantImmunity, reactivateMember } from '../decisions.ts';
 import type { DomainEvent } from '../events.ts';
-import { type TeamState, replay } from '../team.ts';
+import { replay, type TeamState } from '../team.ts';
 import { defaultPolicy } from './policy.ts';
 import { commitSpin, revealSpin } from './spin.ts';
 import { calculateWeights, eligibleMembers } from './weights.ts';
@@ -30,9 +30,45 @@ describe('eligibleMembers', () => {
     const s2 = replay(deactivateMember(s, 'm2', now), s);
     expect(eligibleMembers(s2, null).map((m) => m.memberId)).toEqual(['m1', 'm3']);
   });
+
+  it('reactivating a member cannot create duplicate active names', () => {
+    let s = team(['Anna']);
+    s = replay(deactivateMember(s, 'm1', now), s);
+    s = replay(
+      addMembers(s, ['anna'], () => 'm2', now),
+      s,
+    );
+
+    expect(() => reactivateMember(s, 'm1', now)).toThrow(/Name existiert bereits/);
+  });
 });
 
 describe('calculateWeights', () => {
+  it('skips cooldown when immunity excludes the only remaining participant', async () => {
+    let s = team(
+      ['a', 'b'],
+      [
+        {
+          type: 'FairnessPolicyChanged',
+          policy: { ...defaultPolicy, cooldown: { enabled: true, spins: 1 } },
+          at: now,
+        },
+      ],
+    );
+    s = await runSpin(s, 's1');
+    const winner = s.spins[0]?.reveal?.selectedMemberId;
+    const other = s.members.find((m) => m.memberId !== winner)?.memberId ?? '';
+    s = replay(grantImmunity(s, other, 'protection', now), s);
+    s = await runSpin(s, 's2');
+    expect(s.spins[1]?.reveal?.selectedMemberId).toBe(winner);
+    expect(s.spins[1]?.modifiers.find((m) => m.name === 'cooldown')?.factors).toEqual({
+      m1: 1000,
+      m2: 1000,
+    });
+    expect(s.immunities).toEqual([]);
+    await expect(runSpin(s, 's3')).resolves.toBeDefined();
+  });
+
   it('is uniform by default', () => {
     const { participants, modifiers } = calculateWeights(
       team(['a', 'b']),

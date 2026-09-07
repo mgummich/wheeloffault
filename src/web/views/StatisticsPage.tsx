@@ -1,5 +1,5 @@
 import type { TeamView } from '../../server/views.ts';
-import { dateTime, num, num2, relativeTime } from '../format.ts';
+import { dateTime, num, num2, relativeTime, spinLabel } from '../format.ts';
 import { href } from '../route.ts';
 
 export function StatisticsPage({ team }: { team: TeamView }) {
@@ -21,7 +21,7 @@ export function StatisticsPage({ team }: { team: TeamView }) {
       </div>
 
       <section>
-        <h2>Hall of Shame</h2>
+        <h2>Schuldrangliste</h2>
         <table className="board">
           <thead>
             <tr>
@@ -54,7 +54,16 @@ export function StatisticsPage({ team }: { team: TeamView }) {
                 <td className="num">{r.schuldpunkte}</td>
                 <td className="num">{r.totalSelections}</td>
                 <td className="num">{num(r.expectedSelections)}</td>
-                <td className="num">{r.schuldindex === null ? '–' : num2(r.schuldindex)}</td>
+                <td className="num">
+                  {r.schuldindex === null ? (
+                    <>
+                      <span aria-hidden="true">–</span>
+                      <span className="visually-hidden">kein Index</span>
+                    </>
+                  ) : (
+                    num2(r.schuldindex)
+                  )}
+                </td>
                 <td className="num">{r.currentStreak}</td>
                 <td>{r.lastSelectedAt ? relativeTime(r.lastSelectedAt) : 'nie'}</td>
               </tr>
@@ -107,9 +116,7 @@ export function StatisticsPage({ team }: { team: TeamView }) {
             {stats.history.map((h) => (
               <tr key={h.spinId} data-testid="history-row">
                 <td>
-                  <a href={href.ziehung(team.teamId, h.spinId)}>
-                    SR {String(h.nonce).padStart(4, '0')}
-                  </a>
+                  <a href={href.ziehung(team.teamId, h.spinId)}>{spinLabel(h.nonce)}</a>
                 </td>
                 <td>{dateTime(h.revealedAt ?? h.committedAt)}</td>
                 <td>{h.selectedName ?? <span className="muted">offen</span>}</td>

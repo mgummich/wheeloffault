@@ -31,18 +31,20 @@ export function App() {
 
 function TeamNav({ teamId, page }: { teamId: string; page: string }) {
   const tabs: [string, string, string][] = [
-    ['spin', 'Schuldrad', href.team(teamId)],
+    ['spin', 'Ziehung', href.team(teamId)],
     ['teilnehmer', 'Teilnehmer', href.teilnehmer(teamId)],
     ['statistik', 'Statistik', href.statistik(teamId)],
     ['fairness', 'Fairness', href.fairness(teamId)],
   ];
+  // Detail pages keep their parent tab highlighted for orientation.
+  const activeKey = page === 'bericht' ? 'teilnehmer' : page === 'ziehung' ? 'statistik' : page;
   return (
-    <nav className="tabs" aria-label="Fahrplan">
+    <nav className="tabs" aria-label="Hauptnavigation">
       {tabs.map(([key, label, to]) => (
         <a
           key={key}
           href={to}
-          className={page === key ? 'active' : ''}
+          className={activeKey === key ? 'active' : ''}
           aria-current={page === key ? 'page' : undefined}
         >
           {label}

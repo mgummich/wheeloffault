@@ -6,3 +6,7 @@ data
 test-results
 playwright-report
 .DS_Store
+
+# Local working material, not part of the app (see audit 2026-09)
+design_handoff_schuldrad_animations/
+mood-scales-katalog.md

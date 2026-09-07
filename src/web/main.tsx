@@ -12,5 +12,7 @@ createRoot(root).render(
 );
 
 if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch((err) => console.error('SW', err));
+  navigator.serviceWorker
+    .register(`${import.meta.env.BASE_URL}sw.js`)
+    .catch((err) => console.error('SW', err));
 }

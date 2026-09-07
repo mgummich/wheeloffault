@@ -1,6 +1,6 @@
 import { DomainError } from './errors.ts';
 import type { AppliedModifier, DomainEvent, WeightedParticipant } from './events.ts';
-import { type FairnessPolicy, defaultPolicy } from './fairness/policy.ts';
+import { defaultPolicy, type FairnessPolicy } from './fairness/policy.ts';
 
 export type Member = {
   memberId: string;
@@ -86,6 +86,13 @@ export function applyEvent(state: TeamState, e: DomainEvent): TeamState {
         ...s,
         pools: s.pools.map((p) => (p.poolId === e.poolId ? { ...p, memberIds: e.memberIds } : p)),
       };
+    case 'PoolRenamed':
+      return {
+        ...s,
+        pools: s.pools.map((p) => (p.poolId === e.poolId ? { ...p, name: e.name } : p)),
+      };
+    case 'PoolDeleted':
+      return { ...s, pools: s.pools.filter((p) => p.poolId !== e.poolId) };
     case 'FairnessPolicyChanged':
       return { ...s, policy: e.policy };
     case 'SpinCommitted':
@@ -138,8 +145,9 @@ export function applyEvent(state: TeamState, e: DomainEvent): TeamState {
         ...s,
         immunities: [...s.immunities, { memberId: e.memberId, reason: e.reason, grantedAt: e.at }],
       };
-    case 'ImmunityConsumed': {
-      // Consume exactly one immunity of that member (the oldest).
+    case 'ImmunityConsumed':
+    case 'ImmunityRevoked': {
+      // Remove exactly one immunity of that member (the oldest).
       const idx = s.immunities.findIndex((i) => i.memberId === e.memberId);
       return { ...s, immunities: s.immunities.filter((_, i) => i !== idx) };
     }

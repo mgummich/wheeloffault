@@ -5,7 +5,7 @@ import type { DomainEvent, StoredEvent } from '../domain/events.ts';
 import { randomHex } from '../domain/fairness/draw.ts';
 import type { FairnessPolicy } from '../domain/fairness/policy.ts';
 import { commitSpin, revealSpin } from '../domain/fairness/spin.ts';
-import { type TeamState, findSpin, replay } from '../domain/team.ts';
+import { findSpin, replay, type TeamState } from '../domain/team.ts';
 import { ConcurrencyError, type EventStore } from './eventStore.ts';
 
 /**
@@ -78,6 +78,9 @@ export function createCommands(
     grantImmunity: (teamId: string, memberId: string, reason: string) =>
       execute(teamId, (s) => decide.grantImmunity(s, memberId, reason, now())),
 
+    revokeImmunity: (teamId: string, memberId: string) =>
+      execute(teamId, (s) => decide.revokeImmunity(s, memberId, now())),
+
     changePolicy: (teamId: string, policy: FairnessPolicy) =>
       execute(teamId, (s) => decide.changePolicy(s, policy, now())),
 
@@ -86,6 +89,12 @@ export function createCommands(
 
     changePoolMembers: (teamId: string, poolId: string, memberIds: string[]) =>
       execute(teamId, (s) => decide.changePoolMembers(s, poolId, memberIds, now())),
+
+    renamePool: (teamId: string, poolId: string, name: string) =>
+      execute(teamId, (s) => decide.renamePool(s, poolId, name, now())),
+
+    deletePool: (teamId: string, poolId: string) =>
+      execute(teamId, (s) => decide.deletePool(s, poolId, now())),
 
     /** Commit step. A fresh server seed per attempt; the persisted one wins. */
     async commitSpin(teamId: string, spinId: string, poolId: string | null) {

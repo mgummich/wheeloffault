@@ -1,4 +1,4 @@
-import { type TeamState, officialSpins } from '../team.ts';
+import { officialSpins, type TeamState } from '../team.ts';
 import { type MemberReport, memberReport } from './report.ts';
 
 export type HallOfShameRow = Pick<

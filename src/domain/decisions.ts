@@ -1,7 +1,7 @@
 import { DomainError } from './errors.ts';
 import type { DomainEvent } from './events.ts';
 import { type FairnessPolicy, normalizePolicy } from './fairness/policy.ts';
-import { type TeamState, findMember, findSpin } from './team.ts';
+import { findMember, findSpin, type TeamState } from './team.ts';
 
 /**
  * Decision functions: (state, input) → events. Pure; the caller supplies
@@ -49,6 +49,14 @@ export function deactivateMember(state: TeamState, memberId: string, now: string
 export function reactivateMember(state: TeamState, memberId: string, now: string): DomainEvent[] {
   const m = findMember(state, memberId);
   if (m.active) return [];
+  const duplicate = state.members.some(
+    (other) =>
+      other.memberId !== memberId &&
+      other.active &&
+      other.name.toLowerCase() === m.name.toLowerCase(),
+  );
+  if (duplicate)
+    throw new DomainError('Aktiver Teilnehmer mit diesem Name existiert bereits', 'conflict');
   return [{ type: 'MemberReactivated', memberId, at: now }];
 }
 
@@ -97,6 +105,31 @@ export function changePoolMembers(
   return [{ type: 'PoolMembershipChanged', poolId, memberIds: unique, at: now }];
 }
 
+export function renamePool(
+  state: TeamState,
+  poolId: string,
+  name: string,
+  now: string,
+): DomainEvent[] {
+  const pool = state.pools.find((p) => p.poolId === poolId);
+  if (!pool) throw new DomainError(`Pool ${poolId} unbekannt`, 'not_found');
+  const clean = cleanName(name);
+  if (pool.name === clean) return [];
+  if (
+    state.pools.some((p) => p.poolId !== poolId && p.name.toLowerCase() === clean.toLowerCase())
+  ) {
+    throw new DomainError('Pool mit diesem Namen existiert bereits', 'conflict');
+  }
+  return [{ type: 'PoolRenamed', poolId, name: clean, at: now }];
+}
+
+export function deletePool(state: TeamState, poolId: string, now: string): DomainEvent[] {
+  if (!state.pools.some((p) => p.poolId === poolId)) {
+    throw new DomainError(`Pool ${poolId} unbekannt`, 'not_found');
+  }
+  return [{ type: 'PoolDeleted', poolId, at: now }];
+}
+
 export function grantImmunity(
   state: TeamState,
   memberId: string,
@@ -105,6 +138,14 @@ export function grantImmunity(
 ): DomainEvent[] {
   findMember(state, memberId);
   return [{ type: 'ImmunityGranted', memberId, reason: reason.trim().slice(0, 200), at: now }];
+}
+
+export function revokeImmunity(state: TeamState, memberId: string, now: string): DomainEvent[] {
+  findMember(state, memberId);
+  if (!state.immunities.some((i) => i.memberId === memberId)) {
+    throw new DomainError('Keine Immunität vorhanden', 'not_found');
+  }
+  return [{ type: 'ImmunityRevoked', memberId, at: now }];
 }
 
 export function appealGuilt(

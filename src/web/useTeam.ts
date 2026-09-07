@@ -1,10 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { TeamView } from '../server/views.ts';
-import { api, rememberTeam } from './api.ts';
+import { api, errorMessage, rememberTeam, serverMode } from './api.ts';
 
 /**
- * The client owns no domain state: this hook holds the last TeamView from
- * the server and refetches whenever the server reports a new event.
+ * Rehydrate local sessions on reload; server builds also refresh on SSE
+ * events and reconnections so other browsers see persisted changes.
+ *
+ * Mutating pages call setTeam with the response directly; the SSE `appended`
+ * reload that follows is the echo of our own append (harmless double fetch).
  */
 export function useTeam(teamId: string) {
   const [team, setTeam] = useState<TeamView | null>(null);
@@ -17,14 +20,16 @@ export function useTeam(teamId: string) {
       setError(null);
       rememberTeam(view.teamId, view.name);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     }
   }, [teamId]);
 
   useEffect(() => {
     void reload();
+    if (!serverMode) return;
     const source = new EventSource(`/api/teams/${encodeURIComponent(teamId)}/events`);
     source.addEventListener('appended', () => void reload());
+    source.addEventListener('open', () => void reload());
     return () => source.close();
   }, [teamId, reload]);
 

@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react';
 import type { TeamView } from '../../server/views.ts';
-import { api } from '../api.ts';
+import { api, errorMessage } from '../api.ts';
 import { href } from '../route.ts';
 
 type Props = { team: TeamView; setTeam: (t: TeamView) => void; reload: () => Promise<void> };
@@ -9,15 +9,21 @@ export function ParticipantsPage({ team, setTeam }: Props) {
   const [name, setName] = useState('');
   const [list, setList] = useState('');
   const [error, setError] = useState<string | null>(null);
+  // One in-flight mutation at a time: prevents double-adds and lost pool toggles.
+  const [busy, setBusy] = useState(false);
 
   async function run(action: () => Promise<TeamView>): Promise<boolean> {
+    if (busy) return false;
+    setBusy(true);
     try {
       setTeam(await action());
       setError(null);
       return true;
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
       return false;
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -37,8 +43,8 @@ export function ParticipantsPage({ team, setTeam }: Props) {
   }
 
   async function grantImmunity(memberId: string) {
-    const reason =
-      window.prompt('Grund für die Immunität (z. B. Fahrgastrecht):', 'Fahrgastrecht') ?? '';
+    const reason = window.prompt('Grund für die Immunität (z. B. Fahrgastrecht):', 'Fahrgastrecht');
+    if (reason === null) return; // Abbrechen darf keine Immunität vergeben.
     await run(() => api.grantImmunity(team.teamId, memberId, reason));
   }
 
@@ -64,14 +70,14 @@ export function ParticipantsPage({ team, setTeam }: Props) {
               required
             />
           </label>
-          <button type="submit" data-testid="add-member-button" className="primary">
+          <button type="submit" data-testid="add-member-button" className="primary" disabled={busy}>
             Hinzufügen
           </button>
         </form>
         <form onSubmit={addList} className="stack">
           <h2>Liste einfügen</h2>
           <label className="field">
-            <span className="label">Ein Name pro Zeile</span>
+            <span className="label">Ein Name pro Zeile (Komma und Semikolon trennen auch)</span>
             <textarea
               data-testid="paste-list-textarea"
               rows={4}
@@ -79,7 +85,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
               onChange={(e) => setList(e.target.value)}
             />
           </label>
-          <button type="submit" data-testid="paste-list-button">
+          <button type="submit" data-testid="paste-list-button" disabled={busy}>
             Liste übernehmen
           </button>
         </form>
@@ -87,7 +93,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
 
       <section>
         <h2>Aktiv ({active.length})</h2>
-        <table className="board">
+        <table className="board participant-board">
           <thead>
             <tr>
               <th>Name</th>
@@ -98,22 +104,34 @@ export function ParticipantsPage({ team, setTeam }: Props) {
           <tbody>
             {active.map((m) => (
               <tr key={m.memberId} data-testid="member-row">
-                <td>
+                <td data-label="Name">
                   <a href={href.bericht(team.teamId, m.memberId)}>{m.name}</a>
                 </td>
-                <td>
+                <td data-label="Status">
                   <span className="chip ok">fahrbereit</span>
                   {immunities(m.memberId) > 0 && (
-                    <span className="chip">immun ×{immunities(m.memberId)}</span>
+                    <>
+                      <span className="chip">immun ×{immunities(m.memberId)}</span>
+                      <button
+                        type="button"
+                        className="quiet chip-action"
+                        disabled={busy}
+                        onClick={() => run(() => api.revokeImmunity(team.teamId, m.memberId))}
+                      >
+                        aufheben
+                      </button>
+                    </>
                   )}
                 </td>
                 <td className="actions">
-                  <button type="button" onClick={() => grantImmunity(m.memberId)}>
+                  <button type="button" disabled={busy} onClick={() => grantImmunity(m.memberId)}>
                     Immunität
                   </button>
                   <button
                     type="button"
+                    className="quiet"
                     data-testid="deactivate-button"
+                    disabled={busy}
                     onClick={() => run(() => api.deactivateMember(team.teamId, m.memberId))}
                   >
                     Abmelden
@@ -136,20 +154,21 @@ export function ParticipantsPage({ team, setTeam }: Props) {
         <section>
           <h2>Abgemeldet ({inactive.length})</h2>
           <p className="muted">Bleiben in der Historie. Abwesenheit löscht keine Schuld.</p>
-          <table className="board">
+          <table className="board participant-board">
             <tbody>
               {inactive.map((m) => (
                 <tr key={m.memberId} data-testid="member-row">
-                  <td>
+                  <td data-label="Name">
                     <a href={href.bericht(team.teamId, m.memberId)}>{m.name}</a>
                   </td>
-                  <td>
-                    <span className="chip off">fällt aus</span>
+                  <td data-label="Status">
+                    <span className="chip off">abgemeldet</span>
                   </td>
                   <td className="actions">
                     <button
                       type="button"
                       data-testid="reactivate-button"
+                      disabled={busy}
                       onClick={() => run(() => api.reactivateMember(team.teamId, m.memberId))}
                     >
                       Wieder anmelden
@@ -162,42 +181,51 @@ export function ParticipantsPage({ team, setTeam }: Props) {
         </section>
       )}
 
-      <Pools team={team} setTeam={setTeam} onError={setError} />
+      <Pools team={team} run={run} busy={busy} />
     </>
   );
 }
 
 function Pools({
   team,
-  setTeam,
-  onError,
+  run,
+  busy,
 }: {
   team: TeamView;
-  setTeam: (t: TeamView) => void;
-  onError: (e: string) => void;
+  run: (action: () => Promise<TeamView>) => Promise<boolean>;
+  busy: boolean;
 }) {
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
+  const [renaming, setRenaming] = useState<{ poolId: string; name: string } | null>(null);
   const toggle = (id: string) =>
     setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
 
   async function create(e: FormEvent) {
     e.preventDefault();
-    try {
-      setTeam(await api.createPool(team.teamId, name, selected));
+    if (await run(() => api.createPool(team.teamId, name, selected))) {
       setName('');
       setSelected([]);
-    } catch (err) {
-      onError(err instanceof Error ? err.message : String(err));
     }
   }
 
-  async function togglePoolMember(poolId: string, memberIds: string[], id: string) {
+  async function togglePoolMember(poolId: string, id: string) {
+    // Always compute from the freshest team state; `run` serializes requests.
+    const memberIds = team.pools.find((p) => p.poolId === poolId)?.memberIds ?? [];
     const next = memberIds.includes(id) ? memberIds.filter((x) => x !== id) : [...memberIds, id];
-    try {
-      setTeam(await api.changePoolMembers(team.teamId, poolId, next));
-    } catch (err) {
-      onError(err instanceof Error ? err.message : String(err));
+    await run(() => api.changePoolMembers(team.teamId, poolId, next));
+  }
+
+  async function remove(poolId: string, poolName: string) {
+    if (!window.confirm(`Gleis „${poolName}“ entfernen? Ziehungen bleiben erhalten.`)) return;
+    await run(() => api.deletePool(team.teamId, poolId));
+  }
+
+  async function rename(e: FormEvent) {
+    e.preventDefault();
+    if (!renaming) return;
+    if (await run(() => api.renamePool(team.teamId, renaming.poolId, renaming.name))) {
+      setRenaming(null);
     }
   }
 
@@ -209,14 +237,52 @@ function Pools({
       </p>
       {team.pools.map((pool) => (
         <div key={pool.poolId} className="pool">
-          <strong>{pool.name}</strong>
+          {renaming?.poolId === pool.poolId ? (
+            <form onSubmit={rename} className="actions">
+              <input
+                value={renaming.name}
+                onChange={(e) => setRenaming({ poolId: pool.poolId, name: e.target.value })}
+                maxLength={60}
+                required
+                // biome-ignore lint/a11y/noAutofocus: the form appears on explicit request; focus belongs in it.
+                autoFocus
+              />
+              <button type="submit" disabled={busy}>
+                Speichern
+              </button>
+              <button type="button" className="quiet" onClick={() => setRenaming(null)}>
+                Abbrechen
+              </button>
+            </form>
+          ) : (
+            <div className="actions">
+              <strong>{pool.name}</strong>
+              <button
+                type="button"
+                className="quiet"
+                disabled={busy}
+                onClick={() => setRenaming({ poolId: pool.poolId, name: pool.name })}
+              >
+                Umbenennen
+              </button>
+              <button
+                type="button"
+                className="quiet"
+                disabled={busy}
+                onClick={() => remove(pool.poolId, pool.name)}
+              >
+                Entfernen
+              </button>
+            </div>
+          )}
           <div className="checks">
             {team.members.map((m) => (
               <label key={m.memberId} className={m.active ? '' : 'muted'}>
                 <input
                   type="checkbox"
                   checked={pool.memberIds.includes(m.memberId)}
-                  onChange={() => togglePoolMember(pool.poolId, pool.memberIds, m.memberId)}
+                  disabled={busy}
+                  onChange={() => togglePoolMember(pool.poolId, m.memberId)}
                 />
                 {m.name}
               </label>
@@ -241,7 +307,9 @@ function Pools({
             </label>
           ))}
         </div>
-        <button type="submit">Gleis anlegen</button>
+        <button type="submit" disabled={busy}>
+          Gleis anlegen
+        </button>
       </form>
     </section>
   );

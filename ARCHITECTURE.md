@@ -29,6 +29,10 @@ Ein einziges npm-Paket, drei Quellordner:
 | `src/server`  | Node            | `src/domain`         | HTTP-Server, Event-Store (SQLite), Command-Handler, SSE. |
 | `src/web`     | Browser         | `src/domain`         | React-Oberfläche, Animation, Service Worker, Verifier-UI. |
 
+Ausnahme: `src/web` importiert zusätzlich **nur Typen** aus
+`src/server/views.ts` (`TeamView`, `SpinView`, …) und die pure Funktion
+`teamView`/`spinView` für den Session-Modus — beides ohne Node-I/O.
+
 Die Domäne kennt weder HTTP noch SQLite noch React. Der Fairness-Verifier im
 Browser ist buchstäblich dieselbe Funktion wie auf dem Server.
 

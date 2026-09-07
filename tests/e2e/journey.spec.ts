@@ -1,5 +1,28 @@
 import { expect, test } from '@playwright/test';
 
+test('server teams and live changes are shared between browsers', async ({
+  page,
+  browser,
+  request,
+}) => {
+  const response = await request.post('/api/teams', { data: { name: 'Shared team' } });
+  const team = await response.json();
+  const other = await browser.newPage();
+  try {
+    const url = `/#/team/${team.teamId}/teilnehmer`;
+    await page.goto(url);
+    await other.goto(new URL(url, page.url()).href);
+    await expect(other.getByRole('heading', { name: 'Aktiv (0)' })).toBeVisible();
+    await page.getByTestId('add-member-input').fill('Shared member');
+    await page.getByTestId('add-member-button').click();
+    await expect(other.getByTestId('member-row')).toContainText('Shared member');
+    await other.reload();
+    await expect(other.getByTestId('member-row')).toContainText('Shared member');
+  } finally {
+    await other.close();
+  }
+});
+
 /**
  * The one critical journey: team → participants → deactivate → spin →
  * commit → reveal → result → Schuldbericht → statistics → reload → history.
@@ -29,7 +52,7 @@ test('Schuldrad journey', async ({ page }) => {
   await page.getByTestId('skip-animation').click();
   const resultName = page.getByTestId('result-name');
   await expect(resultName).toBeVisible();
-  const winner = (await resultName.textContent())?.trim() ?? '';
+  const winner = (await resultName.locator('.visually-hidden').textContent())?.trim() ?? '';
   expect(['Anna', 'Cem', 'Dana']).toContain(winner);
   // The announced name must be the persisted result, not something the animation picked.
   const teamId = teamUrl.split('/team/')[1]?.replace(/\/.*$/, '') ?? '';

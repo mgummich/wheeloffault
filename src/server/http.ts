@@ -4,12 +4,12 @@ import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { DomainError } from '../domain/errors.ts';
 import type { StoredEvent } from '../domain/events.ts';
-import { type FairnessPolicy, validatePolicy } from '../domain/fairness/policy.ts';
+import { assertPolicy } from '../domain/fairness/policy.ts';
 import { memberReport } from '../domain/projections/report.ts';
-import { ConcurrencyError } from './eventStore.ts';
 import type { Commands } from './commands.ts';
+import { ConcurrencyError } from './eventStore.ts';
 import { asObject, id, optionalStr, str, strArray } from './validate.ts';
-import { type TeamListEntry, spinView, teamView } from './views.ts';
+import { spinView, type TeamListEntry, teamView } from './views.ts';
 
 type Req = IncomingMessage;
 type Res = ServerResponse;
@@ -125,13 +125,8 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
 
   route('PUT', '/api/teams/:teamId/policy', async (req, res, p) => {
     const body = await readJson(req);
-    const problem = validatePolicy(body);
-    if (problem) throw new DomainError(problem);
-    json(
-      res,
-      200,
-      teamView(await commands.changePolicy(id(p.teamId ?? ''), body as FairnessPolicy)),
-    );
+    assertPolicy(body);
+    json(res, 200, teamView(await commands.changePolicy(id(p.teamId ?? ''), body)));
   });
 
   route('POST', '/api/teams/:teamId/pools', async (req, res, p) => {
@@ -163,6 +158,29 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
       ),
     );
   });
+
+  route('POST', '/api/teams/:teamId/pools/:poolId/rename', async (req, res, p) => {
+    const body = asObject(await readJson(req));
+    json(
+      res,
+      200,
+      teamView(
+        await commands.renamePool(id(p.teamId ?? ''), id(p.poolId ?? ''), str(body, 'name', 100)),
+      ),
+    );
+  });
+
+  route('DELETE', '/api/teams/:teamId/pools/:poolId', async (_req, res, p) =>
+    json(res, 200, teamView(await commands.deletePool(id(p.teamId ?? ''), id(p.poolId ?? '')))),
+  );
+
+  route('DELETE', '/api/teams/:teamId/members/:memberId/immunity', async (_req, res, p) =>
+    json(
+      res,
+      200,
+      teamView(await commands.revokeImmunity(id(p.teamId ?? ''), id(p.memberId ?? ''))),
+    ),
+  );
 
   route('POST', '/api/teams/:teamId/spins', async (req, res, p) => {
     const body = asObject(await readJson(req));
@@ -242,8 +260,13 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
   });
 
   async function handle(req: Req, res: Res) {
-    const url = new URL(req.url ?? '/', 'http://localhost');
     try {
+      let url: URL;
+      try {
+        url = new URL(req.url ?? '/', 'http://localhost');
+      } catch {
+        throw new DomainError('Ungültige Request-URL');
+      }
       for (const r of routes) {
         if (r.method !== req.method) continue;
         const match = r.pattern.exec(url.pathname);

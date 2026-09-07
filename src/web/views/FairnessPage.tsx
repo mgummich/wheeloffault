@@ -1,28 +1,37 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import type { FairnessPolicy } from '../../domain/fairness/policy.ts';
 import type { TeamView } from '../../server/views.ts';
-import { api } from '../api.ts';
+import { api, errorMessage } from '../api.ts';
 
 type Props = { team: TeamView; setTeam: (t: TeamView) => void; reload: () => Promise<void> };
 
 export function FairnessPage({ team, setTeam }: Props) {
   const [policy, setPolicy] = useState<FairnessPolicy>(team.policy);
+  const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Another browser may save meanwhile (SSE refreshes `team`). Follow along
+  // while this form is untouched, so saving never overwrites with stale values.
+  useEffect(() => {
+    if (!dirty) setPolicy(team.policy);
+  }, [team.policy, dirty]);
 
   async function save(e: FormEvent) {
     e.preventDefault();
     try {
       setTeam(await api.changePolicy(team.teamId, policy));
+      setDirty(false);
       setSaved(true);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     }
   }
 
   const update = <K extends keyof FairnessPolicy>(key: K, patch: Partial<FairnessPolicy[K]>) => {
     setSaved(false);
+    setDirty(true);
     setPolicy((p) => ({ ...p, [key]: { ...p[key], ...patch } }));
   };
 
@@ -34,6 +43,7 @@ export function FairnessPage({ team, setTeam }: Props) {
         Wahrscheinlichkeiten. Die tatsächlichen Gewichte jeder Ziehung sind im Nachweis
         festgeschrieben.
       </p>
+      <p className="notice policy-summary">{fairnessSummary(policy, team)}</p>
 
       <form onSubmit={save} className="stack policy">
         <fieldset>
@@ -47,6 +57,7 @@ export function FairnessPage({ team, setTeam }: Props) {
               Pity
             </label>
           </legend>
+          <p className="field-status">{policy.pity.enabled ? 'Aktiv' : 'Aus'}</p>
           <p className="muted">Gewicht steigt pro Ziehung ohne Schuld seit der letzten Schuld.</p>
           <NumberField
             label="% pro Ziehung"
@@ -68,6 +79,7 @@ export function FairnessPage({ team, setTeam }: Props) {
               Cooldown
             </label>
           </legend>
+          <p className="field-status">{policy.cooldown.enabled ? 'Aktiv' : 'Aus'}</p>
           <p className="muted">Wer zuletzt schuldig war, hat für N Ziehungen Gewicht 0.</p>
           <NumberField
             label="Ziehungen"
@@ -89,6 +101,7 @@ export function FairnessPage({ team, setTeam }: Props) {
               Erschöpfung
             </label>
           </legend>
+          <p className="field-status">{policy.exhaustion.enabled ? 'Aktiv' : 'Aus'}</p>
           <p className="muted">Gewicht sinkt pro Schuldspruch innerhalb der letzten N Ziehungen.</p>
           <div className="row">
             <NumberField
@@ -119,6 +132,7 @@ export function FairnessPage({ team, setTeam }: Props) {
               Neuzugang
             </label>
           </legend>
+          <p className="field-status">{policy.newcomer.enabled ? 'Aktiv' : 'Aus'}</p>
           <p className="muted">Faktor (1000 = 1×) für Mitglieder mit weniger als N Teilnahmen.</p>
           <div className="row">
             <NumberField
@@ -147,6 +161,7 @@ export function FairnessPage({ team, setTeam }: Props) {
               Manuell
             </label>
           </legend>
+          <p className="field-status">{policy.manual.enabled ? 'Aktiv' : 'Aus'}</p>
           <p className="muted">Expliziter Faktor je Mitglied (1000 = 1×, 0 = ausgeschlossen).</p>
           <div className="checks">
             {team.members.map((m) => (
@@ -204,6 +219,26 @@ export function FairnessPage({ team, setTeam }: Props) {
   );
 }
 
+export function fairnessSummary(policy: FairnessPolicy, team: TeamView): string {
+  const parts: string[] = [];
+  if (policy.pity.enabled) parts.push(`Pity +${policy.pity.percentPerSpin} %`);
+  if (policy.cooldown.enabled) parts.push(`Cooldown ${policy.cooldown.spins}`);
+  if (policy.exhaustion.enabled) {
+    parts.push(`Erschöpfung -${policy.exhaustion.percentPerSelection} %`);
+  }
+  if (policy.newcomer.enabled) parts.push(`Neuzugang ${policy.newcomer.factor / 1000}×`);
+  if (policy.manual.enabled) {
+    const changed = Object.values(policy.manual.factors).filter((f) => f !== 1000).length;
+    if (changed > 0) parts.push(`${changed} manuelle Anpassung${changed === 1 ? '' : 'en'}`);
+  }
+  if (team.immunities.length > 0) {
+    parts.push(`${team.immunities.length} Immunität${team.immunities.length === 1 ? '' : 'en'}`);
+  }
+  return parts.length > 0
+    ? `Beim nächsten Speichern aktiv: ${parts.join(', ')}.`
+    : 'Keine optionalen Modifier aktiv. Alle aktiven Teilnehmer starten gleich gewichtet.';
+}
+
 function NumberField({
   label,
   value,
@@ -226,7 +261,11 @@ function NumberField({
         min={min}
         max={max}
         step={1}
-        onChange={(e) => onChange(Number.parseInt(e.target.value || '0', 10))}
+        onChange={(e) => {
+          // Guard against NaN ("e", "-", empty) and clamp to the field's range.
+          const n = Number.parseInt(e.target.value, 10);
+          onChange(Number.isNaN(n) ? min : Math.min(max, Math.max(min, n)));
+        }}
       />
     </label>
   );
