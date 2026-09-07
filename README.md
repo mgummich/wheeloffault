@@ -4,6 +4,9 @@ Selbst gehostetes, installierbares Schuldrad für das Scrum-Ritual
 „Wer ist diesmal schuldig?“. Ersetzt wheelofnames.com durch ein absichtlich
 über-professionelles Verantwortungsrad.
 
+**▶ App ausprobieren: <https://mgummich.github.io/wheeloffault/>** ·
+[Dokumentation](https://mgummich.github.io/wheeloffault/docs/)
+
 * **Nachvollziehbare Fairness** – Commit/Reveal mit SHA-256/HMAC, jede Ziehung
   ist im Browser nachrechenbar. Das Ergebnis steht fest, *bevor* sich etwas dreht.
 * **Vollständige Historie** – Event Sourcing; Schuldberichte, Hall of Shame,
