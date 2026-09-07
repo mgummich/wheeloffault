@@ -73,7 +73,7 @@ function useNameTicker(
     : animating
       ? (seq[Math.min(tick, seq.length - 1)] ?? null)
       : null;
-  return { currentId, animating, tick, reduced };
+  return { currentId, animating, tick };
 }
 
 export function BoardStage(props: StageProps) {
@@ -561,40 +561,39 @@ export function TimetableStage(props: StageProps) {
           transition: animating ? `transform ${DURATION_MS}ms cubic-bezier(.1,.7,.1,1)` : 'none',
         }}
       >
-        {rows
-          .map((i, k) => ({ i, k, id: `row-${k}` }))
-          .map(({ i, k, id }) => (
-            <div
-              key={id}
+        {rows.map((i, k) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: fixed synthetic rows, order never changes.
+            key={k}
+            style={{
+              height: rowH,
+              display: 'grid',
+              gridTemplateColumns: '80px minmax(0,1fr) auto',
+              gap: 12,
+              alignItems: 'center',
+              padding: '0 16px',
+              borderBottom: '1px solid #EEF0F2',
+              fontVariantNumeric: 'tabular-nums',
+            }}
+          >
+            <span style={{ fontFamily: mono, fontSize: 13, color: '#5C646C' }}>
+              {`${String(8 + Math.floor(k / 4)).padStart(2, '0')}:${String((k * 15) % 60).padStart(2, '0')}`}
+            </span>
+            <span
               style={{
-                height: rowH,
-                display: 'grid',
-                gridTemplateColumns: '80px minmax(0,1fr) auto',
-                gap: 12,
-                alignItems: 'center',
-                padding: '0 16px',
-                borderBottom: '1px solid #EEF0F2',
-                fontVariantNumeric: 'tabular-nums',
+                fontWeight: 600,
+                whiteSpace: 'nowrap',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
               }}
             >
-              <span style={{ fontFamily: mono, fontSize: 13, color: '#5C646C' }}>
-                {`${String(8 + Math.floor(k / 4)).padStart(2, '0')}:${String((k * 15) % 60).padStart(2, '0')}`}
-              </span>
-              <span
-                style={{
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {participants[i]?.name}
-              </span>
-              <span style={{ fontSize: 12, color: '#5C646C' }}>
-                {percent((participants[i]?.weight ?? 0) / total)}
-              </span>
-            </div>
-          ))}
+              {participants[i]?.name}
+            </span>
+            <span style={{ fontSize: 12, color: '#5C646C' }}>
+              {percent((participants[i]?.weight ?? 0) / total)}
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );
@@ -608,12 +607,7 @@ export function LineStage(props: StageProps) {
   // needle visibly stops inside the winner's segment.
   const sorted = [...participants].sort((a, b) => (a.memberId < b.memberId ? -1 : 1));
   const total = sorted.reduce((s, p) => s + p.weight, 0) || 1;
-  let acc = 0;
-  const segs = sorted.map((p, i) => {
-    const s = acc / total;
-    acc += p.weight;
-    return { s, w: p.weight / total, i, p };
-  });
+  const segs = sorted.map((p, i) => ({ w: p.weight / total, i, p }));
   const ci = announced
     ? sorted.findIndex((p) => p.memberId === result?.reveal?.selectedMemberId)
     : -1;

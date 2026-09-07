@@ -3,7 +3,7 @@ import type { TeamView } from '../../server/views.ts';
 import { api, errorMessage } from '../api.ts';
 import { href } from '../route.ts';
 
-type Props = { team: TeamView; setTeam: (t: TeamView) => void; reload: () => Promise<void> };
+type Props = { team: TeamView; setTeam: (t: TeamView) => void };
 
 export function ParticipantsPage({ team, setTeam }: Props) {
   const [name, setName] = useState('');

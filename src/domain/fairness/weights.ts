@@ -13,22 +13,20 @@ export function eligibleMembers(state: TeamState, poolId: string | null): Member
 
 export function participantContext(state: TeamState, memberId: string): ParticipantContext {
   const revealed = state.spins.filter((s) => s.reveal !== null);
-  const official = officialSpins(state);
-  const participated = revealed.filter((s) => s.participants.some((p) => p.memberId === memberId));
+  const participatedIndices = state.spins.flatMap((s, i) =>
+    s.reveal !== null && s.participants.some((p) => p.memberId === memberId) ? [i] : [],
+  );
   // Index into state.spins of the member's last official selection, -1 if never selected.
-  const officialSet = new Set(official);
+  const officialSet = new Set(officialSpins(state));
   let lastSelectedIndex = -1;
   state.spins.forEach((s, i) => {
     if (officialSet.has(s) && s.reveal?.selectedMemberId === memberId) lastSelectedIndex = i;
   });
-  const spinIndex = new Map(state.spins.map((s, i) => [s, i]));
-  const spinsSinceLastSelection = participated.filter(
-    (s) => (spinIndex.get(s) ?? -1) > lastSelectedIndex,
-  ).length;
+  const spinsSinceLastSelection = participatedIndices.filter((i) => i > lastSelectedIndex).length;
   const recent = (n: number) => revealed.slice(Math.max(0, revealed.length - n));
   return {
     memberId,
-    participations: participated.length,
+    participations: participatedIndices.length,
     spinsSinceLastSelection,
     selectionsInWindow: (window) =>
       recent(window).filter(

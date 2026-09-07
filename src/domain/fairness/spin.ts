@@ -1,6 +1,6 @@
 import { DomainError } from '../errors.ts';
 import type { DomainEvent } from '../events.ts';
-import { findSpin, pendingSpin, type Spin, type TeamState } from '../team.ts';
+import { findSpin, pendingSpin, type TeamState } from '../team.ts';
 import { commitmentOf, drawMessage, hmacSha256Hex, selectParticipant } from './draw.ts';
 import { calculateWeights, eligibleMembers } from './weights.ts';
 
@@ -85,17 +85,4 @@ export async function revealSpin(state: TeamState, input: RevealInput): Promise<
       at: input.now,
     },
   ];
-}
-
-export function proofOf(spin: Spin) {
-  if (!spin.reveal) throw new DomainError('Ziehung noch nicht aufgedeckt');
-  return {
-    nonce: spin.nonce,
-    commitment: spin.commitment,
-    participants: spin.participants,
-    serverSeed: spin.reveal.serverSeed,
-    clientSeed: spin.reveal.clientSeed,
-    digest: spin.reveal.digest,
-    selectedMemberId: spin.reveal.selectedMemberId,
-  };
 }
