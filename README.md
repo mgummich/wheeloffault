@@ -8,16 +8,52 @@ Hall of Shame, Einsprüche, Immunitäten.
 
 Architektur: [ARCHITECTURE.md](ARCHITECTURE.md).
 
-## Betrieb
+## Betrieb auf GitHub Pages
+
+Schuldrad läuft als statische Browser-App und kann direkt über GitHub Pages
+bereitgestellt werden. Der Build liegt in `dist/web`; die mitgelieferte
+GitHub-Actions-Workflowdatei `.github/workflows/pages.yml` baut und deployed
+bei jedem Push auf `main`.
+
+Die Daten werden ausschließlich in `sessionStorage` gespeichert:
+
+* Ein Reload überlebt: Teams, Teilnehmer, Ziehungen und Berichte bleiben im
+  gleichen Browser-Tab erhalten.
+* Die Daten sind nicht geteilt: andere Tabs, Browser oder Geräte haben eigene
+  Sitzungen.
+* Es gibt keine dauerhafte Server-Datenbank. Wenn die Browser-Sitzung endet,
+  ist auch die Schuldrad-Sitzung weg.
+
+Lokal testen:
+
+```bash
+pnpm install
+pnpm build
+pnpm exec vite preview --host 127.0.0.1
+```
+
+## Selbst gehosteter Serverbetrieb
 
 ```bash
 docker build -t schuldrad .
 docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 ```
 
-Danach http://localhost:3000 öffnen. Alles liegt in `/data/schuldrad.db`.
-Schuldrad bringt bewusst keine Authentifizierung mit. Für Zugriff aus dem
-Netz nur hinter VPN oder Reverse Proxy mit Auth betreiben.
+Danach http://localhost:3000 öffnen. Im Serverbetrieb liegt alles in
+`/data/schuldrad.db`. Schuldrad bringt bewusst keine Authentifizierung mit.
+Für Zugriff aus dem Netz nur hinter VPN oder Reverse Proxy mit Auth betreiben.
+
+Ohne Docker wird das Frontend ausdrücklich für den Server gebaut:
+
+```bash
+pnpm build:server
+pnpm start
+```
+
+`build:server` aktiviert über `src/web/.env.server` die HTTP-API und Live-Updates
+zwischen Browsern. Der Docker-Build nutzt denselben Modus. `pnpm build` bleibt
+der statische GitHub-Pages-Build mit tab-lokalen Daten; beide Modi teilen ihre
+Daten nicht miteinander.
 
 ### Optional über-engineered: Postgres + Redis
 
@@ -48,13 +84,14 @@ Voraussetzung: Node ≥ 26, pnpm.
 
 ```bash
 pnpm install
-pnpm dev          # Server auf :3000, Vite auf :5173 mit /api-Proxy
+pnpm dev          # Statische Browser-App auf :5173
+pnpm dev:full     # Optionaler Serverbetrieb: Server auf :3000 + Vite-Proxy
 pnpm verify       # format → lint → typecheck → unit → integration → build
-pnpm e2e          # Playwright gegen den Vite-Build (vorher: pnpm build)
+pnpm e2e          # Baut und prüft Serverbetrieb und statische PWA im Unterpfad
 ```
 
-Der lokale Server bindet standardmäßig an `127.0.0.1`. Für Container oder
-bewusst freigegebene LAN-Installationen `HOST=0.0.0.0` setzen.
+Der optionale lokale Server bindet standardmäßig an `127.0.0.1`. Für Container
+oder bewusst freigegebene LAN-Installationen `HOST=0.0.0.0` setzen.
 
 ## Struktur
 

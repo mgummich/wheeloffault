@@ -21,6 +21,11 @@ export function relativeTime(iso: string, now = Date.now()): string {
   return rtf.format(-Math.round(seconds / (86400 * 30)), 'month');
 }
 
+/** Display label of a draw, e.g. "SR 0042". Used everywhere a spin is named. */
+export function spinLabel(nonce: number): string {
+  return `SR ${String(nonce).padStart(4, '0')}`;
+}
+
 export function probabilityOf(
   participants: { memberId: string; weight: number }[],
   memberId: string,

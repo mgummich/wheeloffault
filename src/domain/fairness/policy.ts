@@ -1,3 +1,5 @@
+import { DomainError } from '../errors.ts';
+
 /**
  * The active fairness policy. Every probability-changing setting lives here
  * and is shown in the UI. Gamification never touches weights.
@@ -61,6 +63,12 @@ export function validatePolicy(input: unknown): string | null {
     if (typeof id !== 'string' || !isInt(f, 0, 10000)) return 'manual factors must be 0..10000';
   }
   return null;
+}
+
+/** Throwing variant of validatePolicy that narrows the type for handlers. */
+export function assertPolicy(input: unknown): asserts input is FairnessPolicy {
+  const problem = validatePolicy(input);
+  if (problem !== null) throw new DomainError(problem);
 }
 
 /** Drops unknown fields so only the validated shape is persisted. */

@@ -1,8 +1,8 @@
 import { type FormEvent, useState } from 'react';
 import { type Verification, verifySpin } from '../../domain/fairness/draw.ts';
 import type { TeamView } from '../../server/views.ts';
-import { api } from '../api.ts';
-import { dateTime, factor, percent, probabilityOf } from '../format.ts';
+import { api, errorMessage } from '../api.ts';
+import { dateTime, factor, percent, probabilityOf, spinLabel } from '../format.ts';
 import { href } from '../route.ts';
 
 type Props = {
@@ -30,7 +30,7 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
       setTeam(await action());
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     }
   }
 
@@ -47,7 +47,7 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
   return (
     <>
       <p className="label">Ziehung</p>
-      <h1>Zug SR {String(spin.nonce).padStart(4, '0')}</h1>
+      <h1>Zug {spinLabel(spin.nonce)}</h1>
       <p className="muted">
         Festgelegt {dateTime(spin.committedAt)}
         {reveal && <> · Aufgedeckt {dateTime(reveal.revealedAt)}</>}

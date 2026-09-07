@@ -8,7 +8,8 @@
     "node": ">=26"
   },
   "scripts": {
-    "dev": "concurrently -k \"pnpm dev:server\" \"pnpm dev:web\"",
+    "dev": "pnpm dev:web",
+    "dev:full": "concurrently -k \"pnpm dev:server\" \"pnpm dev:web --mode server\"",
     "dev:server": "node --watch src/server/main.ts",
     "dev:web": "vite",
     "format": "biome format --write .",
@@ -19,6 +20,7 @@
     "test:unit": "vitest run --project unit",
     "test:integration": "vitest run --project integration",
     "build": "vite build",
+    "build:server": "vite build --mode server",
     "start": "node src/server/main.ts",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm build",
     "e2e": "playwright test"

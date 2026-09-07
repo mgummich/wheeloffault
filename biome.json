@@ -4,6 +4,7 @@
     "includes": [
       "**",
       "!dist",
+      "!!design_handoff_schuldrad_animations",
       "!node_modules",
       "!data",
       "!test-results",
@@ -18,7 +19,7 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
+      "preset": "recommended",
       "suspicious": { "noExplicitAny": "error" },
       "style": { "noNonNullAssertion": "error", "useConst": "error" }
     }

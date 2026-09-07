@@ -1,6 +1,6 @@
 import { DomainError } from '../errors.ts';
 import type { DomainEvent } from '../events.ts';
-import { type Spin, type TeamState, findSpin, pendingSpin } from '../team.ts';
+import { findSpin, pendingSpin, type Spin, type TeamState } from '../team.ts';
 import { commitmentOf, drawMessage, hmacSha256Hex, selectParticipant } from './draw.ts';
 import { calculateWeights, eligibleMembers } from './weights.ts';
 

@@ -31,6 +31,7 @@ export const modifierOrder: WeightModifier[] = [
   {
     name: 'pity',
     enabled: (p) => p.pity.enabled,
+    // * 10 converts percent to thousandths (FACTOR_ONE = 1000 = 100 %).
     factor: (ctx, p) => FACTOR_ONE + ctx.spinsSinceLastSelection * p.pity.percentPerSpin * 10,
   },
   {

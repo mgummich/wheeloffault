@@ -1,6 +1,6 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import type { TeamListEntry } from '../../server/views.ts';
-import { api, recentTeams } from '../api.ts';
+import { api, errorMessage, recentTeams } from '../api.ts';
 import { href, navigate } from '../route.ts';
 
 export function HomePage() {
@@ -13,7 +13,7 @@ export function HomePage() {
     api
       .listTeams()
       .then(setTeams)
-      .catch((e: Error) => setError(e.message));
+      .catch((e: unknown) => setError(errorMessage(e)));
   }, []);
 
   async function create(e: FormEvent) {
@@ -24,7 +24,7 @@ export function HomePage() {
       const team = await api.createTeam(name);
       navigate(href.team(team.teamId));
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+      setError(errorMessage(err));
     } finally {
       setBusy(false);
     }

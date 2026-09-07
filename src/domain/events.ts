@@ -23,6 +23,8 @@ export type EventBody =
   | { type: 'MemberReactivated'; memberId: string }
   | { type: 'PoolCreated'; poolId: string; name: string }
   | { type: 'PoolMembershipChanged'; poolId: string; memberIds: string[] }
+  | { type: 'PoolRenamed'; poolId: string; name: string }
+  | { type: 'PoolDeleted'; poolId: string }
   | { type: 'FairnessPolicyChanged'; policy: FairnessPolicy }
   | {
       type: 'SpinCommitted';
@@ -50,7 +52,8 @@ export type EventBody =
   | { type: 'AppealUpheld'; spinId: string }
   | { type: 'AppealRejected'; spinId: string }
   | { type: 'ImmunityGranted'; memberId: string; reason: string }
-  | { type: 'ImmunityConsumed'; memberId: string; spinId: string };
+  | { type: 'ImmunityConsumed'; memberId: string; spinId: string }
+  | { type: 'ImmunityRevoked'; memberId: string };
 
 export type EventType = EventBody['type'];
 

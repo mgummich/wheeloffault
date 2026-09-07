@@ -1,7 +1,7 @@
-import type { AddressInfo } from 'node:net';
+import { type AddressInfo, connect } from 'node:net';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { verifySpin } from '../domain/fairness/draw.ts';
 import type { StoredEvent } from '../domain/events.ts';
+import { verifySpin } from '../domain/fairness/draw.ts';
 import type { MemberReport } from '../domain/projections/report.ts';
 import { createCommands } from './commands.ts';
 import { openEventStore } from './eventStore.ts';
@@ -66,6 +66,24 @@ async function fullSpin(teamId: string, spinId = crypto.randomUUID(), clientSeed
 }
 
 describe('API', () => {
+  it('returns 400 for a malformed absolute request URL and remains available', async () => {
+    const response = await new Promise<string>((resolve, reject) => {
+      const socket = connect((ctx.http.server.address() as AddressInfo).port, '127.0.0.1');
+      let response = '';
+      socket.setTimeout(1000, () => socket.destroy(new Error('request timed out')));
+      socket.on('error', reject);
+      socket.on('connect', () =>
+        socket.write('GET http://[ HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n'),
+      );
+      socket.on('data', (chunk) => {
+        response += chunk.toString();
+      });
+      socket.on('end', () => resolve(response));
+    });
+    expect(response).toContain('HTTP/1.1 400');
+    expect((await call('GET', '/api/health')).status).toBe(200);
+  });
+
   it('creates a team, adds members (deduplicated), deactivates, spins, reveals, reports', async () => {
     const team = await teamWith(['Anna', 'Bob', ' anna ', 'Cem']);
     expect(team.members.map((m) => m.name)).toEqual(['Anna', 'Bob', 'Cem']);
@@ -239,6 +257,54 @@ describe('API', () => {
     expect(reveal.reveal?.selectedMemberId).toBe(bob);
     const view = await call<TeamView>('GET', `/api/teams/${team.teamId}`);
     expect(view.body.immunities).toEqual([]);
+  });
+
+  it('immunity can be revoked before it is consumed', async () => {
+    const team = await teamWith(['Anna', 'Bob']);
+    const anna = team.members[0]?.memberId ?? '';
+    await call('POST', `/api/teams/${team.teamId}/members/${anna}/immunity`, {
+      reason: 'aus Versehen',
+    });
+    const revoked = await call<TeamView>(
+      'DELETE',
+      `/api/teams/${team.teamId}/members/${anna}/immunity`,
+    );
+    expect(revoked.status).toBe(200);
+    expect(revoked.body.immunities).toEqual([]);
+    // Without an immunity there is nothing to revoke.
+    expect(
+      (await call('DELETE', `/api/teams/${team.teamId}/members/${anna}/immunity`)).status,
+    ).toBe(404);
+  });
+
+  it('pools can be renamed and deleted; past spins are untouched', async () => {
+    const team = await teamWith(['Anna', 'Bob']);
+    const anna = team.members[0]?.memberId ?? '';
+    const withPool = await call<TeamView>('POST', `/api/teams/${team.teamId}/pools`, {
+      name: 'Backend',
+      memberIds: [anna],
+    });
+    const poolId = withPool.body.pools[0]?.poolId ?? '';
+
+    const renamed = await call<TeamView>(
+      'POST',
+      `/api/teams/${team.teamId}/pools/${poolId}/rename`,
+      {
+        name: 'Plattform',
+      },
+    );
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.pools[0]?.name).toBe('Plattform');
+
+    const spinId = crypto.randomUUID();
+    await call('POST', `/api/teams/${team.teamId}/spins`, { spinId, poolId });
+    await call('POST', `/api/teams/${team.teamId}/spins/${spinId}/reveal`, { clientSeed: 'x' });
+
+    const deleted = await call<TeamView>('DELETE', `/api/teams/${team.teamId}/pools/${poolId}`);
+    expect(deleted.status).toBe(200);
+    expect(deleted.body.pools).toEqual([]);
+    expect(deleted.body.spins).toHaveLength(1); // the pool's draw history survives
+    expect((await call('DELETE', `/api/teams/${team.teamId}/pools/${poolId}`)).status).toBe(404);
   });
 
   it('validates input and policy', async () => {

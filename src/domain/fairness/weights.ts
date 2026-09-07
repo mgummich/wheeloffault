@@ -1,7 +1,7 @@
 import { DomainError } from '../errors.ts';
 import type { AppliedModifier, WeightedParticipant } from '../events.ts';
-import { type Member, type TeamState, officialSpins } from '../team.ts';
-import { FACTOR_ONE, type ParticipantContext, modifierOrder } from './modifiers.ts';
+import { type Member, officialSpins, type TeamState } from '../team.ts';
+import { FACTOR_ONE, modifierOrder, type ParticipantContext } from './modifiers.ts';
 
 export function eligibleMembers(state: TeamState, poolId: string | null): Member[] {
   const pool = poolId ? state.pools.find((p) => p.poolId === poolId) : null;
@@ -15,12 +15,15 @@ export function participantContext(state: TeamState, memberId: string): Particip
   const revealed = state.spins.filter((s) => s.reveal !== null);
   const official = officialSpins(state);
   const participated = revealed.filter((s) => s.participants.some((p) => p.memberId === memberId));
-  const lastSelectedAt = official.reduce(
-    (last, s, _i) => (s.reveal?.selectedMemberId === memberId ? state.spins.indexOf(s) : last),
-    -1,
-  );
+  // Index into state.spins of the member's last official selection, -1 if never selected.
+  const officialSet = new Set(official);
+  let lastSelectedIndex = -1;
+  state.spins.forEach((s, i) => {
+    if (officialSet.has(s) && s.reveal?.selectedMemberId === memberId) lastSelectedIndex = i;
+  });
+  const spinIndex = new Map(state.spins.map((s, i) => [s, i]));
   const spinsSinceLastSelection = participated.filter(
-    (s) => state.spins.indexOf(s) > lastSelectedAt,
+    (s) => (spinIndex.get(s) ?? -1) > lastSelectedIndex,
   ).length;
   const recent = (n: number) => revealed.slice(Math.max(0, revealed.length - n));
   return {
@@ -50,6 +53,10 @@ export type WeightResult = {
  * step keeps the result exact integers on every platform.
  */
 export function calculateWeights(state: TeamState, members: Member[]): WeightResult {
+  return weigh(state, members, false);
+}
+
+function weigh(state: TeamState, members: Member[], skipCooldown: boolean): WeightResult {
   if (members.length === 0) throw new DomainError('Keine aktiven Teilnehmer');
   const contexts = members.map((m) => participantContext(state, m.memberId));
   const weights = new Map(members.map((m) => [m.memberId, FACTOR_ONE]));
@@ -58,19 +65,14 @@ export function calculateWeights(state: TeamState, members: Member[]): WeightRes
     if (!modifier.enabled(state.policy)) continue;
     const factors: Record<string, number> = {};
     for (const ctx of contexts) {
-      const f = modifier.factor(ctx, state.policy);
+      const f =
+        modifier.name === 'cooldown' && skipCooldown
+          ? FACTOR_ONE
+          : modifier.factor(ctx, state.policy);
       if (!Number.isInteger(f) || f < 0) {
         throw new DomainError(`Modifikator ${modifier.name} lieferte ungültigen Faktor ${f}`);
       }
       factors[ctx.memberId] = f;
-    }
-    // A cooldown that would exclude everybody (small team, long cooldown) can never
-    // expire on its own, so it is skipped for this spin. The recorded factors show it.
-    const zeroesEveryone = contexts.every(
-      (ctx) => (weights.get(ctx.memberId) ?? 0) * (factors[ctx.memberId] ?? 0) === 0,
-    );
-    if (modifier.name === 'cooldown' && zeroesEveryone) {
-      for (const ctx of contexts) factors[ctx.memberId] = FACTOR_ONE;
     }
     for (const ctx of contexts) {
       const current = weights.get(ctx.memberId) ?? 0;
@@ -83,6 +85,9 @@ export function calculateWeights(state: TeamState, members: Member[]): WeightRes
     weight: weights.get(m.memberId) ?? 0,
   }));
   if (participants.every((p) => p.weight === 0)) {
+    // Evaluate the fallback after all exclusions. Preserve modifier order and
+    // rounding by replaying the calculation with neutral cooldown factors.
+    if (!skipCooldown && state.policy.cooldown.enabled) return weigh(state, members, true);
     throw new DomainError('Alle Gewichte sind 0 – niemand kann gezogen werden');
   }
   return { participants, modifiers };
