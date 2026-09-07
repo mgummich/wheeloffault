@@ -2,11 +2,26 @@
 
 Selbst gehostetes, installierbares Schuldrad für das Scrum-Ritual
 „Wer ist diesmal schuldig?“. Ersetzt wheelofnames.com durch ein absichtlich
-über-professionelles Verantwortungsrad: nachvollziehbare Fairness
-(Commit/Reveal, im Browser prüfbar), vollständige Historie, Schuldberichte,
-Hall of Shame, Einsprüche, Immunitäten.
+über-professionelles Verantwortungsrad.
+
+* **Nachvollziehbare Fairness** – Commit/Reveal mit SHA-256/HMAC, jede Ziehung
+  ist im Browser nachrechenbar. Das Ergebnis steht fest, *bevor* sich etwas dreht.
+* **Vollständige Historie** – Event Sourcing; Schuldberichte, Hall of Shame,
+  Einsprüche, Immunitäten, Pools („Gleise“).
+* **Sieben Visualisierungen** – Drehscheibe, Zugeinfahrt, Fallblattanzeige,
+  Signal, Fahrkartenstempel, Fahrplan-Rolle, Gewichtslinie.
+* **PWA** – installierbar, App-Shell offline, `prefers-reduced-motion` respektiert.
 
 Architektur: [ARCHITECTURE.md](ARCHITECTURE.md).
+
+## Zwei Betriebsmodi
+
+| Modus | Build | Daten | Live-Sync zwischen Browsern |
+|---|---|---|---|
+| **GitHub Pages** (statisch) | `pnpm build` | `sessionStorage`, pro Tab | – |
+| **Server** (Docker/Node) | `pnpm build:server` | SQLite (optional Postgres) | SSE |
+
+Beide Modi teilen ihre Daten nicht miteinander.
 
 ## Betrieb auf GitHub Pages
 
@@ -50,10 +65,10 @@ pnpm build:server
 pnpm start
 ```
 
-`build:server` aktiviert über `src/web/.env.server` die HTTP-API und Live-Updates
-zwischen Browsern. Der Docker-Build nutzt denselben Modus. `pnpm build` bleibt
-der statische GitHub-Pages-Build mit tab-lokalen Daten; beide Modi teilen ihre
-Daten nicht miteinander.
+`build:server` aktiviert über das eingecheckte `src/web/.env.server`
+(`VITE_API_MODE=server`) die HTTP-API und Live-Updates zwischen Browsern.
+Der Docker-Build nutzt denselben Modus; `pnpm build` bleibt der statische
+GitHub-Pages-Build mit tab-lokalen Daten.
 
 ### Optional über-engineered: Postgres + Redis
 
@@ -98,6 +113,10 @@ oder bewusst freigegebene LAN-Installationen `HOST=0.0.0.0` setzen.
 ```
 src/domain   pure Domäne: Events, Zustand, Fairness, Projektionen (Browser + Node)
 src/server   node:http, Event-Store (SQLite/Postgres), Command-Handler, SSE
-src/web      React-PWA
-tests/e2e    Playwright-Journey
+src/web      React-PWA; api.ts wählt zwischen HTTP-Backend und sessionStorage-Backend
+tests/e2e    Playwright: Server-Journey + statische PWA im Unterpfad
 ```
+
+Unit-/Integrationstests liegen als `*.test.ts` neben ihren Modulen und
+dokumentieren das Verhalten (z. B. `src/server/api.test.ts` als API-Spec,
+`src/web/draw.test.ts` für die 409-Wiederaufnahme einer Ziehung).
