@@ -26,7 +26,7 @@ type SessionData = {
   events: StoredEvent[];
 };
 
-export function createSessionApi(storage: Storage = sessionStorage): Api {
+export function createSessionApi(storage: Storage = localStorage): Api {
   const read = (): SessionData => {
     const raw = storage.getItem(STORAGE_KEY);
     if (!raw) return { nextPosition: 1, events: [] };
