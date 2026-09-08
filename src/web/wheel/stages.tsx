@@ -117,7 +117,10 @@ export function BoardStage(props: StageProps) {
         fontSize: big ? 22 : 12,
         fontWeight: 700,
         fontFamily: mono,
-        animation: animating || announced ? 'sr-flap .16s ease-out' : 'none',
+        animation: animating || announced ? 'sr-flap var(--dur-indicator) ease-out both' : 'none',
+        // A few ms of stagger per tile so the row reads as independent
+        // mechanical flaps cascading, not one repainted string.
+        animationDelay: animating || announced ? `${(i % 8) * 12}ms` : '0ms',
         transformOrigin: 'center',
         overflow: 'hidden',
       }}
@@ -203,11 +206,14 @@ export function SignalStage(props: StageProps) {
                   ? 'var(--surface)'
                   : 'transparent',
               border: `1px solid ${stop ? 'color-mix(in srgb, var(--danger-text) 40%, var(--surface-2))' : 'transparent'}`,
-              transition: 'background .12s',
+              transition: 'background var(--dur-latency)',
             }}
           >
             <span
               aria-hidden="true"
+              // Warning blink while a name is still cycling — anticipation
+              // before the light snaps solid red on the winner (motion §4).
+              className={hot && animating ? 'blink' : undefined}
               style={{
                 width: 20,
                 height: 20,
@@ -220,7 +226,7 @@ export function SignalStage(props: StageProps) {
                 boxShadow: stop
                   ? '0 0 0 4px color-mix(in srgb, var(--danger-text) 30%, var(--surface-2))'
                   : 'none',
-                transition: 'background .12s',
+                transition: 'background var(--dur-latency)',
               }}
             />
             <span style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
@@ -242,7 +248,7 @@ export function SignalStage(props: StageProps) {
                   background: hot ? 'var(--text)' : 'var(--border)',
                   position: 'relative',
                   minWidth: 24,
-                  transition: 'background .12s',
+                  transition: 'background var(--dur-latency)',
                 }}
               >
                 {hot && (
@@ -311,7 +317,10 @@ export function StampStage(props: StageProps) {
               borderRadius: 4,
               background: 'var(--surface-2)',
               minHeight: 92,
-              transition: 'border-color .12s',
+              // Lift is the anticipation before the stamp falls (motion §4);
+              // animate it instead of snapping so the wind-up reads.
+              transition:
+                'border-color var(--dur-latency), transform var(--dur-latency) var(--ease-mechanical)',
               transform: hot && animating ? 'translateY(-2px)' : 'none',
             }}
           >
@@ -356,7 +365,7 @@ export function StampStage(props: StageProps) {
                   letterSpacing: '.1em',
                   textTransform: 'uppercase',
                   transform: 'rotate(-8deg)',
-                  animation: 'sr-stamp .45s cubic-bezier(.2,.8,.2,1) both',
+                  animation: 'sr-stamp var(--dur-settle) var(--ease-mechanical) both',
                   background: 'color-mix(in srgb, var(--surface-2) 85%, transparent)',
                 }}
               >
@@ -532,7 +541,7 @@ export function TrainStage(props: StageProps) {
               overflow: 'hidden',
               textOverflow: 'ellipsis',
               color: arrived ? 'var(--board-accent)' : 'var(--board-text)',
-              animation: moving || arrived ? 'sr-flap .18s ease-out' : 'none',
+              animation: moving || arrived ? 'sr-flap var(--dur-indicator) ease-out' : 'none',
             }}
           >
             {currentName ?? (moving ? '…' : t('wheel.trainExpected'))}

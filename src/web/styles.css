@@ -28,6 +28,15 @@
 
   --font: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Motion system — see docs/en/motion.md. Same across themes: this is
+   * timing, not color. */
+  --dur-latency: 120ms; /* control acknowledgement, relay interlocking */
+  --dur-indicator: 160ms; /* flap/tick snap */
+  --dur-settle: 400ms; /* mechanical settle: stamp impact, panel pop-in */
+  --ease-mechanical: cubic-bezier(0.2, 0.8, 0.2, 1); /* sharp attack, damped settle */
+  --ease-damped: cubic-bezier(0.3, 0.7, 0.3, 1); /* slower attack, floaty settle */
+  --ease-sharp: cubic-bezier(0.4, 0, 0.2, 1); /* decisive, no lingering */
 }
 
 /* Dark theme. Deep neutral (not pure black, not navy-purple), warm off-white
@@ -1068,8 +1077,8 @@ legend {
   letter-spacing: 0.06em;
   transform: rotate(-6deg);
   animation:
-    sr-stampin 0.5s cubic-bezier(0.2, 0.9, 0.2, 1) both,
-    sr-shake 0.25s 0.5s ease-out;
+    sr-stampin var(--dur-settle) var(--ease-mechanical) both,
+    sr-shake 0.25s 0.4s ease-out;
 }
 
 /* Teams-Popup (native <dialog>) */
@@ -1435,6 +1444,22 @@ dialog.share-dialog::backdrop {
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* Backstop for every CSS animation/transition not covered above — the seven
+ * draw visualizations set most of their timing via inline styles gated on
+ * JS `reduced` checks (see docs/en/motion.md §7), but this catches anything
+ * still driven by a CSS class (flap snaps, stamp impact, panel pop-ins,
+ * toasts) without needing to enumerate every selector. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 

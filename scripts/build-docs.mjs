@@ -37,6 +37,12 @@ const docs = [
     src: { en: 'docs/en/events.md', de: 'docs/de/events.md' },
   },
   {
+    slug: 'motion',
+    nav: { en: 'Motion', de: 'Bewegung' },
+    title: { en: 'Schuldrad · Motion', de: 'Schuldrad · Bewegung' },
+    src: { en: 'docs/en/motion.md', de: 'docs/de/motion.md' },
+  },
+  {
     slug: 'deployment',
     nav: { en: 'Deployment', de: 'Betrieb' },
     title: { en: 'Schuldrad · Deployment', de: 'Schuldrad · Betrieb' },
