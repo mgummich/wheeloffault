@@ -112,6 +112,10 @@ async function checkCompleteness() {
         .map((d) => d.src[lang].split('/').pop()),
     );
     for (const entry of entries) {
+      // Markdown docs only: this check is about doc-pair completeness, not
+      // a general directory audit. Non-.md files (e.g. a stray asset) and
+      // anything outside docs/en or docs/de (e.g. docs/STATUS.json, a
+      // verification record with no rendered page) are out of its scope.
       if (entry.endsWith('.md') && !known.has(entry)) {
         problems.push(`${dir}/${entry} exists but has no counterpart entry in the docs registry.`);
       }

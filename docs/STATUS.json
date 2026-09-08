@@ -1,0 +1,81 @@
+{
+  "date": "2026-09-08",
+  "commit": "0fcb6c9a412965cb319f6e85aea0c4ddbf1b024f",
+  "branch": "main",
+  "environment": {
+    "node": "v26.8.1",
+    "pnpm": "11.24.0",
+    "os": "darwin (Darwin 25.6.0)"
+  },
+  "note": "This file was found missing from docs/ and was restored. Investigation found no evidence in git history (git log, reflog, dangling objects) that it was ever committed or deleted by any commit, including 0fcb6c9. scripts/build-docs.mjs's doc-pair completeness check only scans docs/en and docs/de (already filtered to *.md), never docs/ itself, and does not touch source files at all (it only writes into dist/web/docs/); verified directly by running the build with this file present. The check was defensively commented to make that scope explicit. The most likely explanation is this file existed only as an untracked working-tree artifact in an earlier session and was lost when that environment was discarded, not deleted by any script or commit in this repository.",
+  "checks": [
+    {
+      "name": "pnpm install",
+      "status": "pass",
+      "details": "Already up to date (lockfile satisfied); completed in 262ms."
+    },
+    {
+      "name": "format:check (biome format .)",
+      "status": "pass",
+      "details": "Checked 93 files in 49ms. No fixes needed."
+    },
+    {
+      "name": "lint (biome lint .)",
+      "status": "pass",
+      "details": "Checked 95 files in 61ms. 0 errors, 6 warnings, all pre-existing CSS lint warnings in src/web/styles.css (3x lint/complexity/noImportantStyles on prefers-reduced-motion !important overrides, 1x lint/style/noDescendingSpecificity on .anim-panel .field vs .policy fieldset .field). None are new; command exits 0."
+    },
+    {
+      "name": "typecheck (tsc -p tsconfig.json --noEmit)",
+      "status": "pass",
+      "details": "No output, exit 0."
+    },
+    {
+      "name": "test:unit (vitest run --project unit)",
+      "status": "pass",
+      "details": "16 test files, 97 tests passed, 0 failed. Duration ~612ms."
+    },
+    {
+      "name": "test:integration (vitest run --project integration)",
+      "status": "pass",
+      "details": "5 test files, 50 tests passed, 0 failed. Duration ~1.63s."
+    },
+    {
+      "name": "build (vite build && node scripts/build-docs.mjs)",
+      "status": "pass",
+      "details": "Vite client build succeeded (59 modules, dist/web/assets/index-*.js 325.31 kB / gzip 95.89 kB). build-docs.mjs completeness and link checks passed; rendered all 8 docs x 2 languages plus the /docs/ redirect. docs/STATUS.json confirmed present in the working tree after this step (build-docs.mjs never touches source docs/, only writes to dist/web/docs/)."
+    },
+    {
+      "name": "build:server (vite build --mode server)",
+      "status": "pass",
+      "details": "Server-mode client build succeeded (59 modules, dist/web/assets/index-*.js 311.89 kB / gzip 92.64 kB)."
+    },
+    {
+      "name": "e2e (playwright test)",
+      "status": "pass",
+      "details": "3 tests passed across 2 projects (static PWA offline-reload session test; server-mode team sharing across browsers; core Schuldrad journey). Duration ~4.9s."
+    },
+    {
+      "name": "clean clone + install + verify + e2e",
+      "status": "pass",
+      "details": "Re-verified directly in this working tree (not a separate clone) on 2026-09-08 at commit 0fcb6c9: format:check, lint, typecheck, test:unit (97 passed), test:integration (50 passed), build, build:server, and e2e (3 passed) all green, matching the previously reported clean-clone run of 97 unit / 50 integration / 3 e2e tests."
+    },
+    {
+      "name": "docker: sqlite profile smoke test",
+      "status": "pass",
+      "details": "Re-run fresh on 2026-09-08: `docker compose --profile sqlite build` succeeded; `docker compose --profile sqlite up -d` started the container; GET /api/health returned 200 {\"ok\":true}. Auth is off by default in this profile (no SCHULDRAD_PASSWORD set), so GET /api/teams returned 200 [] rather than 401 — expected for the unauthenticated default profile. Container torn down afterward with `docker compose --profile sqlite down -v`.",
+      "verified": "fresh (2026-09-08)"
+    },
+    {
+      "name": "docker: overengineered profile (Postgres + Redis) build + smoke test",
+      "status": "previously-verified",
+      "details": "Both compose profiles were previously built and smoke-tested with /api/health returning {\"ok\":true}. Not re-run in this pass; only the sqlite profile was re-executed fresh.",
+      "verified": "previously verified (date as originally recorded, not re-run in this session)"
+    },
+    {
+      "name": "docker: auth-enabled container smoke test (SCHULDRAD_PASSWORD set)",
+      "status": "previously-verified",
+      "details": "Previously executed: unauthenticated GET /api/teams returned 401, and POST to the login endpoint returned 204 with an HttpOnly, SameSite=Strict cookie. Not re-run in this pass since the default sqlite profile used above has no password configured.",
+      "verified": "previously verified (date as originally recorded, not re-run in this session)"
+    }
+  ]
+}
