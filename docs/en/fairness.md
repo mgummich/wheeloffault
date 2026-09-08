@@ -165,3 +165,42 @@ commitment binds seed + weights
 reveal reproduces commitment
 browser verifier reproduces server
 ```
+
+## § 8 Standalone verification
+
+Anyone with the published values of a draw — `nonce`, `commitment`,
+`participants`, `serverSeed`, `clientSeed`, `digest`, `selectedMemberId`, all
+shown on that spin's detail page (`src/web/views/SpinDetailPage.tsx`) —
+can recompute the entire draw without running Schuldrad at all, using
+`scripts/verify-draw.mjs`. It is a zero-dependency Node script that
+re-implements § 3–§ 4 from this document independently; it does not import
+`src/domain/fairness/draw.ts`, so it cannot silently inherit a bug from the
+application it is checking.
+
+Copy the values shown on the spin's detail page into a JSON file:
+
+```json
+{
+  "serverSeed": "…",
+  "clientSeed": "…",
+  "nonce": 0,
+  "participants": [{ "memberId": "…", "weight": 1000 }],
+  "commitment": "…",
+  "digest": "…",
+  "selectedMemberId": "…"
+}
+```
+
+Then run:
+
+```
+node scripts/verify-draw.mjs --file draw.json
+# or: pnpm verify:draw -- --file draw.json
+```
+
+Values can also be passed individually as flags instead of `--file`:
+`--server-seed`, `--client-seed`, `--nonce`, `--participants '<json>'`,
+`--commitment`, `--digest`, `--selected-member-id`. The script prints a
+Prüfprotokoll (verification record) with one ✓/✗ line per check —
+commitment, digest, selection — and exits `0` only if all three pass, `1`
+otherwise, so it composes with CI or a shell `&&`.

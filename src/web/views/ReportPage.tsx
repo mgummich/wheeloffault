@@ -4,6 +4,7 @@ import type { TeamView } from '../../domain/views.ts';
 import { api, errorMessage } from '../api.ts';
 import { dateTime, num, num2, percent, relativeTime, spinLabel } from '../format.ts';
 import { useI18n } from '../i18n/index.ts';
+import type { MessageKey } from '../i18n/messages.ts';
 import { href } from '../route.ts';
 
 export function ReportPage({ team, memberId }: { team: TeamView; memberId: string }) {
@@ -52,7 +53,11 @@ export function ReportPage({ team, memberId }: { team: TeamView; memberId: strin
         </div>
       </header>
 
-      {report.fahrgastrechte && <p className="notice">{report.fahrgastrechte}</p>}
+      {report.fahrgastrechte && (
+        <p className="notice">
+          {t(`report.fahrgastrechte.${report.fahrgastrechte}` as MessageKey)}
+        </p>
+      )}
 
       <table className="board kv">
         <tbody>
@@ -106,7 +111,8 @@ export function ReportPage({ team, memberId }: { team: TeamView; memberId: strin
           <ul className="achievements">
             {report.achievements.map((a) => (
               <li key={a.id}>
-                <strong>{a.title}</strong> <span className="muted">{a.description}</span>
+                <strong>{t(`achievement.${a.id}.title` as MessageKey)}</strong>{' '}
+                <span className="muted">{t(`achievement.${a.id}.description` as MessageKey)}</span>
               </li>
             ))}
           </ul>

@@ -60,98 +60,21 @@ export type TrainKind = {
   color: string;
   set: string;
   n: number;
-  note: string;
 };
 
+/** `set` doubles as the i18n slug for `train.<set>.note` — see stages.tsx. */
 export const trainKinds: TrainKind[] = [
-  {
-    code: 'ICE',
-    name: 'ICE 3',
-    color: '#1F2327',
-    set: 'ice3',
-    n: 4,
-    note: 'Sprinter zur Verantwortung. Keine Zwischenhalte.',
-  },
-  {
-    code: 'ICE',
-    name: 'ICE 4',
-    color: '#1F2327',
-    set: 'ice4',
-    n: 4,
-    note: 'Zwölfteilig gedacht, vierteilig gekommen.',
-  },
-  {
-    code: 'ICE',
-    name: 'ICE Sprinter',
-    color: '#1F2327',
-    set: 'ice-sprinter',
-    n: 4,
-    note: 'Ohne Halt bis zur Schuld.',
-  },
-  {
-    code: 'ICE',
-    name: 'ICE T',
-    color: '#1F2327',
-    set: 'ice-t',
-    n: 4,
-    note: 'Neigetechnik abgeschaltet. Schuld bleibt gerade.',
-  },
-  {
-    code: 'ICE',
-    name: 'ICE (Langzug)',
-    color: '#1F2327',
-    set: 'ice-long',
-    n: 5,
-    note: 'Wagenreihung geändert. Verantwortung nicht.',
-  },
-  {
-    code: 'IC',
-    name: 'Intercity 2 (Dosto)',
-    color: '#1F2327',
-    set: 'ic2',
-    n: 4,
-    note: 'Reservierung nicht möglich. Verantwortung schon.',
-  },
-  {
-    code: 'RE',
-    name: 'Regionalexpress (Flirt)',
-    color: '#8A0C1F',
-    set: 're-flirt',
-    n: 4,
-    note: 'Schneller als gedacht, langsamer als gewünscht.',
-  },
-  {
-    code: 'RB',
-    name: 'Regionalbahn (Talent 2)',
-    color: '#8A0C1F',
-    set: 'rb-talent',
-    n: 4,
-    note: 'Hält überall. Auch bei Ihnen.',
-  },
-  {
-    code: 'S',
-    name: 'S-Bahn',
-    color: '#C8102E',
-    set: 's-bahn',
-    n: 4,
-    note: 'Takt: alle 10 Minuten eine Schuld.',
-  },
-  {
-    code: 'GZ',
-    name: 'Güterzug (gemischt)',
-    color: '#3A4147',
-    set: 'gz-mixed',
-    n: 4,
-    note: 'Lädt ab: 1 × Schuld, sperrig.',
-  },
-  {
-    code: 'GZ',
-    name: 'Güterzug (Container)',
-    color: '#8A0C1F',
-    set: 'gz-red',
-    n: 4,
-    note: 'Zollabfertigung entfällt. Schuld ist inländisch.',
-  },
+  { code: 'ICE', name: 'ICE 3', color: '#1F2327', set: 'ice3', n: 4 },
+  { code: 'ICE', name: 'ICE 4', color: '#1F2327', set: 'ice4', n: 4 },
+  { code: 'ICE', name: 'ICE Sprinter', color: '#1F2327', set: 'ice-sprinter', n: 4 },
+  { code: 'ICE', name: 'ICE T', color: '#1F2327', set: 'ice-t', n: 4 },
+  { code: 'ICE', name: 'ICE (Langzug)', color: '#1F2327', set: 'ice-long', n: 5 },
+  { code: 'IC', name: 'Intercity 2 (Dosto)', color: '#1F2327', set: 'ic2', n: 4 },
+  { code: 'RE', name: 'Regionalexpress (Flirt)', color: '#8A0C1F', set: 're-flirt', n: 4 },
+  { code: 'RB', name: 'Regionalbahn (Talent 2)', color: '#8A0C1F', set: 'rb-talent', n: 4 },
+  { code: 'S', name: 'S-Bahn', color: '#C8102E', set: 's-bahn', n: 4 },
+  { code: 'GZ', name: 'Güterzug (gemischt)', color: '#3A4147', set: 'gz-mixed', n: 4 },
+  { code: 'GZ', name: 'Güterzug (Container)', color: '#8A0C1F', set: 'gz-red', n: 4 },
 ];
 
 /** Seed comes from the spin's digest/commitment, so every draw gets its own train. */

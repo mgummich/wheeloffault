@@ -70,7 +70,7 @@ describe('memberReport', () => {
     expect(anna.achievements.map((x) => x.id)).toEqual(
       expect.arrayContaining(['erste-fahrt', 'doppelschlag', 'ausreisser']),
     );
-    expect(anna.fahrgastrechte).toMatch(/Immunität/);
+    expect(anna.fahrgastrechte).toBe('compensation');
     expect(anna.entschaedigungsminuten).toBe(90);
   });
 
@@ -107,8 +107,8 @@ describe('memberReport', () => {
   it('fahrgastrechte thresholds', () => {
     expect(fahrgastrechte(2, 1)).toBeNull();
     expect(fahrgastrechte(3, 3)).toBeNull();
-    expect(fahrgastrechte(4, 3)).toMatch(/Formular/);
-    expect(fahrgastrechte(6, 3)).toMatch(/Immunität/);
+    expect(fahrgastrechte(4, 3)).toBe('form');
+    expect(fahrgastrechte(6, 3)).toBe('compensation');
   });
 });
 

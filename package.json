@@ -23,6 +23,7 @@
     "build:docs": "node scripts/build-docs.mjs",
     "build:server": "vite build --mode server",
     "start": "node src/server/main.ts",
+    "verify:draw": "node scripts/verify-draw.mjs",
     "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:integration && pnpm build",
     "e2e": "playwright test"
   },

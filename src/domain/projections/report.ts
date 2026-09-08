@@ -32,7 +32,7 @@ export type MemberReport = {
   longestDrySpell: number;
   schuldpunkte: number;
   entschaedigungsminuten: number;
-  fahrgastrechte: string | null;
+  fahrgastrechte: FahrgastrechteStatus | null;
   appeals: { filed: number; upheld: number };
   immunitiesHeld: number;
   achievements: Achievement[];
@@ -143,14 +143,20 @@ export function schuldpunkte(history: HistoryEntry[]): number {
 }
 
 /**
+ * Stable status id only; the copy (`report.fahrgastrechte.<id>`) lives in
+ * i18n, this projection stays pure and doesn't know about language.
+ */
+export type FahrgastrechteStatus = 'compensation' | 'form';
+
+/**
  * Passenger rights, Deutsche-Bahn style: 25 % over expectation → hint,
  * 50 % over → full entitlement to an immunity. Purely informational; the
  * team decides whether to grant it.
  */
-export function fahrgastrechte(selections: number, expected: number): string | null {
+export function fahrgastrechte(selections: number, expected: number): FahrgastrechteStatus | null {
   if (selections < 3 || expected === 0) return null;
   const ratio = selections / expected;
-  if (ratio >= 1.5) return 'Anspruch auf Entschädigung: 1 Immunität (Schuldindex ≥ 1,5)';
-  if (ratio >= 1.25) return 'Fahrgastrechte-Formular liegt bereit (Schuldindex ≥ 1,25)';
+  if (ratio >= 1.5) return 'compensation';
+  if (ratio >= 1.25) return 'form';
   return null;
 }

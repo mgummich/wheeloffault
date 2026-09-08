@@ -2,6 +2,7 @@ import { type CSSProperties, useEffect, useMemo, useState } from 'react';
 import type { SpinView } from '../../domain/views.ts';
 import { percent } from '../format.ts';
 import { useI18n } from '../i18n/index.ts';
+import type { MessageKey } from '../i18n/messages.ts';
 import { DURATION_MS, ease, seedNumberFor, trainDelayFor, trainKindFor } from './anim.ts';
 
 export type Participant = { memberId: string; name: string; weight: number };
@@ -558,7 +559,7 @@ export function TrainStage(props: StageProps) {
         }}
       >
         {arrived
-          ? `${t('wheel.trainArrived', { name: kind.name })} ${delay ? t('wheel.trainDelay', { min: delay }) : t('wheel.trainOnTime')} ${kind.note}`
+          ? `${t('wheel.trainArrived', { name: kind.name })} ${delay ? t('wheel.trainDelay', { min: delay }) : t('wheel.trainOnTime')} ${t(`train.${kind.set}.note` as MessageKey)}`
           : moving
             ? t('wheel.trainMoving')
             : t('wheel.trainIdle')}

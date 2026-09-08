@@ -182,3 +182,42 @@ Commitment bindet Seed + Gewichte
 Reveal reproduziert Commitment
 Browser-Verifier reproduziert Server
 ```
+
+## § 8 Eigenständige Verifikation
+
+Wer die veröffentlichten Werte einer Ziehung besitzt — `nonce`,
+`commitment`, `participants`, `serverSeed`, `clientSeed`, `digest`,
+`selectedMemberId`, alle auf der Detailseite dieses Spins angezeigt
+(`src/web/views/SpinDetailPage.tsx`) — kann die gesamte Ziehung nachrechnen,
+ohne Schuldrad überhaupt zu betreiben, mit `scripts/verify-draw.mjs`. Es
+ist ein abhängigkeitsfreies Node-Skript, das § 3–§ 4 dieser Verordnung
+eigenständig nachbildet; es importiert `src/domain/fairness/draw.ts` nicht,
+kann also keinen Fehler der geprüften Anwendung stillschweigend erben.
+
+Die auf der Detailseite angezeigten Werte in eine JSON-Datei kopieren:
+
+```json
+{
+  "serverSeed": "…",
+  "clientSeed": "…",
+  "nonce": 0,
+  "participants": [{ "memberId": "…", "weight": 1000 }],
+  "commitment": "…",
+  "digest": "…",
+  "selectedMemberId": "…"
+}
+```
+
+Dann ausführen:
+
+```
+node scripts/verify-draw.mjs --file draw.json
+# oder: pnpm verify:draw -- --file draw.json
+```
+
+Die Werte können statt `--file` auch einzeln als Flags übergeben werden:
+`--server-seed`, `--client-seed`, `--nonce`, `--participants '<json>'`,
+`--commitment`, `--digest`, `--selected-member-id`. Das Skript gibt ein
+Prüfprotokoll mit je einer ✓/✗-Zeile pro Prüfung aus — Commitment, Digest,
+Auswahl — und liefert Exit-Code `0` nur, wenn alle drei bestehen, sonst `1`;
+lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.
