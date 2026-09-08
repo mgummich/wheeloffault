@@ -42,8 +42,9 @@ cannot all slip in under the limit); the password is verified with scrypt
 and a constant-time comparison, never logged, never written to disk.
 Sessions slide their expiry on use (12h) but always expire after 7 days
 regardless of activity, and every session tied to a still-open SSE stream
-is closed the moment it ends (logout, expiry, or the periodic sweep) —
-a stolen cookie does not buy an indefinitely live event feed.
+on the *same process* is closed the moment it ends (logout, expiry, or the
+periodic sweep) — a stolen cookie does not buy an indefinitely live event
+feed on that process.
 
 The rate limiter keys on the connecting socket's IP address, which is the
 reverse proxy's IP if you run one — meaning by default every request
@@ -55,6 +56,18 @@ around the limit. See
 anti-DoS machinery beyond that — a single IP behind a shared proxy that
 you choose not to unmask can still lock the login for everyone behind it;
 that trade-off is deliberate given the deployment target (§ 1).
+
+**Password mode is single-instance only.** Sessions and the login-failure
+map live in an in-memory `Map`, per process — there is no shared store,
+Redis included (`REDIS_URL` only fans out *domain* events over SSE, it does
+not touch auth state; see [docs/en/deployment.md](docs/en/deployment.md)
+§ 3a). Behind more than one replica without sticky sessions: a session
+created by instance A is unrecognized by instance B (random 401s on the
+same cookie), a logout on A cannot close a stream open on B, and the
+effective rate limit is 5×replicas rather than 5. If you must run
+`SCHULDRAD_PASSWORD` behind multiple replicas, either pin every client to
+one instance (sticky sessions at the load balancer) or run a single
+instance of server mode.
 
 **What it does not protect against, and is not trying to:**
 

@@ -69,9 +69,19 @@ export function createAuth(
     ? (scryptAsync(password as string, salt, KEY_LEN) as Promise<Buffer>)
     : null;
 
+  // ponytail: sessions and login-failure counts are in-memory Maps, single-process
+  // only. Fine for one deployment password on one process; behind multiple
+  // replicas (no sticky sessions), a session created on instance A is invisible
+  // to B (random 401s), a logout on A cannot close a stream open on B, and the
+  // rate limit is effectively 5×replicas. Upgrade to a shared store (e.g. Redis)
+  // if you run more than one instance of password-protected server mode. See
+  // SECURITY.md § 1a and docs/en/deployment.md § 3a.
   const sessions = new Map<string, { expiresAt: number; absoluteExpiresAt: number }>();
-  // ponytail: in-memory Map, single-process only — fine for one deployment password.
-  const failures = new Map<string, number[]>();
+  const failures = new Map<string, { ts: number; token: number }[]>();
+  // Monotonic, not Date.now(): two attempts landing in the same millisecond
+  // from one IP would otherwise share a token, and clearAttempt() on a
+  // successful login could then splice out the wrong (still-failed) entry.
+  let attemptCounter = 0;
   const sessionEndListeners: ((sid: string) => void)[] = [];
 
   function endSession(sid: string) {
@@ -86,7 +96,7 @@ export function createAuth(
         if (s.expiresAt <= now || s.absoluteExpiresAt <= now) endSession(sid);
       }
       for (const [ip, ts] of failures) {
-        const kept = ts.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+        const kept = ts.filter((t) => now - t.ts < RATE_LIMIT_WINDOW_MS);
         if (kept.length === 0) failures.delete(ip);
         else failures.set(ip, kept);
       }
@@ -128,22 +138,22 @@ export function createAuth(
     },
     rateLimited(ip) {
       const now = Date.now();
-      const ts = (failures.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
+      const ts = (failures.get(ip) ?? []).filter((t) => now - t.ts < RATE_LIMIT_WINDOW_MS);
       failures.set(ip, ts);
       if (ts.length < RATE_LIMIT_MAX) return null;
-      return Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - (ts[0] ?? now))) / 1000));
+      return Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - (ts[0]?.ts ?? now))) / 1000));
     },
     recordAttempt(ip) {
       const ts = failures.get(ip) ?? [];
-      const token = Date.now();
-      ts.push(token);
+      const token = ++attemptCounter;
+      ts.push({ ts: Date.now(), token });
       failures.set(ip, ts);
       return token;
     },
     clearAttempt(ip, token) {
       const ts = failures.get(ip);
       if (!ts) return;
-      const idx = ts.indexOf(token);
+      const idx = ts.findIndex((t) => t.token === token);
       if (idx !== -1) ts.splice(idx, 1);
     },
     secureCookie(req) {

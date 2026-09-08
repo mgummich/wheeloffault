@@ -156,6 +156,19 @@ das Limit umgehen.
 Sitzungen verlängern sich bei Nutzung gleitend (12h), laufen aber
 unabhängig von der Aktivität nach 7 Tagen endgültig ab.
 
+**Nur für eine einzelne Instanz.** Sitzungen und die Zähler für das
+Login-Rate-Limiting liegen in genau dieser In-Memory-`Map`, pro Prozess —
+nichts teilt diesen Zustand über Replicas hinweg, auch `REDIS_URL` nicht
+(das fächert nur Domain-Events per SSE instanzübergreifend auf, siehe die
+Umgebungsvariablen-Tabelle in § 2 — es berührt keinen Auth-Zustand). Läuft
+`SCHULDRAD_PASSWORD` hinter mehr als einer Replica ohne Sticky Sessions,
+ergibt sich: eine auf Instanz A erzeugte Sitzung wird von Instanz B als
+nicht authentifiziert abgelehnt (zufällige 401 bei gültigem Cookie), ein
+Logout auf A kann einen auf B noch offenen Stream nicht schließen, und das
+effektive Rate-Limit liegt bei 5×Replicas statt 5. Entweder Clients per
+Sticky Sessions am Load Balancer an eine Instanz binden, oder nur eine
+einzelne Instanz betreiben, wenn `SCHULDRAD_PASSWORD` gebraucht wird.
+
 Das schützt Team-Daten hinter einem gemeinsamen Geheimnis; es ist keine
 Mehrbenutzer-Authentifizierung (keine Einzelkonten, Rollen oder
 Audit-Trail) — siehe [SECURITY.md](../../SECURITY.md) für das genaue
@@ -194,6 +207,14 @@ ursprünglichen `Host` des Clients weiterreichen:
 
 ```nginx
 proxy_set_header Host $host;
+```
+
+**SSE braucht ungepuffertes Proxying.** nginx puffert Upstream-Antworten
+standardmäßig, was `/api/teams/:id/events` zurückhält, bis der Puffer voll
+ist — das macht Live-Updates zunichte. Im selben Location-Block ergänzen:
+
+```nginx
+proxy_buffering off;
 ```
 
 ## § 4 Bind-Adresse, Reverse Proxy und TLS

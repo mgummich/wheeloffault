@@ -148,6 +148,18 @@ otherwise a client can inject their own value and dodge the limit.
 Sessions slide their expiry on use (12h) but always expire after 7 days of
 elapsed time regardless of activity.
 
+**Single-instance only.** Sessions and the login-failure counts used for
+rate limiting are that in-memory `Map`, per process — nothing shares this
+state across replicas, including `REDIS_URL` (that only fans out domain
+events over SSE across instances; see § 2's env var table — it does not
+touch auth). Run `SCHULDRAD_PASSWORD` behind more than one replica without
+sticky sessions and you get: a session created on instance A rejected as
+unauthenticated by instance B (random 401s on a valid cookie), a logout on
+A that cannot close a stream still open on B, and an effective rate limit
+of 5×replicas instead of 5. Either pin clients to one instance (sticky
+sessions at the load balancer) or run a single instance if you need
+`SCHULDRAD_PASSWORD`.
+
 This protects team data behind one shared secret; it is not multi-user
 auth (no per-user accounts, roles, or audit trail) — see
 [SECURITY.md](../../SECURITY.md) for the exact threat model.
@@ -181,6 +193,14 @@ instead:
 
 ```nginx
 proxy_set_header Host $host;
+```
+
+**SSE needs unbuffered proxying.** nginx buffers upstream responses by
+default, which holds back `/api/teams/:id/events` until the buffer fills —
+defeating live updates. Add, in the same location block:
+
+```nginx
+proxy_buffering off;
 ```
 
 ## § 4 Bind address, reverse proxy, and TLS

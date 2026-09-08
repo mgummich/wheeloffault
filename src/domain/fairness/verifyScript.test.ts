@@ -73,15 +73,33 @@ describe('scripts/verify-draw.mjs', () => {
   });
 
   it('exits 1 for a duplicate memberId (mirrors draw.ts, which also rejects this)', () => {
-    const result = runWith({
-      ...vector,
+    // This record's commitment/digest are recomputed FOR this exact duplicate
+    // participant list (see scripts/compute-dup-vector notes below), and
+    // selectedMemberId is the value the verifier's own selection math would
+    // produce for it if the duplicate/weight check were skipped. So the
+    // commitment and digest checks pass regardless, and the only thing that
+    // can make this fail is the duplicate-memberId guard in
+    // assertValidWeights (scripts/verify-draw.mjs). Deleting that guard makes
+    // this test go from exit 1 to exit 0 — unlike the old version of this
+    // test, which used the frozen `vector`'s commitment/digest unchanged, so
+    // editing `participants` always tripped the commitment check first and
+    // the duplicate guard was never actually exercised.
+    const dupVector = {
+      serverSeed: 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff00',
+      clientSeed: 'clientseed-ascii-001',
+      nonce: 0,
       participants: [
         { memberId: 'alice', weight: 1000 },
         { memberId: 'alice', weight: 2000 },
         { memberId: 'carol', weight: 3000 },
       ],
-    });
+      commitment: 'b9ada65509852a5eb7f05071d3f5a73de71f185e138461561a8c34976b567f14',
+      digest: 'c2ef716a197f7ed3d1b4237bae9f9c6e9d0e6c842a4a82e576bd197004173988',
+      selectedMemberId: 'alice',
+    };
+    const result = runWith(dupVector);
     expect(result.status).toBe(1);
+    expect(result.stdout).toContain('duplicate memberId');
   });
 
   it('accepts the same vector via flag mode (--server-seed and friends) and passes', () => {

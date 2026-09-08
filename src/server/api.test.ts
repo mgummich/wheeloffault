@@ -370,7 +370,7 @@ describe('CSRF / DNS-rebinding defenses', () => {
       headers: { 'content-type': 'text/plain' },
       body: JSON.stringify({ name: 'Team' }),
     });
-    expect([400, 415]).toContain(res.status);
+    expect(res.status).toBe(415);
   });
 
   it('rejects a cross-origin Origin header', async () => {
