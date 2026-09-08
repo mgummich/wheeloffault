@@ -112,10 +112,14 @@ fully-open default mode:
   trick of a `<form>` posting `text/plain`, which never triggers a CORS
   preflight and would otherwise reach the handler with attacker-controlled
   cross-site credentials attached.
-* **Origin.** If a request carries an `Origin` header, it must match the
-  request's `Host`. Requests with no `Origin` at all — curl, scripts,
-  server-to-server calls — are unaffected; browsers only omit `Origin` on
-  requests a same-origin script could have made anyway.
+* **Origin.** For a state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`),
+  if it carries an `Origin` header, that header must match the request's
+  `Host`. Requests with no `Origin` at all — curl, scripts, server-to-server
+  calls — are unaffected; browsers only omit `Origin` on requests a
+  same-origin script could have made anyway. This check runs only for
+  state-changing methods: a `GET` with a mismatched `Origin` is never
+  rejected by it (`GET` can't carry a state-changing side effect, so there's
+  nothing here for the check to defend).
 * **Host allowlist.** Optional. Set `SCHULDRAD_ALLOWED_HOSTS` (comma-separated)
   to reject any request whose `Host` header isn't in the list. This is what
   closes DNS rebinding — an attacker page whose domain resolves to your
@@ -143,13 +147,17 @@ themselves close DNS rebinding. Setting the allowlist does.
 ## § 2 `teamId` is not a capability
 
 `GET /api/teams` returns every team on the server: `[{ teamId, name,
-memberCount, spinCount }]`, unauthenticated, no filter. This means a
-`teamId` is not a secret and must not be treated as one — knowing a team's
-UUID grants no more access than not knowing it, because anyone who can
-reach the server can list all of them anyway. Do not build a workflow that
+memberCount, spinCount }]`, with no filter — and, unless `SCHULDRAD_PASSWORD`
+is set, unauthenticated. When the password is set, `/api/teams` is gated
+like every other `/api/*` route except `/api/health` and `/api/auth/*`, so
+it requires a valid session. Either way, this means a `teamId` is not a
+secret and must not be treated as one — for anyone who *can* reach the
+endpoint, knowing a team's UUID grants no more access than not knowing it,
+because they can list all of them anyway. Do not build a workflow that
 relies on a team URL being hard to guess; the enumeration endpoint makes
 that moot. Every write endpoint under `/api/teams/:id/...` is reachable by
-anyone who can reach the server, for any `:id` listed by `GET /api/teams`.
+anyone who can reach the server (and, if a password is set, has a session),
+for any `:id` listed by `GET /api/teams`.
 
 ## § 3 The static-mode fairness asymmetry
 

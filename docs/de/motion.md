@@ -34,9 +34,9 @@ Bewegungsfehler.
 
 | Stufe | Token | Bereich | Verwendung |
 |---|---|---|---|
-| Indikator | `--dur-indicator` | 150–180ms | Klapp-/Tick-Schnappen, Zeichen-für-Zeichen-Ansagen |
+| Indikator | `--dur-indicator` | 160ms | Klapp-/Tick-Schnappen, Zeichen-für-Zeichen-Ansagen |
 | Mechanische Latenz | `--dur-latency` | 120ms | Steuerungsquittung (Signalumschaltung, Hover-/Press-Feedback) |
-| Mechanisches Einrasten | `--dur-settle` | 240–400ms | Stempelaufprall, Radsegment-Hervorhebung, Panel-Einblendung |
+| Mechanisches Einrasten | `--dur-settle` | 400ms | Stempelaufprall, Radsegment-Hervorhebung, Panel-Einblendung |
 | Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5s | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage |
 
 Die theatralische Enthüllung ist eine einzige Konstante, die sich alle
@@ -93,7 +93,11 @@ Ein kurzer Vorlauf vor einer großen Enthüllung liest sich physikalisch,
 nicht fehlerhaft:
 
 - Der `windup`-Spin-Stil des Rades schwingt vor dem eigentlichen Vorwärts-
-  Spin rund 3,5° zurück (Fall `windup` in `ease()`).
+  Spin um rund 3,5 % der gesamten Spin-Strecke zurück (Fall `windup` in
+  `ease()`) — etwa 63° über die ~1800° Mindeststrecke von `windup` selbst.
+  Zum Vergleich: dieselben 3,5 % über die ~3600°-Strecke des `lang`-Stils
+  wären ~126° (`lang` und `windup` sind eigenständige, nicht kombinierbare
+  Spin-Stile; `lang` selbst schwingt nicht zurück).
 - `SignalStage` blinkt den heißen Indikator (nutzt das bestehende
   `.blink`-Keyframe), solange ein Name noch durchläuft, bevor der finale
   Stopp-Zustand einrastet — ein Warnblinken vor dem soliden Rot.

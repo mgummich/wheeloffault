@@ -30,9 +30,9 @@ a fairness incident, not a motion bug.
 
 | Tier | Token | Range | Used for |
 |---|---|---|---|
-| Indicator | `--dur-indicator` | 150–180ms | flap/tick snaps, per-character reveals |
+| Indicator | `--dur-indicator` | 160ms | flap/tick snaps, per-character reveals |
 | Mechanical latency | `--dur-latency` | 120ms | control acknowledgement (signal light switching, hover/press feedback) |
-| Mechanical settle | `--dur-settle` | 240–400ms | stamp impact, wheel segment highlight, panel pop-in |
+| Mechanical settle | `--dur-settle` | 400ms | stamp impact, wheel segment highlight, panel pop-in |
 | Theatrical reveal | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6.5s | the full draw performance, commit to announcement |
 
 The theatrical reveal is one constant shared by every non-wheel
@@ -82,8 +82,12 @@ uses it so the light doesn't teleport between states.
 
 A brief wind-up before a big reveal reads as physical, not glitchy:
 
-- The wheel's `windup` spin style dips backward ~3.5° before committing to
-  the forward spin (`ease()`'s `windup` case).
+- The wheel's `windup` spin style dips backward by ~3.5% of the spin's
+  total travel before committing to the forward spin (`ease()`'s `windup`
+  case) — about 63° over `windup`'s own ~1800° minimum sweep. For scale,
+  the same 3.5% applied over the `lang` style's ~3600° sweep would be
+  ~126° (`lang` and `windup` are distinct, non-combinable spin styles;
+  `lang` itself doesn't dip).
 - `SignalStage` blinks the hot indicator (reusing the existing `.blink`
   keyframe) while a name is still cycling, before the final stop state
   snaps in — a warning flash before the light goes solid red.

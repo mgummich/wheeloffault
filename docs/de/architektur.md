@@ -98,9 +98,12 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
 * `replay(events): TeamState` in `src/domain/team.ts` faltet den Stream zu
   einem Zustand. Kein Snapshotting: ein Team hat einige tausend Events, das
   ist in SQLite in Millisekunden gelesen.
-* Entscheidungsfunktionen (`addMember`, `commitSpin`, `revealSpin`, …) sind
-  pure Funktionen `(state, input) → Event[]` und werfen `DomainError` bei
-  ungültigen Übergängen.
+* Entscheidungsfunktionen (`addMembers`, `commitSpin`, `revealSpin`, …)
+  nehmen `(state, input)` entgegen und werfen `DomainError` bei ungültigen
+  Übergängen. Die meisten geben synchron `Event[]` zurück; `commitSpin`
+  und `revealSpin` (`src/domain/fairness/spin.ts`) sind async und geben
+  `Promise<CommitResult>` (`{ events, spinId }`) bzw.
+  `Promise<DomainEvent[]>` zurück.
 * Der Server macht pro Command: Stream laden → entscheiden → mit
   `expectedVersion = state.version` anhängen. Konflikt (jemand war schneller)
   → Stream neu laden, Command erneut entscheiden, maximal 3 Versuche.

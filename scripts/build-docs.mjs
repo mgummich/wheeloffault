@@ -1,6 +1,6 @@
 // Renders README.md/README.de.md and docs/en, docs/de as styled HTML into
 // dist/web/docs/, so GitHub Pages serves the documentation next to the app.
-import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
@@ -332,6 +332,13 @@ console.log('docs: → dist/web/docs/index.html (redirect to en/)');
 // blockquotes — behave exactly as they do in the rendered output, unlike a
 // hand-rolled regex).
 const lexerOnly = new Marked({ gfm: true });
+// ponytail: known ceiling — images are entirely unvalidated (no renderer
+// override, so no image() rewriting or dist copy step; collectLinks() only
+// visits type === 'link' nodes, not 'image'; checkArtifactLinks() below
+// only scans <a href>, not <img src>). No docs source embeds an image
+// today, so this is inert; if one ever does, extend collectLinks() to also
+// visit type === 'image' and add an image() renderer override that copies
+// the file into dist and rewrites its src, same as link() does for hrefs.
 function collectLinks(md) {
   const hrefs = [];
   const visit = (node) => {
@@ -391,15 +398,32 @@ async function checkContentLanguage() {
         const info = expectedTarget(hrefPath, frag, lang);
         if (!info) continue; // unregistered target; checkArtifactLinks() catches dead links
 
+        // expectedTarget() resolves by basename only; that's fine for what
+        // it checks, but a literal relative href with the right basename
+        // and the wrong directory (e.g. "deployment.md" from the repo
+        // root, where the real file lives at docs/en/deployment.md) would
+        // pass that match and still 404 on GitHub, which renders the
+        // literal markdown link. Confirm the href actually resolves from
+        // its source file's own directory.
+        try {
+          await stat(join(root, dirname(doc.src[lang]), hrefPath));
+        } catch {
+          problems.push(
+            `${doc.src[lang]}: link "${href}" does not resolve to a file at that relative path (GitHub would 404 on it).`,
+          );
+        }
+
         const expectedHref =
           '../' +
           (info.target.slug === 'index'
             ? `${info.lang}/`
             : `${info.lang}/${info.target.slug}.html`);
-        // ponytail: no closing quote — deliberate prefix match, since the
-        // real rendered href may carry a kept cross-doc fragment (keepFrag)
-        // after expectedHref that this check doesn't otherwise compute.
-        if (!body.includes(`href="${expectedHref}`)) {
+        // Match either the bare href or the href plus a kept cross-doc
+        // fragment (keepFrag) that this check doesn't otherwise compute —
+        // but always require a closing quote or a '#' right after
+        // expectedHref, so an index target's href (e.g. "../de/") can't
+        // prefix-match every other same-language href on the page.
+        if (!body.includes(`href="${expectedHref}"`) && !body.includes(`href="${expectedHref}#`)) {
           problems.push(
             `${doc.src[lang]}: link "${href}" should render as ${expectedHref}, but the rendered page doesn't.`,
           );

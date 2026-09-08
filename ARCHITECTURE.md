@@ -94,9 +94,12 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
 * `replay(events): TeamState` in `src/domain/team.ts` folds the stream into
   a state. No snapshotting: a team has a few thousand events, which SQLite
   reads in milliseconds.
-* Decision functions (`addMember`, `commitSpin`, `revealSpin`, …) are pure
-  functions `(state, input) → Event[]` and throw `DomainError` on invalid
-  transitions.
+* Decision functions (`addMembers`, `commitSpin`, `revealSpin`, …) take
+  `(state, input)` and throw `DomainError` on invalid transitions. Most
+  return `Event[]` synchronously; `commitSpin` and `revealSpin`
+  (`src/domain/fairness/spin.ts`) are async and return
+  `Promise<CommitResult>` (`{ events, spinId }`) and
+  `Promise<DomainEvent[]>` respectively.
 * Per command, the server: loads the stream → decides → appends with
   `expectedVersion = state.version`. On conflict (someone was faster) →
   reload the stream, decide the command again, up to 3 attempts.
