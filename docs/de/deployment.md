@@ -212,7 +212,10 @@ proxy_set_header Host $host;
 
 **SSE braucht ungepuffertes Proxying.** nginx puffert Upstream-Antworten
 standardmäßig, was `/api/teams/:id/events` zurückhält, bis der Puffer voll
-ist — das macht Live-Updates zunichte. Im selben Location-Block ergänzen:
+ist — das macht Live-Updates zunichte. Der Server sendet auf dieser Antwort
+bereits `X-Accel-Buffering: no`, was nginx von sich aus respektiert — dafür
+ist keine Konfigurationsänderung nötig. Für andere Proxies (oder als
+zusätzliche Absicherung bei nginx) im selben Location-Block ergänzen:
 
 ```nginx
 proxy_buffering off;
@@ -228,7 +231,7 @@ Grenzwert (`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
 Der Server bindet standardmäßig an `127.0.0.1` — er lauscht auf keinem
 anderen Netzwerk-Interface als Loopback, sofern nicht ausdrücklich anders
 konfiguriert. Das ist ein bewusster Standard, kein Versehen: Schuldrad
-kommt ohne Authentifizierung (siehe [SECURITY.md](../../SECURITY.md)), also
+kommt standardmäßig ohne Authentifizierung (siehe [SECURITY.md](../../SECURITY.md)), also
 wäre ein standardmäßig aus dem Netz erreichbarer Server einer, den jeder in
 diesem Netz lesen und verändern könnte.
 

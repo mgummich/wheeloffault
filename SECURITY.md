@@ -42,9 +42,12 @@ cannot all slip in under the limit); the password is verified with scrypt
 and a constant-time comparison, never logged, never written to disk.
 Sessions slide their expiry on use (12h) but always expire after 7 days
 regardless of activity, and every session tied to a still-open SSE stream
-on the *same process* is closed the moment it ends (logout, expiry, or the
-periodic sweep) — a stolen cookie does not buy an indefinitely live event
-feed on that process.
+on the *same process* is closed the moment it ends — immediately on
+logout, or on the next request made against an already-expired session;
+a session that simply goes idle past its expiry is only reaped by the
+periodic sweep (every 60s), so its SSE stream can stay open up to that
+long after expiry — a stolen cookie does not buy an indefinitely live
+event feed on that process.
 
 The rate limiter keys on the connecting socket's IP address, which is the
 reverse proxy's IP if you run one — meaning by default every request

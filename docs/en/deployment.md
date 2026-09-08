@@ -198,7 +198,10 @@ proxy_set_header Host $host;
 
 **SSE needs unbuffered proxying.** nginx buffers upstream responses by
 default, which holds back `/api/teams/:id/events` until the buffer fills —
-defeating live updates. Add, in the same location block:
+defeating live updates. The server already sends `X-Accel-Buffering: no` on
+that response, which nginx honors on its own — no config change needed there.
+For other proxies (or belt-and-suspenders on nginx), add this to the same
+location block:
 
 ```nginx
 proxy_buffering off;
@@ -214,7 +217,7 @@ connection attempt; this is a fixed, non-configurable limit
 The server binds to `127.0.0.1` by default — it does not listen on any
 network interface other than loopback unless explicitly told to. This is a
 deliberate default, not an oversight: Schuldrad ships with no
-authentication (see [SECURITY.md](../../SECURITY.md)), so a server
+authentication by default (see [SECURITY.md](../../SECURITY.md)), so a server
 reachable from a network by default would be a server anyone on that
 network could read and mutate.
 

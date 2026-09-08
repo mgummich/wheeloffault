@@ -53,7 +53,14 @@ export async function hmacSha256Hex(keyHex: string, message: string): Promise<st
 }
 
 export function sortParticipants(participants: WeightedParticipant[]): WeightedParticipant[] {
-  return [...participants].sort((a, b) => (a.memberId < b.memberId ? -1 : 1));
+  // Total comparator (0 for equal memberIds, relying on Array#sort's
+  // guaranteed stability) - a comparator that never returns 0 is not a
+  // valid strict weak order, so a tie's result is unspecified and can vary
+  // between engines/versions. Only matters for a duplicate memberId, which
+  // is otherwise rejected by assertValidWeights before a draw is selected.
+  return [...participants].sort((a, b) =>
+    a.memberId < b.memberId ? -1 : a.memberId > b.memberId ? 1 : 0,
+  );
 }
 
 export function commitmentOf(

@@ -9,7 +9,7 @@ import { verifySpin } from '../domain/fairness/draw.ts';
 import type { MemberReport } from '../domain/projections/report.ts';
 import { createCommands } from './commands.ts';
 import { openEventStore } from './eventStore.ts';
-import { createHttpServer } from './http.ts';
+import { createHttpServer, MAX_SSE_CLIENTS_PER_TEAM } from './http.ts';
 import type { SpinView, TeamView } from '../domain/views.ts';
 
 /** Boots the real HTTP server on an in-memory store; tests talk plain HTTP. */
@@ -363,8 +363,6 @@ describe('API', () => {
   });
 
   it('503s the SSE stream past the per-team connection cap with the {error, code} shape', async () => {
-    // Mirrors MAX_SSE_CLIENTS_PER_TEAM in http.ts.
-    const MAX_SSE_CLIENTS_PER_TEAM = 100;
     const team = await teamWith(['Anna']);
     const conns = await Promise.all(
       Array.from({ length: MAX_SSE_CLIENTS_PER_TEAM }, () =>

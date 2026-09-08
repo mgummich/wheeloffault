@@ -3,7 +3,7 @@ import type { IncomingMessage } from 'node:http';
 import { type AddressInfo, connect } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clientIp, createAuth } from './auth.ts';
 import { createCommands } from './commands.ts';
 import { openEventStore } from './eventStore.ts';
@@ -26,6 +26,12 @@ beforeEach(async () => {
 });
 
 afterEach(async () => {
+  // server.close() alone waits for every open connection (including a live
+  // SSE stream) to end on its own, which can hang teardown indefinitely if
+  // a test's stream never gets closed by the code under test - masking a
+  // real bug as a slow/timed-out afterEach instead of a fast, clear
+  // assertion failure. Force-close any lingering sockets first.
+  ctx.http.server.closeAllConnections();
   await new Promise<void>((r) => ctx.http.server.close(() => r()));
   ctx.store.close();
 });
@@ -218,6 +224,47 @@ describe('auth enabled', () => {
     expect(nonLimited.length).toBe(5);
   });
 
+  it('clearAttempt removes its own attempt, not an earlier failure sharing its millisecond', () => {
+    // Regression test for the Date.now()-as-token bug: an attempt landing in
+    // the same millisecond as an earlier still-open failure from the same IP
+    // used to get the same token, so clearAttempt() on a later successful
+    // login could splice out the wrong (still-failed) entry instead of its
+    // own. Splicing always removes exactly one entry regardless of which one
+    // is picked, so raw counts/rate-limit tripping can't tell correct from
+    // buggy apart here - what differs is *array position*: the buggy code
+    // always removes the earliest-pushed colliding entry (index 0), while
+    // the fix removes the actual success entry wherever it landed. That
+    // shows up in retry-after, which is keyed off the oldest surviving
+    // attempt (ts[0]).
+    const rlAuth = createAuth({ SCHULDRAD_PASSWORD: 'geheim' });
+    const ip = '127.0.0.1';
+    const spy = vi.spyOn(Date, 'now');
+    try {
+      spy.mockReturnValue(0);
+      rlAuth.recordAttempt(ip); // failure #1, ts=0
+      spy.mockReturnValue(10_000);
+      rlAuth.recordAttempt(ip); // failure #2, ts=10s - a witness, untouched either way
+      spy.mockReturnValue(0); // clock replays failure #1's millisecond exactly
+      const successToken = rlAuth.recordAttempt(ip); // this login's own attempt, ts=0 again
+      rlAuth.clearAttempt(ip, successToken); // success clears only itself
+
+      // Pad to the 5-attempt threshold so rateLimited() reports a
+      // retry-after instead of null.
+      spy.mockReturnValue(20_000);
+      rlAuth.recordAttempt(ip);
+      rlAuth.recordAttempt(ip);
+      rlAuth.recordAttempt(ip);
+
+      // Correct behaviour: failure #1 (ts=0) survives as the oldest entry,
+      // so 40s of the 60s window remain. The buggy splice removes failure #1
+      // instead of the success entry, leaving failure #2 (ts=10s) as the
+      // oldest surviving entry and reporting 50s remaining instead.
+      expect(rlAuth.rateLimited(ip)).toBe(40);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it('SSE requires a session too', async () => {
     const team = await (
       await fetch(`${base}/api/teams`, {
@@ -331,8 +378,17 @@ describe('auth enabled', () => {
       headers: { cookie, 'content-type': 'application/json' },
     });
 
-    const { done } = await reader.read();
-    expect(done).toBe(true);
+    // Bounded explicitly: if logout's onSessionEnd wiring is broken, the
+    // stream never ends and this would otherwise hang until the (much
+    // longer) test/afterEach timeouts, reporting a confusing teardown
+    // failure instead of pointing at the actual regression.
+    const result = await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('SSE stream did not close within 1s of logout')), 1000),
+      ),
+    ]);
+    expect(result.done).toBe(true);
   });
 
   it('does not open an SSE stream for a session that logged out while the team load was in flight', async () => {

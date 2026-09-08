@@ -25,7 +25,7 @@ type Handler = (req: Req, res: Res, params: Record<string, string>) => Promise<v
 type Route = { method: string; pattern: RegExp; keys: string[]; handler: Handler };
 
 const MAX_BODY = 64 * 1024;
-const MAX_SSE_CLIENTS_PER_TEAM = 100;
+export const MAX_SSE_CLIENTS_PER_TEAM = 100;
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
 
 /**
@@ -377,6 +377,10 @@ export function createHttpServer(
       'content-type': 'text/event-stream',
       'cache-control': 'no-store',
       connection: 'keep-alive',
+      // Tells nginx (and compatible proxies) not to buffer this response,
+      // so `proxy_buffering off` in the reverse-proxy config is no longer
+      // required for live updates to reach the client - see docs/en/deployment.md § 3.
+      'x-accel-buffering': 'no',
     });
     res.write(': connected\n\n');
     const clients = sseClients.get(teamId) ?? new Set<Res>();
