@@ -80,7 +80,7 @@ database — `streamId`, `version` (1-based, gap-free per stream) and
 `position` (global). Events are immutable. An event type is never
 reinterpreted; new meaning = new type. Fields may be added optionally,
 never removed or renamed (`upcast` in `events.ts` is the only place legacy
-data compatibility is allowed to live, currently empty).
+data compatibility is allowed to live, currently the identity function).
 
 ## 3. Command flow
 
@@ -125,7 +125,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
 
 ```
 1. eligibleMembers(state, poolId)                 active members ∩ pool
-2. calculateWeights(participants, policy, state)   modifiers in fixed order
+2. calculateWeights(state, members)                modifiers in fixed order
 3. Server: serverSeed = 32 random bytes (crypto.getRandomValues)
    commitment = SHA-256( canonicalJson({ serverSeed, nonce, participants }) )
    → SpinCommitted { commitment, nonce, participants (with weights), serverSeed }
@@ -135,7 +135,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
    trust boundary.
 4. Client supplies clientSeed (arbitrary string, default: 16 random bytes, hex)
 5. digest = HMAC-SHA-256(key = serverSeed, msg = `${commitment}:${clientSeed}:${nonce}`)
-   r = uint64(digest[0..8]) mod Σweights
+   r = uint64(digest[0..16]) mod Σweights
    selected = first participant whose cumulative weight > r
    → SpinRevealed { serverSeed, clientSeed, digest, selectedMemberId }
 6. The animation drives to the persisted result.
@@ -296,9 +296,9 @@ it to their local SSE clients.
 
 ## 9. Frontend
 
-React 19 + Vite. No router package: the hash (`#/team/:id/spin`) is the
-route. No state management package: `TeamView` from the server plus a
-handful of `useState`. Animations (`src/web/wheel/`) receive the persisted
+React 19 + Vite. No router package: the hash (`#/team/:id`, defaulting to
+the spin page) is the route. No state management package: `TeamView` from
+the server plus a handful of `useState`. Animations (`src/web/wheel/`) receive the persisted
 result as a prop and must not own domain state. They are skippable and
 respect `prefers-reduced-motion`.
 
@@ -327,7 +327,7 @@ server state (see the table in section 1).
 
 One container (`Dockerfile`, multi-stage): Vite build → static files; the
 server runs as unmodified TypeScript source directly under Node ≥ 26
-(native type-stripping, no bundler). Volume for `data/schuldrad.db`.
+(native type-stripping, no bundler). Volume for `/data`.
 `PORT` and `DATA_DIR` via environment variable. No reverse proxy required.
 
 ## 11. Verification loop

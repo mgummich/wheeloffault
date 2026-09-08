@@ -84,7 +84,7 @@ Jedes Event hat zusätzlich `type`, `at` (ISO-Zeit) und – in der Datenbank –
 (global). Events sind unveränderlich. Ein Event-Typ wird nie umgedeutet;
 neue Bedeutung = neuer Typ. Felder dürfen optional hinzukommen, nie
 entfernt oder umbenannt werden (`upcast` in `events.ts` ist die einzige
-erlaubte Stelle für Altdaten-Kompatibilität, aktuell leer).
+erlaubte Stelle für Altdaten-Kompatibilität, aktuell die Identitätsfunktion).
 
 ## 3. Befehlsfluss
 
@@ -129,7 +129,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
 
 ```
 1. eligibleMembers(state, poolId)                 aktive Mitglieder ∩ Pool
-2. calculateWeights(participants, policy, state)   Modifikatoren in fester Reihenfolge
+2. calculateWeights(state, members)                Modifikatoren in fester Reihenfolge
 3. Server: serverSeed = 32 Zufallsbytes (crypto.getRandomValues)
    commitment = SHA-256( canonicalJson({ serverSeed, nonce, participants }) )
    → SpinCommitted { commitment, nonce, participants (mit Gewichten), serverSeed }
@@ -138,7 +138,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
    Datenbank lesen kann, kann das Ergebnis vorhersagen – die Datenbank ist Vertrauensbasis.
 4. Client liefert clientSeed (beliebiger String, Standard: 16 Zufallsbytes hex)
 5. digest = HMAC-SHA-256(key = serverSeed, msg = `${commitment}:${clientSeed}:${nonce}`)
-   r = uint64(digest[0..8]) mod Σweights
+   r = uint64(digest[0..16]) mod Σweights
    selected = erster Teilnehmer, dessen kumulatives Gewicht > r
    → SpinRevealed { serverSeed, clientSeed, digest, selectedMemberId }
 6. Animation fährt zum persistierten Ergebnis.
@@ -301,8 +301,9 @@ ihre lokalen SSE-Clients aus.
 
 ## 9. Frontend
 
-React 19 + Vite. Kein Router-Paket: der Hash (`#/team/:id/spin`) ist die
-Route. Kein State-Management-Paket: `TeamView` vom Server + ein paar
+React 19 + Vite. Kein Router-Paket: der Hash (`#/team/:id`, standardmäßig
+die Spin-Seite) ist die Route. Kein State-Management-Paket: `TeamView` vom
+Server + ein paar
 `useState`. Animationen (`src/web/wheel/`) erhalten das persistierte
 Ergebnis als Prop und dürfen keinen Domänenzustand besitzen. Sie sind
 überspringbar und respektieren `prefers-reduced-motion`.
@@ -332,7 +333,7 @@ und die puren View-Funktionen – das ist der HTTP-Vertrag, kein Serverstaat
 
 Ein Container (`Dockerfile`, Multi-Stage): Vite-Build → statische Dateien;
 der Server läuft als unveränderte TypeScript-Quelle direkt unter Node ≥ 26
-(natives Type-Stripping, kein Bundler). Volume für `data/schuldrad.db`. `PORT` und
+(natives Type-Stripping, kein Bundler). Volume für `/data`. `PORT` und
 `DATA_DIR` per Umgebungsvariable. Kein Reverse Proxy nötig.
 
 ## 11. Verifikationsschleife

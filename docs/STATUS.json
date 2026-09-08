@@ -1,81 +1,76 @@
 {
   "date": "2026-09-08",
-  "commit": "a6e6c50a78f936f240c2b439a5fc31f00f50b96a",
+  "commit": "7f90f263f1f352a2c89a94b75df3d784247a31b4",
   "branch": "main",
   "environment": {
     "node": "v26.8.1",
     "pnpm": "11.24.0",
     "os": "darwin (Darwin 25.6.0)"
   },
-  "note": "Docs-critic follow-up pass on top of commit a6e6c50 (working tree has uncommitted changes on top, not committed per instructions): (1) build-docs.mjs checkLinks() rewritten from a page-wide `html.includes(...)` substring test to a set-equality check between the internal hrefs the source markdown's links must produce and the internal hrefs actually present in the rendered <main> body only (captured pre-shell, so it can no longer be satisfied by the shell's own language-switch markup) — verified against all 5 mutations the critic used to break the old check (resolver fallback, fragment-marker-disabled, dir-marker regex, dead .md link, dead non-.md link); every one now fails the build. Non-.md internal links are now dead-link-checked too. (2) README.de.md's 'ARCHITECTURE.md (Englisch, kanonisch)' link now carries a #en marker so it actually lands on the English page instead of silently resolving to German (was previously identical to the very next line's destination). (3) SECURITY.md's language switch now always renders both EN/DE entries; the DE entry on the (English-only) security page routes to ../de/ so a German reader isn't stranded. (4) docs/en+de/deployment.md's WEB_DIR description reworded: there is no compiled server directory (main.ts runs TypeScript sources directly under Node), the default resolves relative to src/server/. (5) docs/de/deployment.md dropped a redundant 'standardmäßig' from the § 4 paragraph (was stacked 3x across 2 sentences).",
+  "note": "Working tree has uncommitted changes on top of commit 7f90f26, not committed per instructions. (1) scripts/build-docs.mjs's link checker was redesigned: the hand-rolled regex markdown parser is gone, replaced by walking marked's own lexer token stream for source links (so code fences and reference-style links behave exactly as they render); after the build writes all pages, a single artifact-wide pass reads every generated HTML file's href=\"...\" (shell, nav, language switch, and body alike) and asserts each resolves to a file actually written, plus validates in-page #anchor links against the heading ids the build generates; a separate content-language check, independent of the renderer, asserts marker-carrying links resolve to that language and that each paired doc's crossover link resolves to its own counterpart page. Verified against a 9-case mutation table (resolver fallback, fragment-marker-disabled, dir-marker-regex-broken, dead .md link, dead non-.md link, broken nav href, broken language-switch fallback, inverted #en/#de marker, dead in-page anchor) — every mutation fails the build — and against 3 previously-false-positive cases (a deep link into another doc's section, a link inside a code fence, a bare directory link) — all 3 now pass. Net change to build-docs.mjs: +3 lines (123 insertions, 120 deletions), i.e. materially flat despite deleting the old parser and adding the artifact-wide check. (2) A round of accuracy fixes to WEB_DIR's actual resolved path (repo root, not src/server/), calculateWeights' real signature, the digest slice notation (hex chars, not bytes), a wrong section cross-reference (§ 2 -> § 3), the #/team/:id route (no literal /spin segment), the Docker volume path (/data), a stale nonce example, the audit CI job's real (parallel, no needs:) relationship to verify, upcast's real behavior (identity function, not empty), README.de.md's missing canonical marker and translation-lag banner, a German calque ('Auf blankem Metall' -> 'Auf Bare Metal'), and a dropped counterfactual qualifier in a German paragraph about default network reachability. (3) docs/superpowers/plans/2026-09-04-optional-postgres-redis.md marked historical (Postgres/Redis support has shipped; its 21 checkboxes were never updated retroactively).",
   "checks": [
     {
-      "name": "pnpm install",
+      "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Already up to date (lockfile satisfied)."
+      "details": "Checked 93 files. No issues."
     },
     {
-      "name": "format:check (biome format .)",
+      "name": "lint (pnpm lint)",
       "status": "pass",
-      "details": "Checked 93 files in 24ms. No fixes needed (after `biome format --write` on scripts/build-docs.mjs to match the rewritten checkLinks()'s formatting)."
+      "details": "Checked 95 files. 0 errors, 6 warnings, all pre-existing CSS lint warnings in src/web/styles.css (prefers-reduced-motion !important overrides and one noDescendingSpecificity pair unrelated to this change). Exit 0."
     },
     {
-      "name": "lint (biome lint .)",
+      "name": "typecheck (pnpm typecheck)",
       "status": "pass",
-      "details": "Checked 95 files in 74ms. 0 errors, 6 warnings, all pre-existing CSS lint warnings in src/web/styles.css (3x lint/complexity/noImportantStyles on prefers-reduced-motion !important overrides, 1x lint/style/noDescendingSpecificity on .anim-panel .field vs .policy fieldset .field). None are new; command exits 0."
+      "details": "tsc -p tsconfig.json --noEmit: no output, exit 0."
     },
     {
-      "name": "typecheck (tsc -p tsconfig.json --noEmit)",
+      "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "No output, exit 0."
+      "details": "16 test files, 97 tests passed, 0 failed."
     },
     {
-      "name": "test:unit (vitest run --project unit)",
+      "name": "test:integration (pnpm test:integration)",
       "status": "pass",
-      "details": "16 test files, 97 tests passed, 0 failed. Duration ~663ms."
+      "details": "5 test files, 50 tests passed, 0 failed."
     },
     {
-      "name": "test:integration (vitest run --project integration)",
+      "name": "build (pnpm build)",
       "status": "pass",
-      "details": "5 test files, 50 tests passed, 0 failed. Duration ~1.67s."
+      "details": "vite build succeeded, then scripts/build-docs.mjs's completeness check, content-language check, and artifact-wide link/anchor check all passed against the real docs tree (8 docs x 2 languages plus the /docs/ redirect)."
     },
     {
-      "name": "build (vite build && node scripts/build-docs.mjs)",
+      "name": "build:server (pnpm build:server)",
       "status": "pass",
-      "details": "Vite client build succeeded (59 modules, dist/web/assets/index-*.js 325.31 kB / gzip 95.89 kB). build-docs.mjs completeness check and the rewritten set-equality checkLinks() both passed; rendered all 8 docs x 2 languages plus the /docs/ redirect. docs/STATUS.json confirmed present in the working tree after this step."
+      "details": "vite build --mode server succeeded."
     },
     {
-      "name": "build:server (vite build --mode server)",
+      "name": "e2e (pnpm e2e)",
       "status": "pass",
-      "details": "Server-mode client build succeeded (59 modules, dist/web/assets/index-*.js 311.89 kB / gzip 92.64 kB)."
+      "details": "3 Playwright tests passed across 2 projects (static PWA offline-reload session test, server-mode team sharing across browsers, core Schuldrad journey). ~5.2s."
     },
     {
-      "name": "e2e (playwright test)",
+      "name": "build-docs.mjs mutation testing (scratch copy under /private/tmp, not the repo)",
       "status": "pass",
-      "details": "3 tests passed across 2 projects (static PWA offline-reload session test; server-mode team sharing across browsers; core Schuldrad journey). Duration ~5.0s."
-    },
-    {
-      "name": "checkLinks() mutation testing (scratch copy, not the repo)",
-      "status": "pass",
-      "details": "All 5 mutations the docs critic used to defeat the old substring-based checkLinks() were re-applied one at a time to a scratch copy of the repo (symlinked node_modules, no changes to the working tree) and re-run against the new set-equality implementation: (1) renderer resolver fallback `|| lang` -> `|| 'en'` (line ~191): exit 1, caught. (2) fragment marker disabled in the renderer only (`fragMarker = null` at line ~190): exit 1, caught. (3) dir marker regex `/(^|\\/)de\\//` -> `/(^|\\/)zz\\//` (line ~184): exit 1, caught. (4) dead .md link added to docs/en/fairness.md: exit 1, caught (dead/unregistered link + set-equality mismatch). (5) dead non-.md links added to docs/en/fairness.md (`../en/nope.html`, `../../scripts/gone.mjs`): exit 1, caught (new non-.md dead-link check). 5/5 mutations now fail the build; each was reverted immediately after its run."
+      "details": "Full repo copied to a scratch dir; baseline `pnpm build` confirmed green, then each of 9 mutations was applied one at a time, rebuilt, and reverted via git checkout: (a) renderer language-fallback forced to 'en' — failed as expected. (b) #en/#de fragment marker disabled in the renderer — failed. (c) directory-marker regex broken (anchored to string start instead of any path segment) — failed. (d) a dead .md link added to a doc — failed via the artifact-wide existence check. (e) a dead non-.md link added — failed via the same check. (f) navHref's slug interpolation broken (`${slug}X.html`) — failed, every nav tab on every page. (g) the enOnly language-switch fallback reverted, re-emitting a href to a page never written (docs/de/security.html) — failed, reproducing the exact defect the check exists to catch. (h) README.de.md's #en marker on its own English-counterpart link inverted to #de — failed via the pairing check, which does not merely trust the href's own marker. (i) a dead in-page anchor added — failed via the heading-id check. All 9/9 failed the build. Then 3 previously-rejected-but-legitimate cases were tried and all passed: a deep link into another doc's section (`deployment.md#environment`), a markdown link inside a fenced code block, and a bare directory link (`../de/`)."
     },
     {
       "name": "docker: sqlite profile smoke test",
-      "status": "pass",
-      "details": "Re-run fresh on 2026-09-08: `docker compose --profile sqlite build` succeeded; `docker compose --profile sqlite up -d` started the container; GET /api/health returned 200 {\"ok\":true}. Auth is off by default in this profile (no SCHULDRAD_PASSWORD set), so GET /api/teams returned 200 [] rather than 401 — expected for the unauthenticated default profile. Container torn down afterward with `docker compose --profile sqlite down -v`.",
-      "verified": "fresh (2026-09-08)"
+      "status": "previously-verified",
+      "details": "Not re-run in this pass; this pass touched documentation and the docs build script only, no server/container code. See prior STATUS.json history for the last fresh run.",
+      "verified": "previously verified, not re-run in this session"
     },
     {
       "name": "docker: overengineered profile (Postgres + Redis) build + smoke test",
       "status": "previously-verified",
-      "details": "Both compose profiles were previously built and smoke-tested with /api/health returning {\"ok\":true}. Not re-run in this pass; only the sqlite profile was re-executed fresh.",
-      "verified": "previously verified (date as originally recorded, not re-run in this session)"
+      "details": "Not re-run in this pass; no server/container code changed.",
+      "verified": "previously verified, not re-run in this session"
     },
     {
       "name": "docker: auth-enabled container smoke test (SCHULDRAD_PASSWORD set)",
       "status": "previously-verified",
-      "details": "Previously executed: unauthenticated GET /api/teams returned 401, and POST to the login endpoint returned 204 with an HttpOnly, SameSite=Strict cookie. Not re-run in this pass since the default sqlite profile used above has no password configured.",
-      "verified": "previously verified (date as originally recorded, not re-run in this session)"
+      "details": "Not re-run in this pass; no server/container code changed.",
+      "verified": "previously verified, not re-run in this session"
     }
   ]
 }

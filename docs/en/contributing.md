@@ -45,9 +45,9 @@ format:check → lint → typecheck → test:unit → test:integration → build
 ```
 
 This is the single command that must pass before anything is considered
-done; it is also what CI runs (`.github/workflows/ci.yml`, `verify` job)
-before the separate `audit`, `e2e`, and `container` jobs run in parallel on
-top of it. Run it locally before opening a PR — there is no faster
+done; it is also what CI runs (`.github/workflows/ci.yml`, `verify` job).
+`audit` runs in parallel with it; `e2e` and `container` run afterward and
+need it to pass. Run it locally before opening a PR — there is no faster
 feedback loop than not waiting for CI to tell you `lint` failed.
 
 ## § 3 Tests live next to what they document

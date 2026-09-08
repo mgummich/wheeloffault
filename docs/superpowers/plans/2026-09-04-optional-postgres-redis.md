@@ -1,5 +1,7 @@
 # Optional Postgres And Redis Implementation Plan
 
+> **Historical:** implemented and shipped; checkboxes below were not updated retroactively.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add optional Postgres persistence and optional Redis SSE fanout while preserving SQLite as the default.

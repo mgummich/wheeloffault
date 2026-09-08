@@ -48,9 +48,9 @@ format:check → lint → typecheck → test:unit → test:integration → build
 ```
 
 Das ist der eine Befehl, der bestehen muss, bevor irgendetwas als fertig
-gilt; er läuft auch in CI (`.github/workflows/ci.yml`, Job `verify`), bevor
-die separaten Jobs `audit`, `e2e` und `container` parallel darauf
-aufbauend laufen. Vor dem Öffnen eines PR lokal ausführen — es gibt keine
+gilt; er läuft auch in CI (`.github/workflows/ci.yml`, Job `verify`).
+`audit` läuft parallel dazu; `e2e` und `container` laufen danach und setzen
+ihn voraus. Vor dem Öffnen eines PR lokal ausführen — es gibt keine
 schnellere Rückmeldeschleife, als nicht auf CI zu warten, um zu erfahren,
 dass `lint` fehlgeschlagen ist.
 

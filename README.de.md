@@ -1,4 +1,7 @@
-English → [README.md](README.md#en)
+English → [README.md](README.md#en) (kanonisch)
+
+> Diese Übersetzung wird separat gepflegt und kann der kanonischen
+> englischen Fassung hinterherhinken.
 
 # Schuldrad
 

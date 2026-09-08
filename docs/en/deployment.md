@@ -86,7 +86,7 @@ checked-in `src/web/.env.server`), which switches the client from the
 | `PORT` | `3000` | HTTP listen port |
 | `DATA_DIR` | `data` (relative to cwd); `/data` in the container image | directory for `schuldrad.db` |
 | `HOST` | `127.0.0.1` | bind address — see § 4 |
-| `WEB_DIR` | `dist/web` (relative to `src/server/`, where the server sources live — Node runs the TypeScript directly, nothing is compiled — not cwd) | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only) |
+| `WEB_DIR` | `dist/web` (repo root, not cwd) | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only) |
 | `EVENT_STORE` | `sqlite` | `sqlite` or `postgres` |
 | `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; enables cross-instance SSE fanout |
@@ -152,7 +152,7 @@ elapsed time regardless of activity.
 **Single-instance only.** Sessions and the login-failure counts used for
 rate limiting are that in-memory `Map`, per process — nothing shares this
 state across replicas, including `REDIS_URL` (that only fans out domain
-events over SSE across instances; see § 2's env var table — it does not
+events over SSE across instances; see § 3's env var table — it does not
 touch auth). Run `SCHULDRAD_PASSWORD` behind more than one replica without
 sticky sessions and you get: a session created on instance A rejected as
 unauthenticated by instance B (random 401s on a valid cookie), a logout on

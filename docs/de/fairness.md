@@ -204,7 +204,7 @@ Die auf der Detailseite angezeigten Werte in eine JSON-Datei kopieren:
 {
   "serverSeed": "…",
   "clientSeed": "…",
-  "nonce": 0,
+  "nonce": 1,
   "participants": [{ "memberId": "…", "weight": 1000 }],
   "commitment": "…",
   "digest": "…",

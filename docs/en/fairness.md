@@ -186,7 +186,7 @@ Copy the values shown on the spin's detail page into a JSON file:
 {
   "serverSeed": "…",
   "clientSeed": "…",
-  "nonce": 0,
+  "nonce": 1,
   "participants": [{ "memberId": "…", "weight": 1000 }],
   "commitment": "…",
   "digest": "…",

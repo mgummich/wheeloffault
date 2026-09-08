@@ -91,7 +91,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | `PORT` | `3000` | HTTP-Listen-Port |
 | `DATA_DIR` | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db` |
 | `HOST` | `127.0.0.1` | Bind-Adresse — siehe § 4 |
-| `WEB_DIR` | `dist/web` (relativ zu `src/server/`, wo die Server-Quellen liegen — Node führt das TypeScript direkt aus, nichts wird kompiliert — nicht zum Arbeitsverzeichnis) | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
+| `WEB_DIR` | `dist/web` (Repository-Root, nicht Arbeitsverzeichnis) | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
 | `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
@@ -161,7 +161,7 @@ unabhängig von der Aktivität nach 7 Tagen endgültig ab.
 Login-Rate-Limiting liegen in genau dieser In-Memory-`Map`, pro Prozess —
 nichts teilt diesen Zustand über Replicas hinweg, auch `REDIS_URL` nicht
 (das fächert nur Domain-Events per SSE instanzübergreifend auf, siehe die
-Umgebungsvariablen-Tabelle in § 2 — es berührt keinen Auth-Zustand). Läuft
+Umgebungsvariablen-Tabelle in § 3 — es berührt keinen Auth-Zustand). Läuft
 `SCHULDRAD_PASSWORD` hinter mehr als einer Replica ohne Sticky Sessions,
 ergibt sich: eine auf Instanz A erzeugte Sitzung wird von Instanz B als
 nicht authentifiziert abgelehnt (zufällige 401 bei gültigem Cookie), ein
@@ -232,8 +232,8 @@ Der Server bindet standardmäßig an `127.0.0.1` — er lauscht auf keinem
 anderen Netzwerk-Interface als Loopback, sofern nicht ausdrücklich anders
 konfiguriert. Das ist ein bewusster Standard, kein Versehen: Schuldrad
 kommt standardmäßig ohne Authentifizierung (siehe [SECURITY.md](../../SECURITY.md)), also
-wäre ein aus dem Netz erreichbarer Server einer, den jeder in
-diesem Netz lesen und verändern könnte.
+wäre ein Server, der ohne weiteres Zutun aus dem Netz erreichbar wäre,
+einer, den jeder in diesem Netz lesen und verändern könnte.
 
 Um den Server freizugeben:
 
@@ -242,7 +242,7 @@ Um den Server freizugeben:
   Freigabe wird dann durch die Host-Adresse gesteuert, an die der
   veröffentlichte Port gebunden wird, z. B. `-p 127.0.0.1:3000:3000`
   (nur Loopback auf dem Host) versus `-p 3000:3000` (alle Interfaces).
-* **Auf blankem Metall** `HOST=0.0.0.0` nur setzen, wenn zusätzlich ein
+* **Auf Bare Metal** `HOST=0.0.0.0` nur setzen, wenn zusätzlich ein
   Reverse Proxy oder eine VPN-Grenze davor steht — nie an alle Interfaces
   in einem sonst offenen Netz binden.
 * **TLS** wird von Schuldrad selbst nicht terminiert; es gibt keine
