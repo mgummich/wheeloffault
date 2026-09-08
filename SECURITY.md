@@ -188,9 +188,11 @@ database the operator's browser does not control.
   knows the deployment password, if one is set (no per-team access control
   even with § 1a enabled — see § 2). Without § 1a, from anyone who can
   reach the server at all.
-* Availability — outside of § 1a's login rate limiting, there is no
-  general request rate limiting; a server exposed to an untrusted network
-  can still be flooded on any other route.
+* Availability — outside of § 1a's login rate limiting and a fixed cap of
+  100 concurrent SSE connections per team (`MAX_SSE_CLIENTS_PER_TEAM` in
+  `src/server/http.ts`, returns 503 beyond it), there is no general request
+  rate limiting; a server exposed to an untrusted network can still be
+  flooded on any other route.
 * Anything about the underlying host, container runtime, SQLite/Postgres
   instance, or Redis instance beyond what the Dockerfile itself does (runs
   as non-root, strips the npm CLI from the runtime image, applies OS

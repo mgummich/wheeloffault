@@ -86,7 +86,7 @@ checked-in `src/web/.env.server`), which switches the client from the
 | `PORT` | `3000` | HTTP listen port |
 | `DATA_DIR` | `data` (relative to cwd); `/data` in the container image | directory for `schuldrad.db` |
 | `HOST` | `127.0.0.1` | bind address — see § 4 |
-| `WEB_DIR` | `dist/web` | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only) |
+| `WEB_DIR` | `dist/web` (relative to the compiled server directory, not cwd) | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only) |
 | `EVENT_STORE` | `sqlite` | `sqlite` or `postgres` |
 | `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; enables cross-instance SSE fanout |
@@ -203,6 +203,11 @@ defeating live updates. Add, in the same location block:
 ```nginx
 proxy_buffering off;
 ```
+
+**SSE connections are capped at 100 per team.** A team beyond that many
+concurrent `/api/teams/:id/events` connections gets `503` on the next
+connection attempt; this is a fixed, non-configurable limit
+(`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
 
 ## § 4 Bind address, reverse proxy, and TLS
 

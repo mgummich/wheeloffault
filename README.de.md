@@ -1,4 +1,4 @@
-English → [README.md](README.md)
+English → [README.md](README.md#en)
 
 # Schuldrad
 
@@ -76,7 +76,8 @@ docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 Danach http://localhost:3000 öffnen. Im Serverbetrieb liegt alles in
 `/data/schuldrad.db`. Standardmäßig gibt es keine Authentifizierung; im
 Serverbetrieb kann optional ein einzelnes gemeinsames Betriebspasswort über
-`SCHULDRAD_PASSWORD` jede `/api/*`-Route absichern (siehe
+`SCHULDRAD_PASSWORD` die `/api/*`-Routen absichern (außer `/api/health` und
+`/api/auth/*`) (siehe
 [docs/de/deployment.md](docs/de/deployment.md) § 3a). Für Zugriff aus dem
 Netz nur hinter VPN oder Reverse Proxy mit Auth betreiben — das
 vollständige Bedrohungsmodell steht in [SECURITY.md](SECURITY.md).

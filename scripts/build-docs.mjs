@@ -141,10 +141,7 @@ const slug = (text) =>
 // target file actually is — a link to an en source lands on the en page
 // even from a de source page (and vice versa), so "Deutsch → architektur.md"
 // and "English → ARCHITECTURE.md" cross over instead of self-linking.
-// Links are recorded here as they're rendered (path relative to outDir) so
-// checkLinks() can verify every one after the build actually resolved
-// somewhere real, and to the right language.
-const renderedLinks = [];
+// checkLinks() below verifies every one independently, after the build.
 
 function markedFor(lang) {
   return new Marked({
@@ -159,24 +156,38 @@ function markedFor(lang) {
         if (/^(https?:)?\/\//.test(href) || href.startsWith('#')) {
           return `<a href="${href}">${text}</a>`;
         }
-        const hrefBase = href.split('/').pop();
+        // Strip a trailing #en/#de marker fragment before matching: it's
+        // not a real in-page anchor, just a way to mark language on a link
+        // whose real relative path (for GitHub's renderer) can't carry a
+        // directory or filename marker — e.g. README.de.md linking to the
+        // sibling README.md, or docs/de/architektur.md linking up to the
+        // root ARCHITECTURE.md. Both are valid GitHub links either way;
+        // the fragment is just ignored by GitHub's viewer.
+        const fragMatch = /#(en|de)$/.exec(href);
+        const hrefPath = fragMatch ? href.slice(0, fragMatch.index) : href;
+        const hrefBase = hrefPath.split('/').pop();
         const target = docs.find(
           (d) => d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
         );
         if (target) {
           // The href's own language marker wins: a directory segment
-          // (../de/, docs/de/, ../en/, docs/en/) or a filename marker
-          // (README.de.md). A bare basename shared by both languages
-          // (deployment.md, fairness.md, ...) carries no marker, so it
-          // falls back to the CURRENT page's language — keeping in-page
-          // links in-language instead of defaulting to `en`.
-          const dirMarker = /(^|\/)de\//.test(href) ? 'de' : /(^|\/)en\//.test(href) ? 'en' : null;
+          // (../de/, docs/de/, ../en/, docs/en/), a filename marker
+          // (README.de.md), or a #en/#de fragment marker. A bare basename
+          // shared by both languages (deployment.md, fairness.md, ...)
+          // carries no marker, so it falls back to the CURRENT page's
+          // language — keeping in-page links in-language instead of
+          // defaulting to `en`.
+          const dirMarker = /(^|\/)de\//.test(hrefPath)
+            ? 'de'
+            : /(^|\/)en\//.test(hrefPath)
+              ? 'en'
+              : null;
           const fileMarker = /\.de\.md$/.test(hrefBase) ? 'de' : null;
-          const wantLang = dirMarker || fileMarker || lang;
+          const fragMarker = fragMatch ? fragMatch[1] : null;
+          const wantLang = dirMarker || fileMarker || fragMarker || lang;
           const targetLang = target.src[wantLang] ? wantLang : 'en';
           const path =
             target.slug === 'index' ? `${targetLang}/` : `${targetLang}/${target.slug}.html`;
-          renderedLinks.push({ href, resolvedLang: targetLang, path });
           return `<a href="../${path}">${text}</a>`;
         }
         return `<a href="${href}">${text}</a>`;
@@ -299,27 +310,75 @@ await writeFile(
 console.log('docs: → dist/web/docs/index.html (redirect to en/)');
 
 // Guard against the class of bug where a link resolves to a URL that was
-// never written, or resolves to the wrong language (e.g. a `de/` href
-// landing on an `en/` page). Every link recorded by markedFor() above must
-// point at a file this build actually produced, in the language its href
-// named.
+// never written, resolves to the wrong language (e.g. a `de/` href landing
+// on an `en/` page), or never resolves at all because its basename isn't in
+// the docs registry.
+//
+// This scans the raw Markdown SOURCE directly and computes, from scratch,
+// what each link must resolve to — it does not call markedFor()'s link()
+// renderer or consult its bookkeeping (renderedLinks). In particular, a
+// marker-less href (no de/en directory, no .de.md suffix, no #en/#de
+// fragment) is ALWAYS asserted against the current page's own language;
+// unlike the renderer, this check never silently skips that case. That
+// independence is the point: a bug in the renderer's marker regex, or in
+// its fallback, must not also be baked into the check that's supposed to
+// catch it.
+const MD_LINK_RE = /\[[^\]]*\]\(([^)]+)\)/g;
+
+function expectedLangFor(href, pageLang) {
+  const fragMatch = /#(en|de)$/.exec(href);
+  const hrefPath = fragMatch ? href.slice(0, fragMatch.index) : href;
+  if (!hrefPath.endsWith('.md')) return null; // not an internal doc link
+  const hrefBase = hrefPath.split('/').pop();
+  const segs = hrefPath.split('/');
+  const dirLang = segs.includes('de') ? 'de' : segs.includes('en') ? 'en' : null;
+  const fileLang = hrefBase.endsWith('.de.md') ? 'de' : null;
+  const markerLang = fragMatch?.[1] || dirLang || fileLang;
+  return { hrefBase, wantLang: markerLang || pageLang };
+}
+
 async function checkLinks() {
   const problems = [];
-  for (const { href, resolvedLang, path } of renderedLinks) {
-    const filePath = path.endsWith('/') ? join(outDir, path, 'index.html') : join(outDir, path);
-    try {
-      await readFile(filePath);
-    } catch {
-      problems.push(`link "${href}" resolved to dist/web/docs/${path}, which does not exist.`);
-      continue;
-    }
-    const dirMarker = /(^|\/)de\//.test(href) ? 'de' : /(^|\/)en\//.test(href) ? 'en' : null;
-    const fileMarker = /\.de\.md$/.test(href.split('/').pop()) ? 'de' : null;
-    const wantLang = dirMarker || fileMarker;
-    if (wantLang && wantLang !== resolvedLang) {
-      problems.push(
-        `link "${href}" names language '${wantLang}' but resolved to '${resolvedLang}' (dist/web/docs/${path}).`,
-      );
+  for (const lang of LANGS) {
+    for (const doc of docs) {
+      if (!doc.src[lang]) continue;
+      const md = await readFile(join(root, doc.src[lang]), 'utf8');
+      for (const [, href] of md.matchAll(MD_LINK_RE)) {
+        if (/^(https?:)?\/\//.test(href) || href.startsWith('#')) continue;
+        const parsed = expectedLangFor(href, lang);
+        if (!parsed) continue; // not a .md link (image, anchor, external, ...)
+        const { hrefBase, wantLang } = parsed;
+        const target = docs.find(
+          (d) => d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
+        );
+        if (!target) {
+          problems.push(
+            `${doc.src[lang]}: link "${href}" has no matching entry in the docs registry (dead/unregistered link).`,
+          );
+          continue;
+        }
+        const resolvedLang = target.src[wantLang] ? wantLang : 'en';
+        const path =
+          target.slug === 'index' ? `${resolvedLang}/` : `${resolvedLang}/${target.slug}.html`;
+        const filePath = path.endsWith('/') ? join(outDir, path, 'index.html') : join(outDir, path);
+        try {
+          await readFile(filePath);
+        } catch {
+          problems.push(
+            `${doc.src[lang]}: link "${href}" should resolve to dist/web/docs/${path}, which does not exist.`,
+          );
+          continue;
+        }
+        const html = await readFile(
+          join(outDir, lang, doc.slug === 'index' ? 'index.html' : `${doc.slug}.html`),
+          'utf8',
+        );
+        if (!html.includes(`href="../${path}"`)) {
+          problems.push(
+            `${doc.src[lang]}: link "${href}" should resolve to '../${path}' (language '${resolvedLang}') but the rendered page does not contain that href.`,
+          );
+        }
+      }
     }
   }
   if (problems.length > 0) {

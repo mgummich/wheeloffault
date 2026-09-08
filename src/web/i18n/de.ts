@@ -451,6 +451,15 @@ export const de: Record<MessageKey, string> = {
   'error.internal_error': 'Interner Fehler.',
   'error.invalid_url': 'Ungültige Anfrage-URL.',
   'error.body_not_object': 'Der Anfrage-Body muss ein JSON-Objekt sein.',
+  'error.field_too_long': 'Dieses Feld ist zu lang.',
+  'error.field_too_many_items': 'Zu viele Einträge in dieser Liste.',
+  'error.field_not_string': 'Dieses Feld muss Text sein.',
+  'error.field_not_string_array': 'Dieses Feld muss eine Liste aus Text sein.',
+  'error.invalid_hex': 'Ungültiger Hex-Wert.',
+  'error.duplicate_member_id': 'Ein Teilnehmer mit dieser ID existiert bereits.',
+  'error.spin_without_result': 'Diese Ziehung hat noch kein Ergebnis.',
+  'error.invalid_modifier_factor': 'Ungültiger Modifikator-Faktor.',
+  'error.unknown_event_type': 'Unbekannter Ereignistyp.',
 
   // ---------- format ----------
   'format.justNow': 'gerade eben',

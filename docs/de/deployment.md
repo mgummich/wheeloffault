@@ -91,7 +91,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | `PORT` | `3000` | HTTP-Listen-Port |
 | `DATA_DIR` | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db` |
 | `HOST` | `127.0.0.1` | Bind-Adresse — siehe § 4 |
-| `WEB_DIR` | `dist/web` | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
+| `WEB_DIR` | `dist/web` (relativ zum kompilierten Server-Verzeichnis, nicht zum Arbeitsverzeichnis) | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
 | `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
@@ -217,6 +217,11 @@ ist — das macht Live-Updates zunichte. Im selben Location-Block ergänzen:
 ```nginx
 proxy_buffering off;
 ```
+
+**SSE-Verbindungen sind pro Team auf 100 begrenzt.** Ein Team mit mehr
+gleichzeitigen `/api/teams/:id/events`-Verbindungen erhält beim nächsten
+Verbindungsversuch `503`; dies ist ein fester, nicht konfigurierbarer
+Grenzwert (`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
 
 ## § 4 Bind-Adresse, Reverse Proxy und TLS
 

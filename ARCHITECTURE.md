@@ -1,3 +1,5 @@
+Deutsch → [architektur.md](docs/de/architektur.md)
+
 # Schuldrad — Architecture
 
 Schuldrad is a self-hosted, installable PWA tool for the Scrum ritual of
@@ -219,9 +221,10 @@ POST /api/auth/logout            clears the session cookie
 GET  /api/auth/status                        { enabled, authenticated }
 ```
 
-Errors: `{ error: string, code: string }` with 400 (invalid input), 401/403
-(auth), 404, 409 (conflict), 415 (unsupported content type), 429 (rate
-limited), 500/503 (internal error / overload). `code` is a stable,
+Errors: `{ error: string, code: string }` with 400 (invalid input), 401
+(auth), 403 (CSRF/host checks: `host_not_allowed`, `origin_mismatch`), 404,
+409 (conflict), 415 (unsupported content type), 429 (rate limited), 500/503
+(internal error / overload). `code` is a stable,
 machine-readable identifier that the client localizes (`src/web/apiError.ts`,
 `src/web/i18n/`); the human `error` message is English and only a fallback
 for unknown codes. All

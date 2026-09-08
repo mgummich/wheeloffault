@@ -1,4 +1,4 @@
-English → [ARCHITECTURE.md](../../ARCHITECTURE.md) (kanonisch)
+English → [ARCHITECTURE.md](../../ARCHITECTURE.md#en) (kanonisch)
 
 > Diese Übersetzung wird separat gepflegt und kann der kanonischen englischen
 > Fassung hinterherhinken. Bei Widerspruch gilt `ARCHITECTURE.md` im
@@ -224,8 +224,9 @@ POST /api/auth/logout            löscht das Session-Cookie
 GET  /api/auth/status                        { enabled, authenticated }
 ```
 
-Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 401/403
-(Auth), 404, 409 (Konflikt), 415 (nicht unterstützter Content-Type), 429
+Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 401
+(Auth), 403 (CSRF-/Host-Prüfungen: `host_not_allowed`, `origin_mismatch`),
+404, 409 (Konflikt), 415 (nicht unterstützter Content-Type), 429
 (Rate-Limit), 500/503 (interner Fehler / Überlastung). `code` ist ein
 stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
 (`src/web/apiError.ts`, `src/web/i18n/`); die menschenlesbare `error`-Meldung

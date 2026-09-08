@@ -449,6 +449,15 @@ export const en = {
   'error.internal_error': 'Internal error.',
   'error.invalid_url': 'Invalid request URL.',
   'error.body_not_object': 'Request body must be a JSON object.',
+  'error.field_too_long': 'This field is too long.',
+  'error.field_too_many_items': 'Too many entries in this list.',
+  'error.field_not_string': 'This field must be text.',
+  'error.field_not_string_array': 'This field must be a list of text.',
+  'error.invalid_hex': 'Invalid hex value.',
+  'error.duplicate_member_id': 'A participant with this id already exists.',
+  'error.spin_without_result': 'This draw has no result yet.',
+  'error.invalid_modifier_factor': 'Invalid modifier factor.',
+  'error.unknown_event_type': 'Unknown event type.',
 
   // ---------- format ----------
   'format.justNow': 'just now',
