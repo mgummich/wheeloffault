@@ -20,7 +20,20 @@ export function shareFileName(spin: RevealedSpin): string {
   return `schuldrad-${spinLabel(spin.nonce).replace(/\s+/g, '-')}.png`;
 }
 
-/** 1200×630 result card for the Teams chat. */
+/** Reads a CSS custom property's resolved value (e.g. "#1f2327"). The share
+ * card is styled like the split-flap board, whose colors are fixed "always
+ * dark" chrome (see styles.css) — but reading them via CSS vars keeps this
+ * canvas from re-declaring hex literals of its own. Falls back for
+ * environments without a document (e.g. server-side rendering). */
+function cssVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  return v || fallback;
+}
+
+/** 1200×630 result card for the Teams chat. Always rendered in the fixed
+ * "indicator board" palette (--board-*), regardless of the active app theme —
+ * matching the split-flap board look everywhere else in the UI. */
 export function renderShareCard(teamName: string, spin: RevealedSpin, name: string): Promise<Blob> {
   const W = 1200;
   const H = 630;
@@ -34,15 +47,24 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
   const F = 'system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
   const M = 'ui-monospace, Menlo, Consolas, monospace';
 
-  g.fillStyle = '#1F2327';
+  const boardBg = cssVar('--board-bg', '#1f2327');
+  const boardText = cssVar('--board-text', '#f7f7f5');
+  const boardTextMuted = cssVar('--board-text-muted', '#b8bec6');
+  const boardAccent = cssVar('--board-accent', '#ffb84d');
+  const accent = cssVar('--accent', '#ec0016');
+  const tileBg = '#2b3037';
+  const hairline = 'rgba(0,0,0,.55)';
+  const rule = '#3a4147';
+
+  g.fillStyle = boardBg;
   g.fillRect(0, 0, W, H);
-  g.fillStyle = '#EC0016';
+  g.fillStyle = accent;
   g.fillRect(0, 0, W, 14);
 
-  g.fillStyle = '#F7F7F5';
+  g.fillStyle = boardText;
   g.font = `700 30px ${F}`;
   g.fillText('SCHULDRAD', 72, 96);
-  g.fillStyle = '#B8BEC6';
+  g.fillStyle = boardTextMuted;
   g.font = `600 22px ${F}`;
   g.fillText(
     t('share.cardTeamZug', { team: teamName.toUpperCase(), spin: spinLabel(spin.nonce) }),
@@ -59,12 +81,12 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
   const y = 252;
   const th = 110;
   for (const ch of cells) {
-    g.fillStyle = '#2B3037';
+    g.fillStyle = tileBg;
     g.fillRect(x, y, tw - 6, th);
-    g.fillStyle = 'rgba(0,0,0,.55)';
+    g.fillStyle = hairline;
     g.fillRect(x, y + th / 2 - 1, tw - 6, 2);
     if (ch !== ' ') {
-      g.fillStyle = '#FFB84D';
+      g.fillStyle = boardAccent;
       g.font = `700 ${Math.floor(tw * 1.05)}px ${M}`;
       g.textAlign = 'center';
       g.textBaseline = 'middle';
@@ -75,19 +97,19 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
     x += tw;
   }
 
-  g.fillStyle = '#F7F7F5';
+  g.fillStyle = boardText;
   g.font = `600 28px ${F}`;
   g.fillText(t('share.cardGuiltyProb', { prob }), 72, 420);
-  g.fillStyle = '#8A9199';
+  g.fillStyle = boardTextMuted;
   g.font = `400 22px ${F}`;
   g.fillText(t('share.cardWhenNote', { when }), 72, 462);
-  g.strokeStyle = '#3A4147';
+  g.strokeStyle = rule;
   g.lineWidth = 2;
   g.beginPath();
   g.moveTo(72, 520);
   g.lineTo(W - 72, 520);
   g.stroke();
-  g.fillStyle = '#8A9199';
+  g.fillStyle = boardTextMuted;
   g.font = `400 20px ${M}`;
   g.fillText(
     `commit ${spin.commitment.slice(0, 24)}…   digest ${spin.reveal.digest.slice(0, 16)}…`,
@@ -95,11 +117,11 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
     566,
   );
 
-  g.fillStyle = '#EC0016';
+  g.fillStyle = accent;
   g.beginPath();
   g.arc(W - 112, 96, 22, 0, Math.PI * 2);
   g.fill();
-  g.fillStyle = '#1F2327';
+  g.fillStyle = boardBg;
   g.beginPath();
   g.arc(W - 112, 96, 9, 0, Math.PI * 2);
   g.fill();

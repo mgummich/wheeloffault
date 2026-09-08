@@ -7,6 +7,10 @@ export const en = {
   // ---------- app shell ----------
   'app.brand': 'Schuldrad',
   'nav.ariaLabel': 'Main navigation',
+  'theme.ariaLabel': 'Theme',
+  'theme.system': 'Auto',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
   'nav.spin': 'Draw',
   'nav.teilnehmer': 'Participants',
   'nav.statistik': 'Statistics',

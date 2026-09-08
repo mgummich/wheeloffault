@@ -6,6 +6,10 @@ export const de: Record<MessageKey, string> = {
   // ---------- app shell ----------
   'app.brand': 'Schuldrad',
   'nav.ariaLabel': 'Hauptnavigation',
+  'theme.ariaLabel': 'Darstellung',
+  'theme.system': 'Auto',
+  'theme.light': 'Hell',
+  'theme.dark': 'Dunkel',
   'nav.spin': 'Ziehung',
   'nav.teilnehmer': 'Teilnehmer',
   'nav.statistik': 'Statistik',

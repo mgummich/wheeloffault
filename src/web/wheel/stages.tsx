@@ -17,6 +17,13 @@ type StageProps = {
 };
 
 const mono = 'ui-monospace,Menlo,Consolas,monospace';
+/** Decorative railway-tie style for TrainStage's track; static, defined once. */
+const tieStyle: CSSProperties = {
+  flex: 'none',
+  width: 8,
+  height: 22,
+  background: 'var(--border-strong)',
+};
 
 /**
  * Shared clock for the non-wheel visualizations: eases through a fixed
@@ -101,8 +108,11 @@ export function BoardStage(props: StageProps) {
         justifyContent: 'center',
         width: big ? 26 : 16,
         height: big ? 40 : 24,
-        background: announced && currentId ? '#3A1420' : '#2B3037',
-        color: '#F7F7F5',
+        background:
+          announced && currentId
+            ? 'color-mix(in srgb, var(--accent) 35%, var(--board-bg))'
+            : '#2B3037',
+        color: 'var(--board-text)',
         borderRadius: 3,
         fontSize: big ? 22 : 12,
         fontWeight: 700,
@@ -127,7 +137,14 @@ export function BoardStage(props: StageProps) {
     </span>
   );
   return (
-    <div style={{ background: '#1F2327', borderRadius: 4, padding: '20px 16px', color: '#F7F7F5' }}>
+    <div
+      style={{
+        background: 'var(--board-bg)',
+        borderRadius: 4,
+        padding: '20px 16px',
+        color: 'var(--board-text)',
+      }}
+    >
       <div
         style={{
           display: 'flex',
@@ -135,7 +152,7 @@ export function BoardStage(props: StageProps) {
           fontSize: 12,
           letterSpacing: '.08em',
           textTransform: 'uppercase',
-          color: '#B8BEC6',
+          color: 'var(--board-text-muted)',
           marginBottom: 12,
         }}
       >
@@ -150,7 +167,7 @@ export function BoardStage(props: StageProps) {
       <div style={{ display: 'flex', gap: 3, flexWrap: 'nowrap', overflow: 'hidden' }}>
         {cellsOf(name).map((c, i) => cell(c, i, true))}
       </div>
-      <p style={{ margin: '14px 0 0', fontSize: 12, color: '#B8BEC6' }}>
+      <p style={{ margin: '14px 0 0', fontSize: 12, color: 'var(--board-text-muted)' }}>
         {announced
           ? t('wheel.boardArrived')
           : animating
@@ -180,8 +197,12 @@ export function SignalStage(props: StageProps) {
               alignItems: 'center',
               padding: '10px 12px',
               borderRadius: 4,
-              background: stop ? '#FBE9EE' : hot ? '#F1F2F4' : 'transparent',
-              border: `1px solid ${stop ? '#F0C3CF' : 'transparent'}`,
+              background: stop
+                ? 'color-mix(in srgb, var(--danger-text) 16%, var(--surface-2))'
+                : hot
+                  ? 'var(--surface)'
+                  : 'transparent',
+              border: `1px solid ${stop ? 'color-mix(in srgb, var(--danger-text) 40%, var(--surface-2))' : 'transparent'}`,
               transition: 'background .12s',
             }}
           >
@@ -191,8 +212,14 @@ export function SignalStage(props: StageProps) {
                 width: 20,
                 height: 20,
                 borderRadius: '50%',
-                background: stop ? '#EC0016' : hot && animating ? '#C97A00' : '#1E7A46',
-                boxShadow: stop ? '0 0 0 4px #F0C3CF' : 'none',
+                background: stop
+                  ? 'var(--danger-text)'
+                  : hot && animating
+                    ? 'var(--warn)'
+                    : 'var(--success)',
+                boxShadow: stop
+                  ? '0 0 0 4px color-mix(in srgb, var(--danger-text) 30%, var(--surface-2))'
+                  : 'none',
                 transition: 'background .12s',
               }}
             />
@@ -212,7 +239,7 @@ export function SignalStage(props: StageProps) {
                 style={{
                   flex: 1,
                   height: 2,
-                  background: hot ? '#1F2327' : '#D9DDE2',
+                  background: hot ? 'var(--text)' : 'var(--border)',
                   position: 'relative',
                   minWidth: 24,
                   transition: 'background .12s',
@@ -226,7 +253,7 @@ export function SignalStage(props: StageProps) {
                       top: -5,
                       width: 22,
                       height: 12,
-                      background: '#1F2327',
+                      background: 'var(--text)',
                       borderRadius: 2,
                     }}
                   />
@@ -237,7 +264,11 @@ export function SignalStage(props: StageProps) {
               style={{
                 fontSize: 12,
                 fontWeight: 700,
-                color: stop ? '#EC0016' : hot && animating ? '#8A4B00' : '#1E7A46',
+                color: stop
+                  ? 'var(--danger-text)'
+                  : hot && animating
+                    ? 'var(--warn)'
+                    : 'var(--success)',
                 whiteSpace: 'nowrap',
               }}
             >
@@ -276,9 +307,9 @@ export function StampStage(props: StageProps) {
             style={{
               position: 'relative',
               padding: '14px 14px 12px',
-              border: `1px ${hot && !hit ? 'dashed #EC0016' : 'solid #D9DDE2'}`,
+              border: `1px ${hot && !hit ? 'dashed var(--danger-text)' : 'solid var(--border)'}`,
               borderRadius: 4,
-              background: '#fff',
+              background: 'var(--surface-2)',
               minHeight: 92,
               transition: 'border-color .12s',
               transform: hot && animating ? 'translateY(-2px)' : 'none',
@@ -290,7 +321,7 @@ export function StampStage(props: StageProps) {
                 fontSize: 10,
                 letterSpacing: '.08em',
                 textTransform: 'uppercase',
-                color: '#5C646C',
+                color: 'var(--text-muted)',
               }}
             >
               {t('wheel.ticketLabel')}
@@ -307,7 +338,7 @@ export function StampStage(props: StageProps) {
             >
               {p.name}
             </p>
-            <p style={{ margin: '2px 0 0', fontSize: 12, color: '#5C646C' }}>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
               {percent(p.weight / total)}
             </p>
             {hit && (
@@ -317,16 +348,16 @@ export function StampStage(props: StageProps) {
                   right: 8,
                   top: 22,
                   padding: '4px 8px',
-                  border: '3px solid #EC0016',
+                  border: '3px solid var(--danger-text)',
                   borderRadius: 4,
-                  color: '#EC0016',
+                  color: 'var(--danger-text)',
                   fontWeight: 800,
                   fontSize: 14,
                   letterSpacing: '.1em',
                   textTransform: 'uppercase',
                   transform: 'rotate(-8deg)',
                   animation: 'sr-stamp .45s cubic-bezier(.2,.8,.2,1) both',
-                  background: 'rgba(255,255,255,.85)',
+                  background: 'color-mix(in srgb, var(--surface-2) 85%, transparent)',
                 }}
               >
                 {t('common.guilty')}
@@ -361,8 +392,8 @@ export function TrainStage(props: StageProps) {
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 4,
-        border: '1px solid #D9DDE2',
-        background: '#fff',
+        border: '1px solid var(--border)',
+        background: 'var(--surface-2)',
       }}
     >
       <div
@@ -372,18 +403,18 @@ export function TrainStage(props: StageProps) {
           alignItems: 'baseline',
           gap: 12,
           padding: '12px 16px',
-          borderBottom: '1px solid #E3E6EA',
+          borderBottom: '1px solid var(--border)',
           fontSize: 12,
           textTransform: 'uppercase',
           letterSpacing: '.06em',
-          color: '#5C646C',
+          color: 'var(--text-muted)',
         }}
       >
         <span>{t('wheel.poolPrefix', { pool: poolLabel ?? t('common.all') })}</span>
         <span
           style={{
             fontWeight: 700,
-            color: moving || arrived ? kind.color : '#5C646C',
+            color: moving || arrived ? kind.color : 'var(--text-muted)',
             textTransform: 'none',
             letterSpacing: 0,
             fontSize: 14,
@@ -397,7 +428,7 @@ export function TrainStage(props: StageProps) {
           position: 'relative',
           height: 170,
           overflow: 'hidden',
-          background: 'linear-gradient(#fff 0 68%, #EEF0F2 68% 100%)',
+          background: 'linear-gradient(var(--surface-2) 0 68%, var(--surface) 68% 100%)',
         }}
       >
         <div
@@ -408,7 +439,7 @@ export function TrainStage(props: StageProps) {
             right: 0,
             top: 138,
             height: 3,
-            background: '#8A9199',
+            background: 'var(--border-strong)',
           }}
         />
         <div
@@ -419,7 +450,7 @@ export function TrainStage(props: StageProps) {
             right: 0,
             top: 146,
             height: 3,
-            background: '#8A9199',
+            background: 'var(--border-strong)',
           }}
         />
         <div
@@ -436,8 +467,11 @@ export function TrainStage(props: StageProps) {
           }}
         >
           {Array.from({ length: 40 }, (_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static decoration, order never changes.
-            <span key={i} style={{ flex: 'none', width: 8, height: 22, background: '#B8BEC6' }} />
+            <span
+              // biome-ignore lint/suspicious/noArrayIndexKey: static decoration, order never changes.
+              key={i}
+              style={tieStyle}
+            />
           ))}
         </div>
         <div
@@ -478,7 +512,7 @@ export function TrainStage(props: StageProps) {
             gap: 8,
             height: 26,
             padding: '0 10px',
-            background: '#1F2327',
+            background: 'var(--board-bg)',
             borderRadius: 3,
             fontFamily: mono,
             fontSize: 13,
@@ -488,7 +522,7 @@ export function TrainStage(props: StageProps) {
             zIndex: 2,
           }}
         >
-          <span style={{ fontSize: 10, color: '#B8BEC6', fontWeight: 600 }}>
+          <span style={{ fontSize: 10, color: 'var(--board-text-muted)', fontWeight: 600 }}>
             {t('wheel.targetLabel')}
           </span>
           <span
@@ -497,7 +531,7 @@ export function TrainStage(props: StageProps) {
               whiteSpace: 'nowrap',
               overflow: 'hidden',
               textOverflow: 'ellipsis',
-              color: arrived ? '#FFB84D' : '#F7F7F5',
+              color: arrived ? 'var(--board-accent)' : 'var(--board-text)',
               animation: moving || arrived ? 'sr-flap .18s ease-out' : 'none',
             }}
           >
@@ -510,8 +544,8 @@ export function TrainStage(props: StageProps) {
           margin: 0,
           padding: '10px 16px',
           fontSize: 12,
-          color: '#5C646C',
-          borderTop: '1px solid #E3E6EA',
+          color: 'var(--text-muted)',
+          borderTop: '1px solid var(--border)',
         }}
       >
         {arrived
@@ -546,8 +580,8 @@ export function TimetableStage(props: StageProps) {
         height: rowH * 3,
         overflow: 'hidden',
         borderRadius: 4,
-        border: '1px solid #D9DDE2',
-        background: '#fff',
+        border: '1px solid var(--border)',
+        background: 'var(--surface-2)',
       }}
     >
       <div
@@ -558,9 +592,11 @@ export function TimetableStage(props: StageProps) {
           right: 0,
           top: rowH,
           height: rowH,
-          borderTop: `2px solid ${announced ? '#EC0016' : '#1F2327'}`,
-          borderBottom: `2px solid ${announced ? '#EC0016' : '#1F2327'}`,
-          background: announced ? 'rgba(236,0,22,.06)' : 'transparent',
+          borderTop: `2px solid ${announced ? 'var(--danger-text)' : 'var(--text)'}`,
+          borderBottom: `2px solid ${announced ? 'var(--danger-text)' : 'var(--text)'}`,
+          background: announced
+            ? 'color-mix(in srgb, var(--danger-text) 8%, transparent)'
+            : 'transparent',
           zIndex: 2,
           pointerEvents: 'none',
           transition: 'border-color .3s',
@@ -583,11 +619,11 @@ export function TimetableStage(props: StageProps) {
               gap: 12,
               alignItems: 'center',
               padding: '0 16px',
-              borderBottom: '1px solid #EEF0F2',
+              borderBottom: '1px solid var(--border)',
               fontVariantNumeric: 'tabular-nums',
             }}
           >
-            <span style={{ fontFamily: mono, fontSize: 13, color: '#5C646C' }}>
+            <span style={{ fontFamily: mono, fontSize: 13, color: 'var(--text-muted)' }}>
               {`${String(8 + Math.floor(k / 4)).padStart(2, '0')}:${String((k * 15) % 60).padStart(2, '0')}`}
             </span>
             <span
@@ -600,7 +636,7 @@ export function TimetableStage(props: StageProps) {
             >
               {participants[i]?.name}
             </span>
-            <span style={{ fontSize: 12, color: '#5C646C' }}>
+            <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>
               {percent((participants[i]?.weight ?? 0) / total)}
             </span>
           </div>
@@ -627,7 +663,8 @@ export function LineStage(props: StageProps) {
     ? Number(BigInt(`0x${result.reveal.digest.slice(0, 16)}`) % BigInt(total)) / total
     : 0;
   const pos = animating || announced ? frac * 100 : 0;
-  const segBg = (i: number) => (announced && i === ci ? '#EC0016' : i % 2 ? '#E3E6EA' : '#F1F2F4');
+  const segBg = (i: number) =>
+    announced && i === ci ? 'var(--danger-text)' : i % 2 ? 'var(--border)' : 'var(--surface)';
   return (
     <div style={{ padding: '28px 8px 8px' }}>
       <div style={{ position: 'relative', height: 44 }}>
@@ -637,7 +674,7 @@ export function LineStage(props: StageProps) {
             height: 44,
             borderRadius: 4,
             overflow: 'hidden',
-            border: '1px solid #B8BEC6',
+            border: '1px solid var(--border-strong)',
           }}
         >
           {segs.map((g) => (
@@ -647,7 +684,7 @@ export function LineStage(props: StageProps) {
               style={{
                 width: `${g.w * 100}%`,
                 background: segBg(g.i),
-                borderRight: '1px solid #fff',
+                borderRight: '1px solid var(--surface-2)',
                 transition: 'background .3s',
               }}
             />
@@ -672,10 +709,10 @@ export function LineStage(props: StageProps) {
               height: 0,
               borderLeft: '8px solid transparent',
               borderRight: '8px solid transparent',
-              borderTop: '12px solid #1F2327',
+              borderTop: '12px solid var(--text)',
             }}
           />
-          <span style={{ width: 3, height: 56, background: '#1F2327', marginTop: -1 }} />
+          <span style={{ width: 3, height: 56, background: 'var(--text)', marginTop: -1 }} />
         </div>
       </div>
       <ul
@@ -696,7 +733,7 @@ export function LineStage(props: StageProps) {
             alignItems: 'center',
             gap: 8,
             fontWeight: win ? 700 : 500,
-            color: win ? '#EC0016' : '#1F2327',
+            color: win ? 'var(--danger-text)' : 'var(--text)',
           };
           return (
             <li key={g.p.memberId} style={itemStyle}>
@@ -706,19 +743,21 @@ export function LineStage(props: StageProps) {
                   width: 12,
                   height: 12,
                   borderRadius: 2,
-                  background: win ? '#EC0016' : segBg(g.i),
-                  border: '1px solid #B8BEC6',
+                  background: win ? 'var(--danger-text)' : segBg(g.i),
+                  border: '1px solid var(--border-strong)',
                 }}
               />
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {g.p.name}
               </span>
-              <span style={{ marginLeft: 'auto', color: '#5C646C' }}>{percent(g.w)}</span>
+              <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{percent(g.w)}</span>
             </li>
           );
         })}
       </ul>
-      <p style={{ margin: '12px 0 0', fontSize: 12, color: '#5C646C' }}>{t('wheel.lineNote')}</p>
+      <p style={{ margin: '12px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>
+        {t('wheel.lineNote')}
+      </p>
     </div>
   );
 }

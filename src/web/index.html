@@ -3,11 +3,21 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#282d37" />
+    <meta name="theme-color" content="#f0f3f5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17181a" media="(prefers-color-scheme: dark)" />
     <title>Schuldrad</title>
     <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
     <link rel="icon" href="%BASE_URL%icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="%BASE_URL%icon.svg" />
+    <script>
+      // Sync with src/web/theme.ts: set data-theme before first paint so
+      // there is no flash of the wrong theme. System mode leaves the
+      // attribute unset and relies on the prefers-color-scheme CSS.
+      try {
+        const t = localStorage.getItem('schuldrad.theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (_e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>

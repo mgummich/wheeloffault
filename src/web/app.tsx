@@ -1,4 +1,5 @@
 import { href, useRoute } from './route.ts';
+import { type Theme, useTheme } from './theme.ts';
 import { useTeam } from './useTeam.ts';
 import { FairnessPage } from './views/FairnessPage.tsx';
 import { HomePage } from './views/HomePage.tsx';
@@ -20,6 +21,7 @@ export function App() {
         </a>
         {route.page !== 'home' && <TeamNav teamId={route.teamId} page={route.page} />}
         <LangSwitch />
+        <ThemeSwitch />
       </header>
       <main className="container">
         {route.page === 'home' ? <HomePage /> : <TeamRoutes route={route} />}
@@ -49,6 +51,33 @@ function LangSwitch() {
       {option('de', 'DE')}
       <span aria-hidden="true">|</span>
       {option('en', 'EN')}
+    </div>
+  );
+}
+
+/** Three-state control-panel toggle next to the language switch: system /
+ * light / dark, persisted in localStorage via theme.ts. */
+function ThemeSwitch() {
+  const { theme, setTheme } = useTheme();
+  const { t } = useI18n();
+  const option = (value: Theme, label: string) => (
+    <button
+      type="button"
+      className={`theme-option${theme === value ? ' active' : ''}`}
+      aria-pressed={theme === value}
+      onClick={() => setTheme(value)}
+    >
+      {label}
+    </button>
+  );
+  return (
+    <div className="theme-switch">
+      <span className="visually-hidden">{t('theme.ariaLabel')}</span>
+      {option('system', t('theme.system'))}
+      <span aria-hidden="true">|</span>
+      {option('light', t('theme.light'))}
+      <span aria-hidden="true">|</span>
+      {option('dark', t('theme.dark'))}
     </div>
   );
 }
