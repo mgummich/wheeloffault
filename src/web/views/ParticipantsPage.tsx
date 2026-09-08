@@ -76,7 +76,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
               data-testid="add-member-input"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              maxLength={60}
+              maxLength={MAX_NAME}
               required
               aria-describedby={error ? 'participants-error' : undefined}
             />
@@ -324,7 +324,7 @@ function Pools({
               <input
                 value={renaming.name}
                 onChange={(e) => setRenaming({ poolId: pool.poolId, name: e.target.value })}
-                maxLength={60}
+                maxLength={MAX_NAME}
                 required
                 // biome-ignore lint/a11y/noAutofocus: the form appears on explicit request; focus belongs in it.
                 autoFocus
@@ -375,7 +375,12 @@ function Pools({
       <form onSubmit={create} className="stack">
         <label className="field">
           <span className="label">{t('participants.newPoolLabel')}</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} required />
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            maxLength={MAX_NAME}
+            required
+          />
         </label>
         <div className="checks">
           {team.members.map((m) => (

@@ -63,84 +63,39 @@ function contrast(hexA: string, hexB: string): number {
 const AA_NORMAL = 4.5;
 const AA_LARGE = 3;
 
+// [description, foreground token, background token, minimum ratio]
+const PAIR_CHECKS: [string, string, string, number][] = [
+  ['body text on page background', 'text', 'bg', AA_NORMAL],
+  ['muted text on page background', 'text-muted', 'bg', AA_NORMAL],
+  ['body text on surface', 'text', 'surface', AA_NORMAL],
+  ['body text on surface-2 (cards, inputs, dialogs)', 'text', 'surface-2', AA_NORMAL],
+  ['danger text on page background', 'danger-text', 'bg', AA_NORMAL],
+  ['success text on page background', 'success', 'bg', AA_NORMAL],
+  ['warn text on page background', 'warn', 'bg', AA_NORMAL],
+  ['link text on page background', 'link', 'bg', AA_NORMAL],
+  ['border-strong (input/button/chip borders) on page background', 'border-strong', 'bg', AA_LARGE],
+  ['focus ring on page background', 'focus', 'bg', AA_LARGE],
+];
+
+const BOARD_CHECKS: [string, string, string, number][] = [
+  ['board-text on board-bg', 'board-text', 'board-bg', AA_NORMAL],
+  ['board-text-muted on board-bg', 'board-text-muted', 'board-bg', AA_NORMAL],
+  ['board-accent on board-bg', 'board-accent', 'board-bg', AA_NORMAL],
+  ['accent-contrast text on accent background (buttons)', 'accent-contrast', 'accent', AA_NORMAL],
+];
+
 describe('theme contrast (WCAG 2.2 AA)', () => {
   describe.each([
     ['light', light],
     ['dark', dark],
   ])('%s theme', (_name, tokens) => {
-    it('body text on page background is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'text'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(AA_NORMAL);
-    });
-
-    it('muted text on page background is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'text-muted'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(
-        AA_NORMAL,
-      );
-    });
-
-    it('body text on surface is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'text'), tok(tokens, 'surface'))).toBeGreaterThanOrEqual(
-        AA_NORMAL,
-      );
-    });
-
-    it('body text on surface-2 (cards, inputs, dialogs) is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'text'), tok(tokens, 'surface-2'))).toBeGreaterThanOrEqual(
-        AA_NORMAL,
-      );
-    });
-
-    it('danger text on page background is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'danger-text'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(
-        AA_NORMAL,
-      );
-    });
-
-    it('success text on page background is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'success'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(AA_NORMAL);
-    });
-
-    it('warn text on page background is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'warn'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(AA_NORMAL);
-    });
-
-    it('link text on page background is >= 4.5:1', () => {
-      expect(contrast(tok(tokens, 'link'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(AA_NORMAL);
-    });
-
-    it('border-strong (input/button/chip borders) on page background is >= 3:1 (UI component)', () => {
-      expect(contrast(tok(tokens, 'border-strong'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(
-        AA_LARGE,
-      );
-    });
-
-    it('focus ring on page background is >= 3:1 (UI component)', () => {
-      expect(contrast(tok(tokens, 'focus'), tok(tokens, 'bg'))).toBeGreaterThanOrEqual(AA_LARGE);
+    it.each(PAIR_CHECKS)('%s is >= the required ratio', (_desc, fg, bg, min) => {
+      expect(contrast(tok(tokens, fg), tok(tokens, bg))).toBeGreaterThanOrEqual(min);
     });
   });
 
-  it('board chrome: board-text on board-bg is >= 4.5:1', () => {
-    expect(contrast(tok(light, 'board-text'), tok(light, 'board-bg'))).toBeGreaterThanOrEqual(
-      AA_NORMAL,
-    );
-  });
-
-  it('board chrome: board-text-muted on board-bg is >= 4.5:1', () => {
-    expect(contrast(tok(light, 'board-text-muted'), tok(light, 'board-bg'))).toBeGreaterThanOrEqual(
-      AA_NORMAL,
-    );
-  });
-
-  it('board chrome: board-accent on board-bg is >= 4.5:1', () => {
-    expect(contrast(tok(light, 'board-accent'), tok(light, 'board-bg'))).toBeGreaterThanOrEqual(
-      AA_NORMAL,
-    );
-  });
-
-  it('accent-contrast text on accent background (buttons) is >= 4.5:1', () => {
-    expect(contrast(tok(light, 'accent-contrast'), tok(light, 'accent'))).toBeGreaterThanOrEqual(
-      AA_NORMAL,
-    );
+  it.each(BOARD_CHECKS)('board chrome: %s is >= 4.5:1', (_desc, fg, bg, min) => {
+    expect(contrast(tok(light, fg), tok(light, bg))).toBeGreaterThanOrEqual(min);
   });
 
   it('light and dark disagree on bg (themes are actually different)', () => {

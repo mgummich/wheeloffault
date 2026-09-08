@@ -4,7 +4,7 @@ import { ApiError } from './apiError.ts';
 import type { Api } from './serverApi.ts';
 
 /** A refresh mid-reveal must retry with the same client seed, otherwise the server (rightly) refuses. */
-export function clientSeedFor(spinId: string): string {
+function clientSeedFor(spinId: string): string {
   const key = `schuldrad.clientSeed.${spinId}`;
   try {
     const existing = sessionStorage.getItem(key);

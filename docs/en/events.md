@@ -100,41 +100,26 @@ dialect, below). Most changes only need one.
 4. Never touch the type or payload shape of an event already described in
    § 1 in a way that changes what an *old, stored* instance means.
 
-### Storage-level: SQLite
+### Storage-level: SQLite and Postgres
 
-`src/server/migrations.ts` holds a numbered, append-only list. Each entry
-is `{ id, sql }`, applied once inside its own transaction, and recorded in
-`schema_migrations` so it never runs twice. To add one:
+`src/server/migrations.ts` holds a numbered, append-only list. Each entry is
+`{ id, sql, pgSql }` — `sql` runs against SQLite, `pgSql` against Postgres —
+applied once inside its own transaction, and recorded in `schema_migrations`
+so it never runs twice. Write each dialect's SQL literally; there is no
+rewriting between them. To add one:
 
 ```ts
 {
   id: '002_whatever',
   sql: `ALTER TABLE events ADD COLUMN whatever TEXT;`,
+  pgSql: `ALTER TABLE events ADD COLUMN whatever TEXT;`,
 }
 ```
 
 Append a new entry with the next number. **Never edit a migration that has
 already shipped** — a migration that ran differently on different
 deployments is worse than one that never ran. If a shipped migration was
-wrong, ship a corrective migration.
-
-### Storage-level: Postgres
-
-Postgres uses the same logical `events` table and the same migration list —
-`payload` is `JSONB` there instead of SQLite's `TEXT`, and `position` is
-`BIGSERIAL` instead of `INTEGER PRIMARY KEY AUTOINCREMENT`, but the
-migration mechanism (numbered, transactional, recorded in
-`schema_migrations`, append-only) is identical. There is no per-migration
-branching: `toPostgresMigration()` in `src/server/postgresEventStore.ts`
-centrally rewrites each migration's SQL with a small table of regexes (e.g.
-`INTEGER PRIMARY KEY AUTOINCREMENT` → `BIGSERIAL PRIMARY KEY`) before it
-runs. A rule that doesn't match a given migration is simply skipped — most
-migrations, like a plain `ADD COLUMN ... TEXT`, are valid in both dialects
-and need no rewriting at all. What it will not do is let a SQLite-only
-construct through unnoticed: after porting, if a known SQLite-ism (e.g. a
-residual `AUTOINCREMENT`) is still present, it throws rather than run
-invalid SQL against Postgres. If a future migration needs a genuinely new
-rewrite, add a rule to that table. See `EVENT_STORE=postgres` in
+wrong, ship a corrective migration. See `EVENT_STORE=postgres` in
 [deployment.md](deployment.md) for how the dialect is selected at runtime.
 
 ## § 5 Why not just snapshot?

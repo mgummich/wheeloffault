@@ -28,6 +28,9 @@ const MAX_BODY = 64 * 1024;
 export const MAX_SSE_CLIENTS_PER_TEAM = 100;
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
 
+/** Validates the `:teamId` route param — every handler below needs it. */
+const teamIdOf = (p: Record<string, string>) => id(p.teamId ?? '');
+
 /**
  * Plain node:http. ~15 routes do not justify a framework. Routes are declared
  * with `:param` placeholders and matched in order.
@@ -158,14 +161,13 @@ export function createHttpServer(
     // burst of concurrent connections can't all pass the check before any of
     // them is counted. This also counts a request whose body fails to parse
     // as JSON, which is correct: it's still an attempt against this IP.
-    const attempt = auth.recordAttempt(ip);
+    auth.recordAttempt(ip);
     const body = asObject(await readJson(req));
     const password = str(body, 'password', 200);
     if (!(await auth.verify(password))) {
       json(res, 401, { error: 'Invalid password', code: 'invalid_password' });
       return;
     }
-    auth.clearAttempt(ip, attempt);
     const sid = auth.createSession();
     res.setHeader('set-cookie', sessionCookieHeader(sid, auth.secureCookie(req)));
     res.writeHead(204);
@@ -196,29 +198,21 @@ export function createHttpServer(
   });
 
   route('GET', '/api/teams/:teamId', async (_req, res, p) =>
-    json(res, 200, teamView(await commands.loadTeam(id(p.teamId ?? '')))),
+    json(res, 200, teamView(await commands.loadTeam(teamIdOf(p)))),
   );
 
   route('POST', '/api/teams/:teamId/members', async (req, res, p) => {
     const body = asObject(await readJson(req));
     const names = body.names !== undefined ? strArray(body, 'names') : [str(body, 'name', 100)];
-    json(res, 200, teamView(await commands.addMembers(id(p.teamId ?? ''), names)));
+    json(res, 200, teamView(await commands.addMembers(teamIdOf(p), names)));
   });
 
   route('POST', '/api/teams/:teamId/members/:memberId/deactivate', async (_req, res, p) =>
-    json(
-      res,
-      200,
-      teamView(await commands.deactivateMember(id(p.teamId ?? ''), id(p.memberId ?? ''))),
-    ),
+    json(res, 200, teamView(await commands.deactivateMember(teamIdOf(p), id(p.memberId ?? '')))),
   );
 
   route('POST', '/api/teams/:teamId/members/:memberId/reactivate', async (_req, res, p) =>
-    json(
-      res,
-      200,
-      teamView(await commands.reactivateMember(id(p.teamId ?? ''), id(p.memberId ?? ''))),
-    ),
+    json(res, 200, teamView(await commands.reactivateMember(teamIdOf(p), id(p.memberId ?? '')))),
   );
 
   route('POST', '/api/teams/:teamId/members/:memberId/immunity', async (req, res, p) => {
@@ -228,7 +222,7 @@ export function createHttpServer(
       200,
       teamView(
         await commands.grantImmunity(
-          id(p.teamId ?? ''),
+          teamIdOf(p),
           id(p.memberId ?? ''),
           optionalStr(body, 'reason', 200) ?? '',
         ),
@@ -237,13 +231,13 @@ export function createHttpServer(
   });
 
   route('GET', '/api/teams/:teamId/members/:memberId/report', async (_req, res, p) =>
-    json(res, 200, memberReport(await commands.loadTeam(id(p.teamId ?? '')), id(p.memberId ?? ''))),
+    json(res, 200, memberReport(await commands.loadTeam(teamIdOf(p)), id(p.memberId ?? ''))),
   );
 
   route('PUT', '/api/teams/:teamId/policy', async (req, res, p) => {
     const body = await readJson(req);
     assertPolicy(body);
-    json(res, 200, teamView(await commands.changePolicy(id(p.teamId ?? ''), body)));
+    json(res, 200, teamView(await commands.changePolicy(teamIdOf(p), body)));
   });
 
   route('POST', '/api/teams/:teamId/pools', async (req, res, p) => {
@@ -253,7 +247,7 @@ export function createHttpServer(
       200,
       teamView(
         await commands.createPool(
-          id(p.teamId ?? ''),
+          teamIdOf(p),
           str(body, 'name', 100),
           strArray(body, 'memberIds').map((m) => id(m)),
         ),
@@ -268,7 +262,7 @@ export function createHttpServer(
       200,
       teamView(
         await commands.changePoolMembers(
-          id(p.teamId ?? ''),
+          teamIdOf(p),
           id(p.poolId ?? ''),
           strArray(body, 'memberIds').map((m) => id(m)),
         ),
@@ -281,22 +275,16 @@ export function createHttpServer(
     json(
       res,
       200,
-      teamView(
-        await commands.renamePool(id(p.teamId ?? ''), id(p.poolId ?? ''), str(body, 'name', 100)),
-      ),
+      teamView(await commands.renamePool(teamIdOf(p), id(p.poolId ?? ''), str(body, 'name', 100))),
     );
   });
 
   route('DELETE', '/api/teams/:teamId/pools/:poolId', async (_req, res, p) =>
-    json(res, 200, teamView(await commands.deletePool(id(p.teamId ?? ''), id(p.poolId ?? '')))),
+    json(res, 200, teamView(await commands.deletePool(teamIdOf(p), id(p.poolId ?? '')))),
   );
 
   route('DELETE', '/api/teams/:teamId/members/:memberId/immunity', async (_req, res, p) =>
-    json(
-      res,
-      200,
-      teamView(await commands.revokeImmunity(id(p.teamId ?? ''), id(p.memberId ?? ''))),
-    ),
+    json(res, 200, teamView(await commands.revokeImmunity(teamIdOf(p), id(p.memberId ?? '')))),
   );
 
   route('POST', '/api/teams/:teamId/spins', async (req, res, p) => {
@@ -304,7 +292,7 @@ export function createHttpServer(
     const spinId = id(str(body, 'spinId', 64), 'spinId');
     const poolId = optionalStr(body, 'poolId', 64);
     const { spin } = await commands.commitSpin(
-      id(p.teamId ?? ''),
+      teamIdOf(p),
       spinId,
       poolId ? id(poolId, 'poolId') : null,
     );
@@ -314,7 +302,7 @@ export function createHttpServer(
   route('POST', '/api/teams/:teamId/spins/:spinId/reveal', async (req, res, p) => {
     const body = asObject(await readJson(req));
     const { spin } = await commands.revealSpin(
-      id(p.teamId ?? ''),
+      teamIdOf(p),
       id(p.spinId ?? '', 'spinId'),
       str(body, 'clientSeed', 200),
     );
@@ -328,7 +316,7 @@ export function createHttpServer(
       200,
       teamView(
         await commands.appealGuilt(
-          id(p.teamId ?? ''),
+          teamIdOf(p),
           id(p.spinId ?? '', 'spinId'),
           str(body, 'reason', 500),
         ),
@@ -340,9 +328,7 @@ export function createHttpServer(
     json(
       res,
       200,
-      teamView(
-        await commands.decideAppeal(id(p.teamId ?? ''), id(p.spinId ?? '', 'spinId'), 'upheld'),
-      ),
+      teamView(await commands.decideAppeal(teamIdOf(p), id(p.spinId ?? '', 'spinId'), 'upheld')),
     ),
   );
 
@@ -350,14 +336,12 @@ export function createHttpServer(
     json(
       res,
       200,
-      teamView(
-        await commands.decideAppeal(id(p.teamId ?? ''), id(p.spinId ?? '', 'spinId'), 'rejected'),
-      ),
+      teamView(await commands.decideAppeal(teamIdOf(p), id(p.spinId ?? '', 'spinId'), 'rejected')),
     ),
   );
 
   route('GET', '/api/teams/:teamId/events', async (req, res, p) => {
-    const teamId = id(p.teamId ?? '');
+    const teamId = teamIdOf(p);
     const sid = parseSessionCookie(req);
     await commands.loadTeam(teamId); // 404 for unknown teams
     // Re-validate: the await above is a window where a logout could have

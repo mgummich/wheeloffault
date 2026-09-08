@@ -109,17 +109,20 @@ Dialekt, unten). Die meisten Änderungen brauchen nur eine davon.
 4. Nie Typ oder Payload-Form eines in § 1 beschriebenen Events so ändern,
    dass sich die Bedeutung einer *alten, gespeicherten* Instanz ändert.
 
-### Speicherebene: SQLite
+### Speicherebene: SQLite und Postgres
 
 `src/server/migrations.ts` enthält eine nummerierte, nur anhängbare Liste.
-Jeder Eintrag ist `{ id, sql }`, wird einmal in eigener Transaktion
-angewendet und in `schema_migrations` protokolliert, damit er nie zweimal
-läuft. Zum Hinzufügen:
+Jeder Eintrag ist `{ id, sql, pgSql }` — `sql` läuft gegen SQLite, `pgSql`
+gegen Postgres —, wird einmal in eigener Transaktion angewendet und in
+`schema_migrations` protokolliert, damit er nie zweimal läuft. Jeder Dialekt
+wird wörtlich ausgeschrieben; es gibt keine Umschreibung zwischen ihnen. Zum
+Hinzufügen:
 
 ```ts
 {
   id: '002_irgendwas',
   sql: `ALTER TABLE events ADD COLUMN irgendwas TEXT;`,
+  pgSql: `ALTER TABLE events ADD COLUMN irgendwas TEXT;`,
 }
 ```
 
@@ -127,28 +130,7 @@ Einen neuen Eintrag mit der nächsten Nummer anhängen. **Eine bereits
 ausgelieferte Migration wird nie editiert** — eine Migration, die auf
 verschiedenen Deployments unterschiedlich gelaufen ist, ist schlimmer als
 eine, die nie gelaufen ist. War eine ausgelieferte Migration falsch, wird
-eine korrigierende Migration ausgeliefert.
-
-### Speicherebene: Postgres
-
-Postgres nutzt dieselbe logische `events`-Tabelle und dieselbe
-Migrationsliste — `payload` ist dort `JSONB` statt SQLites `TEXT`, und
-`position` ist `BIGSERIAL` statt `INTEGER PRIMARY KEY AUTOINCREMENT`, aber
-der Migrationsmechanismus (nummeriert, transaktional, in
-`schema_migrations` protokolliert, nur anhängbar) ist identisch. Es gibt
-keine Verzweigung pro Migration: `toPostgresMigration()` in
-`src/server/postgresEventStore.ts` schreibt das SQL jeder Migration zentral
-anhand einer kleinen Tabelle von Regexes um (z. B.
-`INTEGER PRIMARY KEY AUTOINCREMENT` → `BIGSERIAL PRIMARY KEY`), bevor es
-läuft. Eine Regel, die auf eine gegebene Migration nicht zutrifft, wird
-einfach übersprungen — die meisten Migrationen, etwa ein einfaches
-`ADD COLUMN ... TEXT`, sind in beiden Dialekten gültig und brauchen gar
-keine Umschreibung. Was nicht passiert: ein rein SQLite-spezifisches
-Konstrukt unbemerkt durchzulassen — steht nach dem Umschreiben noch ein
-bekanntes SQLite-Idiom (z. B. ein verbliebenes `AUTOINCREMENT`) im SQL,
-wird geworfen, statt ungültiges SQL gegen Postgres auszuführen. Braucht
-eine künftige Migration eine wirklich neue Umschreibung, wird dieser
-Tabelle eine Regel hinzugefügt. Siehe `EVENT_STORE=postgres` in
+eine korrigierende Migration ausgeliefert. Siehe `EVENT_STORE=postgres` in
 [deployment.md](deployment.md) dazu, wie der Dialekt zur Laufzeit gewählt
 wird.
 

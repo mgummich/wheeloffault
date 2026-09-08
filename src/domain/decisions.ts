@@ -10,7 +10,7 @@ import { findMember, findSpin, type TeamState } from './team.ts';
 
 export const MAX_NAME = 60;
 
-export function cleanName(raw: string): string {
+function cleanName(raw: string): string {
   const name = raw.trim().replace(/\s+/g, ' ');
   if (name.length === 0) throw new DomainError('Name must not be empty', 'name_empty');
   if (name.length > MAX_NAME) {

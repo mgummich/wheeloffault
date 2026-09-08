@@ -12,7 +12,7 @@ export function eligibleMembers(state: TeamState, poolId: string | null): Member
     .sort((a, b) => (a.memberId < b.memberId ? -1 : 1));
 }
 
-export function participantContext(state: TeamState, memberId: string): ParticipantContext {
+function participantContext(state: TeamState, memberId: string): ParticipantContext {
   const revealed = state.spins.filter((s) => s.reveal !== null);
   const participatedIndices = state.spins.flatMap((s, i) =>
     s.reveal !== null && s.participants.some((p) => p.memberId === memberId) ? [i] : [],

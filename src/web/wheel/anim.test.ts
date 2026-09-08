@@ -51,14 +51,21 @@ describe('train kinds', () => {
     expect(picked.size).toBe(11);
   });
 
-  it('delay is 0 or within 5–44 minutes', () => {
+  it('delay is 0 or within 5–44 minutes, and both cases actually occur', () => {
+    let sawZero = false;
+    let sawNonZero = false;
     for (let i = 0; i < 500; i++) {
       const d = trainDelayFor(i);
-      if (d !== 0) {
+      if (d === 0) {
+        sawZero = true;
+      } else {
+        sawNonZero = true;
         expect(d).toBeGreaterThanOrEqual(5);
         expect(d).toBeLessThanOrEqual(44);
       }
     }
+    expect(sawZero).toBe(true);
+    expect(sawNonZero).toBe(true);
   });
 });
 

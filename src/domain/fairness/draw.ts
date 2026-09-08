@@ -8,11 +8,11 @@ import type { WeightedParticipant } from '../events.ts';
 
 const encoder = new TextEncoder();
 
-export function toHex(bytes: Uint8Array): string {
+function toHex(bytes: Uint8Array): string {
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-export function fromHex(hex: string): Uint8Array<ArrayBuffer> {
+function fromHex(hex: string): Uint8Array<ArrayBuffer> {
   if (hex.length % 2 !== 0 || /[^0-9a-f]/i.test(hex)) {
     throw new DomainError('Invalid hex', 'invalid_hex');
   }
@@ -35,7 +35,7 @@ export function canonicalJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
-export async function sha256Hex(text: string): Promise<string> {
+async function sha256Hex(text: string): Promise<string> {
   const buf = await globalThis.crypto.subtle.digest('SHA-256', encoder.encode(text));
   return toHex(new Uint8Array(buf));
 }
@@ -52,7 +52,7 @@ export async function hmacSha256Hex(keyHex: string, message: string): Promise<st
   return toHex(new Uint8Array(sig));
 }
 
-export function sortParticipants(participants: WeightedParticipant[]): WeightedParticipant[] {
+function sortParticipants(participants: WeightedParticipant[]): WeightedParticipant[] {
   // Total comparator (0 for equal memberIds, relying on Array#sort's
   // guaranteed stability) - a comparator that never returns 0 is not a
   // valid strict weak order, so a tie's result is unspecified and can vary

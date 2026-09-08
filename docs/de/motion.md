@@ -47,24 +47,12 @@ Ziehung auswirken.
 
 ## § 2a Easing-Tokens
 
-Definiert in `src/web/styles.css` unter `:root`. In der Praxis wird derzeit
-nur `--ease-mechanical` tatsächlich in CSS verwendet, und zwar nur für den
-Stempel: seine drei Verwendungen sind der Rand-/Transform-Übergang von
-`StampStage` (`stages.tsx:325`), dessen Aufprall-Animation
-(`stages.tsx:370`) und das zugehörige Keyframe in `styles.css:1080`.
-`--ease-damped` und `--ease-sharp` sind deklariert, werden aber aktuell
-sonst nirgends im Repo referenziert — kein Panel, Dialog, Drop-in oder
-Verzierung nutzt sie. Ihre beabsichtigte Semantik, für den Fall, dass sie
-künftig einmal genutzt werden:
-
-- `--ease-mechanical` (`cubic-bezier(.2,.8,.2,1)`) — scharfer Antritt,
-  gedämpftes Einrasten. Gedacht als Standard für alles, was "ankommt":
-  Panels, Stempel, Verzierungen.
-- `--ease-damped` (`cubic-bezier(.3,.7,.3,1)`) — langsamerer Antritt,
-  schwebendes Einrasten. Gedacht für schwerere Objekte, die landen
-  (Dialoge, Drop-ins).
-- `--ease-sharp` (`cubic-bezier(.4,0,.2,1)`) — entschieden, ohne
-  Nachschwingen. Gedacht für Schnapp-Bewegungen und Quittungen.
+Definiert in `src/web/styles.css` unter `:root`. `--ease-mechanical`
+(`cubic-bezier(.2,.8,.2,1)`) ist das einzige Token: scharfer Antritt,
+gedämpftes Einrasten, der Standard für alles, was "ankommt". Seine drei
+Verwendungen sind der Rand-/Transform-Übergang von `StampStage`
+(`stages.tsx:325`), dessen Aufprall-Animation (`stages.tsx:370`) und das
+zugehörige Keyframe in `styles.css:1080`.
 
 Keines davon ist eine Feder-/Bounce-Kurve. Ein Bahnrelais schwingt nicht
 nach, bevor es einrastet — es klackt in Position und bleibt dort. Wo

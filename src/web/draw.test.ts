@@ -57,20 +57,18 @@ describe('performDraw', () => {
   });
 
   it('adopts the persisted result when another browser revealed first', async () => {
+    // The team is fetched fresh; the spin we committed shows up revealed there.
+    let committed = '';
     const api = {
-      commitSpin: async (_t: string, spinId: string) => spin(spinId, false),
+      commitSpin: async (_t: string, spinId: string) => {
+        committed = spinId;
+        return spin(spinId, false);
+      },
       revealSpin: async () => {
         throw new ApiError(409, 'schon aufgedeckt', {});
       },
-      getTeam: async () => ({ spins: [spin('other', false)] }) as unknown,
+      getTeam: async () => ({ spins: [spin(committed, true)] }) as unknown,
     };
-    // The team is fetched fresh; the spin we committed shows up revealed there.
-    let committed = '';
-    api.commitSpin = async (_t: string, spinId: string) => {
-      committed = spinId;
-      return spin(spinId, false);
-    };
-    api.getTeam = async () => ({ spins: [spin(committed, true)] }) as unknown;
     const result = await performDraw(
       api as Parameters<typeof performDraw>[0],
       't1',

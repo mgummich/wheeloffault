@@ -32,7 +32,7 @@ const isInt = (n: unknown, min: number, max: number): n is number =>
   typeof n === 'number' && Number.isInteger(n) && n >= min && n <= max;
 
 /** Validates untrusted input. Returns an error message or null. */
-export function validatePolicy(input: unknown): string | null {
+function validatePolicy(input: unknown): string | null {
   if (typeof input !== 'object' || input === null) return 'policy must be an object';
   const p = input as Record<string, unknown>;
   const section = (name: string): Record<string, unknown> | null => {

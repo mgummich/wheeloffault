@@ -2,18 +2,12 @@ import type { FairnessPolicy } from '../domain/fairness/policy.ts';
 import type { MemberReport } from '../domain/projections/report.ts';
 import type { SpinView, TeamListEntry, TeamView } from '../domain/views.ts';
 
+import { apiFetch } from './apiFetch.ts';
 import { ApiError } from './apiError.ts';
 import { markUnauthenticated } from './authState.ts';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
-  // The server requires application/json on every state-changing request (CSRF
-  // defense), so send it — and a body to match — even when there's nothing to say.
-  const hasBody = method !== 'GET';
-  const res = await fetch(`/api${path}`, {
-    method,
-    headers: hasBody ? { 'content-type': 'application/json' } : {},
-    ...(hasBody ? { body: JSON.stringify(body ?? {}) } : {}),
-  });
+  const res = await apiFetch(`/api${path}`, method, body);
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
     if (res.status === 401 && data.code === 'unauthorized') markUnauthenticated();

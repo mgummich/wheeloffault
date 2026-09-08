@@ -12,6 +12,24 @@ const event: StoredEvent = {
   position: 1,
 };
 
+// Carries serverSeed, unlike `event` above — exercises the contract at
+// broadcast.ts:19 that Redis publish never leaks a pre-reveal
+// SpinCommitted.serverSeed.
+const spinCommitted: StoredEvent = {
+  type: 'SpinCommitted',
+  spinId: 's1',
+  poolId: null,
+  nonce: 1,
+  commitment: 'commitment-hash',
+  participants: [],
+  modifiers: [],
+  serverSeed: 'top-secret-seed',
+  at: '2026-01-01T00:00:00.000Z',
+  streamId: 't1',
+  version: 1,
+  position: 1,
+};
+
 class FakeRedisClient {
   published: { channel: string; message: string }[] = [];
   subscription: ((message: string) => void | Promise<void>) | null = null;
@@ -50,18 +68,17 @@ describe('broadcast hubs', () => {
     publisher.duplicate = () => subscriber;
 
     const hub = await createRedisBroadcastHub(
-      'redis://localhost:6379',
       (teamId, events) => delivered.push([teamId, events]),
       () => publisher,
       'instance-a',
     );
 
-    await hub.broadcast('t1', [event]);
-    expect(delivered).toEqual([['t1', [event]]]);
+    await hub.broadcast('t1', [spinCommitted]);
+    expect(delivered).toEqual([['t1', [spinCommitted]]]);
     expect(publisher.published).toHaveLength(1);
 
     const published = JSON.parse(publisher.published[0]?.message ?? '{}');
-    expect(published.events).toEqual([{ type: 'TeamCreated', version: 1 }]);
+    expect(published.events).toEqual([{ type: 'SpinCommitted', version: 1 }]);
     expect(published.events[0]).not.toHaveProperty('serverSeed');
 
     await subscriber.subscription?.(
@@ -86,7 +103,6 @@ describe('broadcast hubs', () => {
     publisher.duplicate = () => subscriber;
 
     const hub = await createRedisBroadcastHub(
-      'redis://localhost:6379',
       (teamId, events) => delivered.push([teamId, events]),
       () => publisher,
       'instance-a',

@@ -39,7 +39,7 @@ export type MemberReport = {
   history: HistoryEntry[];
 };
 
-export function probabilityIn(spin: Spin, memberId: string): number {
+function probabilityIn(spin: Spin, memberId: string): number {
   const total = spin.participants.reduce((s, p) => s + p.weight, 0);
   const own = spin.participants.find((p) => p.memberId === memberId)?.weight ?? 0;
   return total === 0 ? 0 : own / total;

@@ -9,9 +9,6 @@
 //
 // Usage:
 //   node scripts/verify-draw.mjs --file draw.json
-//   node scripts/verify-draw.mjs --server-seed <hex> --client-seed <str> \
-//     --nonce <n> --participants '[{"memberId":"a","weight":1000}]' \
-//     --commitment <hex> --digest <hex> --selected-member-id <id>
 //
 // Exit 0 if every check passes ("bestanden"), exit 1 otherwise ("beanstandet").
 
@@ -19,11 +16,7 @@ import { readFileSync } from 'node:fs';
 
 function usageAndExit(message) {
   if (message) console.error(`Fehler / Error: ${message}`);
-  console.error(
-    'Usage: node scripts/verify-draw.mjs --file <draw.json>\n' +
-      '   or: node scripts/verify-draw.mjs --server-seed <hex> --client-seed <str> --nonce <n> ' +
-      '--participants <json> --commitment <hex> --digest <hex> --selected-member-id <id>',
-  );
+  console.error('Usage: node scripts/verify-draw.mjs --file <draw.json>');
   process.exit(2);
 }
 
@@ -43,22 +36,8 @@ function parseArgs(argv) {
 
 const args = parseArgs(process.argv.slice(2));
 
-let record;
-if (args.file) {
-  record = JSON.parse(readFileSync(args.file, 'utf8'));
-} else if (args['server-seed']) {
-  record = {
-    serverSeed: args['server-seed'],
-    clientSeed: args['client-seed'],
-    nonce: Number(args.nonce),
-    participants: args.participants ? JSON.parse(args.participants) : undefined,
-    commitment: args.commitment,
-    digest: args.digest,
-    selectedMemberId: args['selected-member-id'],
-  };
-} else {
-  usageAndExit('provide --file <draw.json> or --server-seed and friends');
-}
+if (!args.file) usageAndExit('provide --file <draw.json>');
+const record = JSON.parse(readFileSync(args.file, 'utf8'));
 
 const {
   serverSeed,

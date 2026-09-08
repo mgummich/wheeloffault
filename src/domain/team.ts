@@ -62,7 +62,7 @@ export const emptyTeam: TeamState = {
   createdAt: '',
 };
 
-export function applyEvent(state: TeamState, e: DomainEvent): TeamState {
+function applyEvent(state: TeamState, e: DomainEvent): TeamState {
   const s = { ...state, version: state.version + 1 };
   switch (e.type) {
     case 'TeamCreated':

@@ -121,7 +121,7 @@ async function migrate(pool: pg.Pool) {
         if (applied.has(m.id)) continue;
         try {
           await client.query('BEGIN');
-          await client.query(toPostgresMigration(m.sql));
+          await client.query(m.pgSql);
           await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
             m.id,
             new Date().toISOString(),
@@ -138,37 +138,4 @@ async function migrate(pool: pg.Pool) {
   } finally {
     client.release();
   }
-}
-
-const PORTING_RULES: [RegExp, string][] = [
-  [/position\s+INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/, 'position   BIGSERIAL PRIMARY KEY'],
-  [/payload\s+TEXT\s+NOT\s+NULL/, 'payload    JSONB   NOT NULL'],
-];
-
-// SQLite-only tokens that must not survive porting. If one of these is still
-// present after applying every matching rule above, the migration contains a
-// SQLite-ism with no Postgres equivalent registered — fail loudly rather than
-// run invalid SQL against Postgres.
-const UNPORTABLE_TOKENS = [/AUTOINCREMENT/];
-
-/**
- * Ports SQLite migration SQL to Postgres: applies any porting rule whose
- * pattern matches (a rule simply not matching is fine — most migrations,
- * e.g. `ADD COLUMN`, need no porting at all) and throws if a known
- * SQLite-only token survives, so SQLite-specific SQL never silently reaches
- * Postgres.
- */
-export function toPostgresMigration(sql: string): string {
-  let ported = sql;
-  for (const [pattern, replacement] of PORTING_RULES) {
-    if (pattern.test(ported)) {
-      ported = ported.replace(pattern, replacement);
-    }
-  }
-  for (const token of UNPORTABLE_TOKENS) {
-    if (token.test(ported)) {
-      throw new Error(`Migration contains unported SQLite-ism: ${token}`);
-    }
-  }
-  return ported;
 }

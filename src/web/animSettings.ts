@@ -18,7 +18,7 @@ export type AnimSettings = {
   autoShare: boolean;
 };
 
-export const defaultAnimSettings: AnimSettings = {
+const defaultAnimSettings: AnimSettings = {
   vis: 'wheel',
   wheelStyle: 'db',
   spinStyle: 'standard',

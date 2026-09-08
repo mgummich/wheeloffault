@@ -3,7 +3,7 @@ import type { IncomingMessage } from 'node:http';
 import { type AddressInfo, connect } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { clientIp, createAuth } from './auth.ts';
 import { createCommands } from './commands.ts';
 import { openEventStore } from './eventStore.ts';
@@ -16,25 +16,36 @@ function boot(auth = createAuth({ SCHULDRAD_PASSWORD: 'geheim' })) {
   return { store, http, auth };
 }
 
-let ctx: ReturnType<typeof boot>;
+/**
+ * boot() plus listen-on-an-ephemeral-port plus a base URL plus a
+ * disconnect-everything teardown, since almost every test needs all four.
+ */
+async function bootAt(auth?: ReturnType<typeof createAuth>) {
+  const ctx = boot(auth);
+  await new Promise<void>((r) => ctx.http.server.listen(0, '127.0.0.1', r));
+  const base = `http://127.0.0.1:${(ctx.http.server.address() as AddressInfo).port}`;
+  const dispose = async () => {
+    // server.close() alone waits for every open connection (including a live
+    // SSE stream) to end on its own, which can hang teardown indefinitely if
+    // a test's stream never gets closed by the code under test - masking a
+    // real bug as a slow/timed-out afterEach instead of a fast, clear
+    // assertion failure. Force-close any lingering sockets first.
+    ctx.http.server.closeAllConnections();
+    await new Promise<void>((r) => ctx.http.server.close(() => r()));
+    ctx.store.close();
+  };
+  return { ...ctx, base, dispose };
+}
+
+let ctx: Awaited<ReturnType<typeof bootAt>>;
 let base: string;
 
 beforeEach(async () => {
-  ctx = boot();
-  await new Promise<void>((r) => ctx.http.server.listen(0, '127.0.0.1', r));
-  base = `http://127.0.0.1:${(ctx.http.server.address() as AddressInfo).port}`;
+  ctx = await bootAt();
+  base = ctx.base;
 });
 
-afterEach(async () => {
-  // server.close() alone waits for every open connection (including a live
-  // SSE stream) to end on its own, which can hang teardown indefinitely if
-  // a test's stream never gets closed by the code under test - masking a
-  // real bug as a slow/timed-out afterEach instead of a fast, clear
-  // assertion failure. Force-close any lingering sockets first.
-  ctx.http.server.closeAllConnections();
-  await new Promise<void>((r) => ctx.http.server.close(() => r()));
-  ctx.store.close();
-});
+afterEach(() => ctx.dispose());
 
 /** Extracts the session cookie's "name=value" pair from a Set-Cookie header (attributes stripped). */
 function cookiePair(res: Response): string {
@@ -85,17 +96,14 @@ function rawLoginRequest(
 
 describe('auth disabled (default)', () => {
   it('existing behaviour is untouched: no cookie needed, status reports disabled', async () => {
-    const disabled = boot(createAuth({}));
-    await new Promise<void>((r) => disabled.http.server.listen(0, '127.0.0.1', r));
-    const disabledBase = `http://127.0.0.1:${(disabled.http.server.address() as AddressInfo).port}`;
+    const disabled = await bootAt(createAuth({}));
     try {
-      const status = await fetch(`${disabledBase}/api/auth/status`);
+      const status = await fetch(`${disabled.base}/api/auth/status`);
       expect(await status.json()).toEqual({ enabled: false, authenticated: false });
-      expect((await fetch(`${disabledBase}/api/teams`)).status).toBe(200);
-      expect((await fetch(`${disabledBase}/api/health`)).status).toBe(200);
+      expect((await fetch(`${disabled.base}/api/teams`)).status).toBe(200);
+      expect((await fetch(`${disabled.base}/api/health`)).status).toBe(200);
     } finally {
-      await new Promise<void>((r) => disabled.http.server.close(() => r()));
-      disabled.store.close();
+      await disabled.dispose();
     }
   });
 });
@@ -168,21 +176,18 @@ describe('auth enabled', () => {
   });
 
   it('sets Secure when SCHULDRAD_SECURE_COOKIES=1', async () => {
-    const secure = boot(
+    const secure = await bootAt(
       createAuth({ SCHULDRAD_PASSWORD: 'geheim', SCHULDRAD_SECURE_COOKIES: '1' }),
     );
-    await new Promise<void>((r) => secure.http.server.listen(0, '127.0.0.1', r));
-    const secureBase = `http://127.0.0.1:${(secure.http.server.address() as AddressInfo).port}`;
     try {
-      const res = await fetch(`${secureBase}/api/auth/login`, {
+      const res = await fetch(`${secure.base}/api/auth/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ password: 'geheim' }),
       });
       expect(res.headers.get('set-cookie')).toContain('Secure');
     } finally {
-      await new Promise<void>((r) => secure.http.server.close(() => r()));
-      secure.store.close();
+      await secure.dispose();
     }
   });
 
@@ -222,47 +227,6 @@ describe('auth enabled', () => {
     );
     const nonLimited = attempts.filter((r) => r.status !== 429);
     expect(nonLimited.length).toBe(5);
-  });
-
-  it('clearAttempt removes its own attempt, not an earlier failure sharing its millisecond', () => {
-    // Regression test for the Date.now()-as-token bug: an attempt landing in
-    // the same millisecond as an earlier still-open failure from the same IP
-    // used to get the same token, so clearAttempt() on a later successful
-    // login could splice out the wrong (still-failed) entry instead of its
-    // own. Splicing always removes exactly one entry regardless of which one
-    // is picked, so raw counts/rate-limit tripping can't tell correct from
-    // buggy apart here - what differs is *array position*: the buggy code
-    // always removes the earliest-pushed colliding entry (index 0), while
-    // the fix removes the actual success entry wherever it landed. That
-    // shows up in retry-after, which is keyed off the oldest surviving
-    // attempt (ts[0]).
-    const rlAuth = createAuth({ SCHULDRAD_PASSWORD: 'geheim' });
-    const ip = '127.0.0.1';
-    const spy = vi.spyOn(Date, 'now');
-    try {
-      spy.mockReturnValue(0);
-      rlAuth.recordAttempt(ip); // failure #1, ts=0
-      spy.mockReturnValue(10_000);
-      rlAuth.recordAttempt(ip); // failure #2, ts=10s - a witness, untouched either way
-      spy.mockReturnValue(0); // clock replays failure #1's millisecond exactly
-      const successToken = rlAuth.recordAttempt(ip); // this login's own attempt, ts=0 again
-      rlAuth.clearAttempt(ip, successToken); // success clears only itself
-
-      // Pad to the 5-attempt threshold so rateLimited() reports a
-      // retry-after instead of null.
-      spy.mockReturnValue(20_000);
-      rlAuth.recordAttempt(ip);
-      rlAuth.recordAttempt(ip);
-      rlAuth.recordAttempt(ip);
-
-      // Correct behaviour: failure #1 (ts=0) survives as the oldest entry,
-      // so 40s of the 60s window remain. The buggy splice removes failure #1
-      // instead of the success entry, leaving failure #2 (ts=10s) as the
-      // oldest surviving entry and reporting 50s remaining instead.
-      expect(rlAuth.rateLimited(ip)).toBe(40);
-    } finally {
-      spy.mockRestore();
-    }
   });
 
   it('SSE requires a session too', async () => {
@@ -307,49 +271,47 @@ describe('auth enabled', () => {
   });
 
   it('a session expires after its TTL', async () => {
-    const shortLived = boot(createAuth({ SCHULDRAD_PASSWORD: 'geheim' }, { ttlMs: 20 }));
-    await new Promise<void>((r) => shortLived.http.server.listen(0, '127.0.0.1', r));
-    const shortBase = `http://127.0.0.1:${(shortLived.http.server.address() as AddressInfo).port}`;
+    const shortLived = await bootAt(createAuth({ SCHULDRAD_PASSWORD: 'geheim' }, { ttlMs: 20 }));
     try {
-      const login = await fetch(`${shortBase}/api/auth/login`, {
+      const login = await fetch(`${shortLived.base}/api/auth/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ password: 'geheim' }),
       });
       const cookie = cookiePair(login);
-      expect((await fetch(`${shortBase}/api/teams`, { headers: { cookie } })).status).toBe(200);
+      expect((await fetch(`${shortLived.base}/api/teams`, { headers: { cookie } })).status).toBe(
+        200,
+      );
       await new Promise((r) => setTimeout(r, 50));
-      expect((await fetch(`${shortBase}/api/teams`, { headers: { cookie } })).status).toBe(401);
+      expect((await fetch(`${shortLived.base}/api/teams`, { headers: { cookie } })).status).toBe(
+        401,
+      );
     } finally {
-      await new Promise<void>((r) => shortLived.http.server.close(() => r()));
-      shortLived.store.close();
+      await shortLived.dispose();
     }
   });
 
   it('a session dies at the absolute cap even when touched repeatedly before the sliding TTL', async () => {
     // ttlMs is deliberately huge so the sliding expiry never fires early -
     // only the absolute cap should be able to end this session.
-    const capped = boot(
+    const capped = await bootAt(
       createAuth({ SCHULDRAD_PASSWORD: 'geheim' }, { ttlMs: 60_000, absoluteTtlMs: 200 }),
     );
-    await new Promise<void>((r) => capped.http.server.listen(0, '127.0.0.1', r));
-    const cappedBase = `http://127.0.0.1:${(capped.http.server.address() as AddressInfo).port}`;
     try {
-      const login = await fetch(`${cappedBase}/api/auth/login`, {
+      const login = await fetch(`${capped.base}/api/auth/login`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ password: 'geheim' }),
       });
       const cookie = cookiePair(login);
       for (let i = 0; i < 4; i++) {
-        expect((await fetch(`${cappedBase}/api/teams`, { headers: { cookie } })).status).toBe(200);
+        expect((await fetch(`${capped.base}/api/teams`, { headers: { cookie } })).status).toBe(200);
         await new Promise((r) => setTimeout(r, 15));
       }
       await new Promise((r) => setTimeout(r, 250));
-      expect((await fetch(`${cappedBase}/api/teams`, { headers: { cookie } })).status).toBe(401);
+      expect((await fetch(`${capped.base}/api/teams`, { headers: { cookie } })).status).toBe(401);
     } finally {
-      await new Promise<void>((r) => capped.http.server.close(() => r()));
-      capped.store.close();
+      await capped.dispose();
     }
   });
 

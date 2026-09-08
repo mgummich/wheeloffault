@@ -39,7 +39,7 @@ export type TeamStatistics = {
   history: SpinSummary[];
 };
 
-export function spinHistory(state: TeamState): SpinSummary[] {
+function spinHistory(state: TeamState): SpinSummary[] {
   const names = new Map(state.members.map((m) => [m.memberId, m.name]));
   return state.spins
     .map((s) => ({

@@ -35,8 +35,6 @@
   --dur-indicator: 160ms; /* flap/tick snap */
   --dur-settle: 400ms; /* mechanical settle: stamp impact, panel pop-in */
   --ease-mechanical: cubic-bezier(0.2, 0.8, 0.2, 1); /* sharp attack, damped settle */
-  --ease-damped: cubic-bezier(0.3, 0.7, 0.3, 1); /* slower attack, floaty settle */
-  --ease-sharp: cubic-bezier(0.4, 0, 0.2, 1); /* decisive, no lingering */
 }
 
 /* Dark theme. Deep neutral (not pure black, not navy-purple), warm off-white
@@ -1476,19 +1474,5 @@ dialog.small-dialog::backdrop {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .announcement,
-  .reveal-rise,
-  .reveal-flap > span,
-  .reveal-type > span,
-  .reveal-flicker,
-  .reveal-stamp,
-  .anim-panel,
-  .share-dialog,
-  .toast {
-    animation-duration: 0.01ms !important;
   }
 }

@@ -45,11 +45,10 @@ export async function openRedisBroadcastHub(
   deliver: BroadcastSink,
 ): Promise<BroadcastHub> {
   const { createClient } = await import('redis');
-  return createRedisBroadcastHub(url, deliver, () => createClient({ url }) as RedisClient);
+  return createRedisBroadcastHub(deliver, () => createClient({ url }) as RedisClient);
 }
 
 export async function createRedisBroadcastHub(
-  _url: string,
   deliver: BroadcastSink,
   createClient: () => RedisClient,
   origin: string = randomUUID(),

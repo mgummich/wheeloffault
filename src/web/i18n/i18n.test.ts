@@ -10,15 +10,11 @@ describe('translation dictionaries', () => {
 });
 
 describe('t()', () => {
-  it('returns the plain message when there are no params', () => {
-    expect(t('common.save')).toBe(en['common.save']);
-  });
-
-  it('interpolates {param} placeholders', () => {
+  it('substitutes a {param} placeholder', () => {
     expect(t('home.memberCount', { n: 5 })).toBe('5 active');
   });
 
-  it('leaves unknown placeholders untouched', () => {
-    expect(t('common.save', { unused: 1 })).toBe(en['common.save']);
+  it('leaves an unfilled {param} placeholder in place', () => {
+    expect(t('home.memberCount', {})).toBe('{n} active');
   });
 });

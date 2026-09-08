@@ -13,7 +13,7 @@ const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 5;
 const SWEEP_INTERVAL_MS = 60_000;
 
-export const SESSION_COOKIE = 'schuldrad_session';
+const SESSION_COOKIE = 'schuldrad_session';
 
 /**
  * Optional single-password protection for server mode. One deployment
@@ -36,12 +36,9 @@ export interface Auth {
   /**
    * Records a login attempt (not just a failure) before the slow scrypt
    * compare runs, so a burst of concurrent requests can't all slip past the
-   * rate limit before any of them is counted. Returns a token to hand back
-   * to clearAttempt() on success.
+   * rate limit before any of them is counted.
    */
-  recordAttempt(ip: string): number;
-  /** Undoes recordAttempt() after a successful login, so it isn't held against the IP. */
-  clearAttempt(ip: string, token: number): void;
+  recordAttempt(ip: string): void;
   secureCookie(req: IncomingMessage): boolean;
 }
 
@@ -77,11 +74,7 @@ export function createAuth(
   // if you run more than one instance of password-protected server mode. See
   // SECURITY.md § 1a and docs/en/deployment.md § 3a.
   const sessions = new Map<string, { expiresAt: number; absoluteExpiresAt: number }>();
-  const failures = new Map<string, { ts: number; token: number }[]>();
-  // Monotonic, not Date.now(): two attempts landing in the same millisecond
-  // from one IP would otherwise share a token, and clearAttempt() on a
-  // successful login could then splice out the wrong (still-failed) entry.
-  let attemptCounter = 0;
+  const failures = new Map<string, number[]>();
   const sessionEndListeners: ((sid: string) => void)[] = [];
 
   function endSession(sid: string) {
@@ -96,7 +89,7 @@ export function createAuth(
         if (s.expiresAt <= now || s.absoluteExpiresAt <= now) endSession(sid);
       }
       for (const [ip, ts] of failures) {
-        const kept = ts.filter((t) => now - t.ts < RATE_LIMIT_WINDOW_MS);
+        const kept = ts.filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
         if (kept.length === 0) failures.delete(ip);
         else failures.set(ip, kept);
       }
@@ -138,23 +131,15 @@ export function createAuth(
     },
     rateLimited(ip) {
       const now = Date.now();
-      const ts = (failures.get(ip) ?? []).filter((t) => now - t.ts < RATE_LIMIT_WINDOW_MS);
+      const ts = (failures.get(ip) ?? []).filter((t) => now - t < RATE_LIMIT_WINDOW_MS);
       failures.set(ip, ts);
       if (ts.length < RATE_LIMIT_MAX) return null;
-      return Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - (ts[0]?.ts ?? now))) / 1000));
+      return Math.max(1, Math.ceil((RATE_LIMIT_WINDOW_MS - (now - (ts[0] ?? now))) / 1000));
     },
     recordAttempt(ip) {
       const ts = failures.get(ip) ?? [];
-      const token = ++attemptCounter;
-      ts.push({ ts: Date.now(), token });
+      ts.push(Date.now());
       failures.set(ip, ts);
-      return token;
-    },
-    clearAttempt(ip, token) {
-      const ts = failures.get(ip);
-      if (!ts) return;
-      const idx = ts.findIndex((t) => t.token === token);
-      if (idx !== -1) ts.splice(idx, 1);
     },
     secureCookie(req) {
       if (env.SCHULDRAD_SECURE_COOKIES === '1') return true;

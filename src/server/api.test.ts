@@ -393,31 +393,27 @@ describe('CSRF / DNS-rebinding defenses', () => {
     expect(res.status).toBe(415);
   });
 
-  it('rejects a cross-origin Origin header', async () => {
-    const res = await fetch(`${base}/api/teams`, {
+  it('rejects a cross-origin Origin header but allows a same-origin one or none at all (curl-style)', async () => {
+    const cross = await fetch(`${base}/api/teams`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
       body: JSON.stringify({ name: 'Team' }),
     });
-    expect(res.status).toBe(403);
-  });
+    expect(cross.status).toBe(403);
 
-  it('allows a same-origin Origin header', async () => {
-    const res = await fetch(`${base}/api/teams`, {
+    const same = await fetch(`${base}/api/teams`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', origin: base },
       body: JSON.stringify({ name: 'Team' }),
     });
-    expect(res.status).toBe(201);
-  });
+    expect(same.status).toBe(201);
 
-  it('allows a request with no Origin header at all (curl-style)', async () => {
-    const res = await fetch(`${base}/api/teams`, {
+    const missing = await fetch(`${base}/api/teams`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: 'Team' }),
     });
-    expect(res.status).toBe(201);
+    expect(missing.status).toBe(201);
   });
 
   it('enforces SCHULDRAD_ALLOWED_HOSTS when set', async () => {

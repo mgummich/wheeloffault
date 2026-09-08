@@ -102,32 +102,6 @@ describe('scripts/verify-draw.mjs', () => {
     expect(result.stdout).toContain('duplicate memberId');
   });
 
-  it('accepts the same vector via flag mode (--server-seed and friends) and passes', () => {
-    const result = spawnSync(
-      process.execPath,
-      [
-        scriptPath,
-        '--server-seed',
-        vector.serverSeed,
-        '--client-seed',
-        vector.clientSeed,
-        '--nonce',
-        String(vector.nonce),
-        '--participants',
-        JSON.stringify(vector.participants),
-        '--commitment',
-        vector.commitment,
-        '--digest',
-        vector.digest,
-        '--selected-member-id',
-        vector.selectedMemberId,
-      ],
-      { encoding: 'utf8' },
-    );
-    expect(result.status).toBe(0);
-    expect(result.stdout).toContain('bestanden');
-  });
-
   it('exits 2 (usage error) when a required field is missing', () => {
     const { selectedMemberId: _omit, ...withoutSelected } = vector;
     const result = runWith(withoutSelected);

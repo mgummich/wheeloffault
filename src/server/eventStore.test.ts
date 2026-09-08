@@ -19,12 +19,10 @@ const joined: DomainEvent = {
 };
 
 describe('eventStore', () => {
-  it('uses an async contract for adapters that need network I/O', async () => {
+  it('loads an empty stream as []', async () => {
     const store = openEventStore(':memory:');
     try {
-      const loaded = store.load('t1');
-      expect(loaded).toBeInstanceOf(Promise);
-      await expect(loaded).resolves.toEqual([]);
+      await expect(store.load('t1')).resolves.toEqual([]);
     } finally {
       store.close();
     }
