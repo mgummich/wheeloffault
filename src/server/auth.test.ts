@@ -1,9 +1,10 @@
 import { mkdtemp, writeFile } from 'node:fs/promises';
+import type { IncomingMessage } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createAuth } from './auth.ts';
+import { clientIp, createAuth } from './auth.ts';
 import { createCommands } from './commands.ts';
 import { openEventStore } from './eventStore.ts';
 import { createHttpServer } from './http.ts';
@@ -50,6 +51,31 @@ describe('auth disabled (default)', () => {
       await new Promise<void>((r) => disabled.http.server.close(() => r()));
       disabled.store.close();
     }
+  });
+});
+
+describe('clientIp / TRUST_PROXY gating', () => {
+  function fakeReq(headers: Record<string, string>, remoteAddress = '10.0.0.9'): IncomingMessage {
+    return { headers, socket: { remoteAddress } } as unknown as IncomingMessage;
+  }
+
+  it('ignores x-forwarded-for unless SCHULDRAD_TRUST_PROXY=1', () => {
+    const req = fakeReq({ 'x-forwarded-for': '1.2.3.4' });
+    expect(clientIp(req, {})).toBe('10.0.0.9');
+    expect(clientIp(req, { SCHULDRAD_TRUST_PROXY: '1' })).toBe('1.2.3.4');
+  });
+
+  it('Secure cookie flag follows x-forwarded-proto only when TRUST_PROXY is set', () => {
+    const auth = createAuth({ SCHULDRAD_PASSWORD: 'geheim' });
+    const trustedAuth = createAuth({
+      SCHULDRAD_PASSWORD: 'geheim',
+      SCHULDRAD_TRUST_PROXY: '1',
+    });
+    const httpsReq = fakeReq({ 'x-forwarded-proto': 'https' });
+
+    expect(auth.secureCookie(httpsReq)).toBe(false);
+    expect(trustedAuth.secureCookie(httpsReq)).toBe(true);
+    expect(trustedAuth.secureCookie(fakeReq({ 'x-forwarded-proto': 'http' }))).toBe(false);
   });
 });
 
@@ -139,6 +165,20 @@ describe('auth enabled', () => {
     expect(stillLimited.status).toBe(429);
   });
 
+  it('rate limit holds under concurrent requests (check-then-record is not racy)', async () => {
+    const attempts = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        fetch(`${base}/api/auth/login`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ password: 'nope' }),
+        }),
+      ),
+    );
+    const nonLimited = attempts.filter((r) => r.status !== 429);
+    expect(nonLimited.length).toBeLessThanOrEqual(5);
+  });
+
   it('SSE requires a session too', async () => {
     const team = await (
       await fetch(`${base}/api/teams`, {
@@ -198,6 +238,62 @@ describe('auth enabled', () => {
       await new Promise<void>((r) => shortLived.http.server.close(() => r()));
       shortLived.store.close();
     }
+  });
+
+  it('a session dies at the absolute cap even when touched repeatedly before the sliding TTL', async () => {
+    // ttlMs is deliberately huge so the sliding expiry never fires early -
+    // only the absolute cap should be able to end this session.
+    const capped = boot(
+      createAuth({ SCHULDRAD_PASSWORD: 'geheim' }, { ttlMs: 60_000, absoluteTtlMs: 200 }),
+    );
+    await new Promise<void>((r) => capped.http.server.listen(0, '127.0.0.1', r));
+    const cappedBase = `http://127.0.0.1:${(capped.http.server.address() as AddressInfo).port}`;
+    try {
+      const login = await fetch(`${cappedBase}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: 'geheim' }),
+      });
+      const cookie = cookiePair(login);
+      for (let i = 0; i < 4; i++) {
+        expect((await fetch(`${cappedBase}/api/teams`, { headers: { cookie } })).status).toBe(200);
+        await new Promise((r) => setTimeout(r, 15));
+      }
+      await new Promise((r) => setTimeout(r, 250));
+      expect((await fetch(`${cappedBase}/api/teams`, { headers: { cookie } })).status).toBe(401);
+    } finally {
+      await new Promise<void>((r) => capped.http.server.close(() => r()));
+      capped.store.close();
+    }
+  });
+
+  it('logging out closes an open SSE stream for that session', async () => {
+    const login = await fetch(`${base}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: 'geheim' }),
+    });
+    const cookie = cookiePair(login);
+    const team = await (
+      await fetch(`${base}/api/teams`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', cookie },
+        body: JSON.stringify({ name: 'Team' }),
+      })
+    ).json();
+
+    const sse = await fetch(`${base}/api/teams/${team.teamId}/events`, { headers: { cookie } });
+    const reader = sse.body?.getReader();
+    if (!reader) throw new Error('no body');
+    await reader.read(); // ": connected" comment, confirms the stream is open
+
+    await fetch(`${base}/api/auth/logout`, {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+    });
+
+    const { done } = await reader.read();
+    expect(done).toBe(true);
   });
 
   it('reads the password from SCHULDRAD_PASSWORD_FILE, trimming a trailing newline, file wins over env', async () => {

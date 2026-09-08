@@ -153,11 +153,14 @@ export function createHttpServer(
       json(res, 429, { error: 'Too many attempts, please wait', code: 'rate_limited' });
       return;
     }
+    // Recorded synchronously, right after the rate-limit check and before any
+    // `await`, so check-then-record is atomic under single-threaded JS — a
+    // burst of concurrent connections can't all pass the check before any of
+    // them is counted. This also counts a request whose body fails to parse
+    // as JSON, which is correct: it's still an attempt against this IP.
+    const attempt = auth.recordAttempt(ip);
     const body = asObject(await readJson(req));
     const password = str(body, 'password', 200);
-    // Recorded before the (slow) scrypt compare, not after, so a burst of
-    // concurrent requests can't all sneak past the rate limit at once.
-    const attempt = auth.recordAttempt(ip);
     if (!(await auth.verify(password))) {
       json(res, 401, { error: 'Invalid password', code: 'invalid_password' });
       return;
@@ -355,7 +358,14 @@ export function createHttpServer(
 
   route('GET', '/api/teams/:teamId/events', async (req, res, p) => {
     const teamId = id(p.teamId ?? '');
+    const sid = parseSessionCookie(req);
     await commands.loadTeam(teamId); // 404 for unknown teams
+    // Re-validate: the await above is a window where a logout could have
+    // ended this session, and we must not open a stream for a dead one.
+    if (auth.enabled && (!sid || !auth.touchSession(sid))) {
+      json(res, 401, { error: 'Authentication required', code: 'unauthorized' });
+      return;
+    }
     if ((sseClients.get(teamId)?.size ?? 0) >= MAX_SSE_CLIENTS_PER_TEAM) {
       json(res, 503, { error: 'Zu viele gleichzeitige Verbindungen für dieses Team' });
       return;
@@ -369,7 +379,6 @@ export function createHttpServer(
     const clients = sseClients.get(teamId) ?? new Set<Res>();
     clients.add(res);
     sseClients.set(teamId, clients);
-    const sid = parseSessionCookie(req);
     if (sid) sseSessionByClient.set(res, sid);
     const heartbeat = setInterval(() => res.write(': ping\n\n'), 25_000);
     req.on('close', () => {

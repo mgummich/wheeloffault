@@ -72,6 +72,18 @@ describe('scripts/verify-draw.mjs', () => {
     expect(result.status).toBe(1);
   });
 
+  it('exits 1 for a duplicate memberId (mirrors draw.ts, which also rejects this)', () => {
+    const result = runWith({
+      ...vector,
+      participants: [
+        { memberId: 'alice', weight: 1000 },
+        { memberId: 'alice', weight: 2000 },
+        { memberId: 'carol', weight: 3000 },
+      ],
+    });
+    expect(result.status).toBe(1);
+  });
+
   it('accepts the same vector via flag mode (--server-seed and friends) and passes', () => {
     const result = spawnSync(
       process.execPath,

@@ -110,6 +110,14 @@ fully-open default mode:
   is worth doing wherever the reachable hostnames are known ahead of time.
   See [docs/en/deployment.md](docs/en/deployment.md) § 3b.
 
+If you run a reverse proxy in front of Schuldrad, it **must** forward the
+client's original `Host` header unchanged (`proxy_set_header Host $host;`
+in nginx). A proxy that rewrites `Host` to the upstream address (nginx's
+default `proxy_set_header Host $proxy_host`) makes every browser request's
+`Origin` mismatch the `Host` the server sees, so the Origin check above
+403s every state-changing request. See
+[docs/en/deployment.md](docs/en/deployment.md) § 3b.
+
 Without `SCHULDRAD_ALLOWED_HOSTS` set, a DNS-rebinding attacker can still
 reach the API with a same-origin-looking request (Origin and Host both
 resolve to the attacker's own domain, so the Origin check passes) — the

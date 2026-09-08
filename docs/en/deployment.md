@@ -172,6 +172,17 @@ Left unset by default so existing LAN deployments reached by raw IP or an
 unlisted hostname keep working unmodified. See
 [SECURITY.md](../../SECURITY.md) § 1b for the full threat model.
 
+**Reverse proxy must forward the original `Host` header.** The Origin↔Host
+check above compares the browser's `Origin` against the `Host` header the
+server receives. A reverse proxy that rewrites `Host` to its own upstream
+address — nginx's default `proxy_set_header Host $proxy_host` — makes every
+state-changing browser request 403. Forward the client's original `Host`
+instead:
+
+```nginx
+proxy_set_header Host $host;
+```
+
 ## § 4 Bind address, reverse proxy, and TLS
 
 The server binds to `127.0.0.1` by default — it does not listen on any

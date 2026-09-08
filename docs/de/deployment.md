@@ -184,6 +184,18 @@ rohe IP oder einen nicht gelisteten Hostnamen erreicht werden,
 unverändert weiterlaufen. Siehe [SECURITY.md](../../SECURITY.md) § 1b für
 das vollständige Bedrohungsmodell.
 
+**Der Reverse Proxy muss den ursprünglichen `Host`-Header weiterreichen.**
+Die Origin↔Host-Prüfung oben vergleicht den `Origin`-Header des Browsers
+mit dem `Host`-Header, den der Server empfängt. Ein Reverse Proxy, der
+`Host` auf seine eigene Upstream-Adresse umschreibt — nginx' Standard
+`proxy_set_header Host $proxy_host` — lässt dadurch jede
+zustandsänderende Browser-Anfrage mit 403 scheitern. Stattdessen den
+ursprünglichen `Host` des Clients weiterreichen:
+
+```nginx
+proxy_set_header Host $host;
+```
+
 ## § 4 Bind-Adresse, Reverse Proxy und TLS
 
 Der Server bindet standardmäßig an `127.0.0.1` — er lauscht auf keinem
