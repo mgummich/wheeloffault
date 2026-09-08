@@ -1,4 +1,5 @@
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
+import { MAX_NAME } from '../../domain/decisions.ts';
 import type { TeamView } from '../../domain/views.ts';
 import { api, errorMessage } from '../api.ts';
 import { useI18n } from '../i18n/index.ts';
@@ -41,17 +42,17 @@ export function ParticipantsPage({ team, setTeam }: Props) {
       .map((s) => s.trim())
       .filter(Boolean);
     if (names.length === 0) return;
+    // Mirror the server's length limit here so one bad line names itself
+    // instead of the whole batch failing on a generic "name too long".
+    const tooLong = names.filter((n) => n.length > MAX_NAME);
+    if (tooLong.length > 0) {
+      setError(t('participants.lineRejected', { name: tooLong.join(', '), max: MAX_NAME }));
+      return;
+    }
     if (await run(() => api.addMembers(team.teamId, names))) setList('');
   }
 
-  async function grantImmunity(memberId: string) {
-    const reason = window.prompt(
-      t('participants.immunityPrompt'),
-      t('participants.immunityDefaultReason'),
-    );
-    if (reason === null) return; // Cancel must not grant immunity.
-    await run(() => api.grantImmunity(team.teamId, memberId, reason));
-  }
+  const [immunityFor, setImmunityFor] = useState<string | null>(null);
 
   const active = team.members.filter((m) => m.active);
   const inactive = team.members.filter((m) => !m.active);
@@ -61,7 +62,11 @@ export function ParticipantsPage({ team, setTeam }: Props) {
   return (
     <>
       <h1>{t('participants.title')}</h1>
-      {error && <p className="error-text">{error}</p>}
+      {error && (
+        <p className="error-text" id="participants-error" role="alert">
+          {error}
+        </p>
+      )}
       <section className="split">
         <form onSubmit={addOne} className="stack">
           <h2>{t('participants.addOneHeading')}</h2>
@@ -73,6 +78,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
               onChange={(e) => setName(e.target.value)}
               maxLength={60}
               required
+              aria-describedby={error ? 'participants-error' : undefined}
             />
           </label>
           <button type="submit" data-testid="add-member-button" className="primary" disabled={busy}>
@@ -88,6 +94,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
               rows={4}
               value={list}
               onChange={(e) => setList(e.target.value)}
+              aria-describedby={error ? 'participants-error' : undefined}
             />
           </label>
           <button type="submit" data-testid="paste-list-button" disabled={busy}>
@@ -131,7 +138,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
                   )}
                 </td>
                 <td className="actions">
-                  <button type="button" disabled={busy} onClick={() => grantImmunity(m.memberId)}>
+                  <button type="button" disabled={busy} onClick={() => setImmunityFor(m.memberId)}>
                     {t('participants.immunityButton')}
                   </button>
                   <button
@@ -189,7 +196,76 @@ export function ParticipantsPage({ team, setTeam }: Props) {
       )}
 
       <Pools team={team} run={run} busy={busy} />
+
+      {immunityFor && (
+        <ImmunityDialog
+          onCancel={() => setImmunityFor(null)}
+          onSubmit={async (reason) => {
+            if (await run(() => api.grantImmunity(team.teamId, immunityFor, reason))) {
+              setImmunityFor(null);
+            }
+          }}
+        />
+      )}
     </>
+  );
+}
+
+/** Native <dialog> via showModal(): focus trap, Esc handling, backdrop and
+ * focus restore on close come for free (see ShareDialog). */
+function ImmunityDialog({
+  onCancel,
+  onSubmit,
+}: {
+  onCancel: () => void;
+  onSubmit: (reason: string) => void;
+}) {
+  const { t } = useI18n();
+  const [reason, setReason] = useState(t('participants.immunityDefaultReason'));
+  const dialogRef = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    dialogRef.current?.showModal();
+  }, []);
+
+  return (
+    // biome-ignore lint/a11y/useKeyWithClickEvents: backdrop click is a mouse convenience; the keyboard path is the native Esc handling of <dialog>.
+    <dialog
+      ref={dialogRef}
+      className="small-dialog"
+      aria-labelledby="sr-immunity-h"
+      onClose={onCancel}
+      onClick={(e) => {
+        if (e.target === dialogRef.current) dialogRef.current?.close();
+      }}
+    >
+      <form
+        className="stack"
+        onSubmit={(e) => {
+          e.preventDefault();
+          onSubmit(reason);
+        }}
+      >
+        <h2 id="sr-immunity-h">{t('participants.immunityButton')}</h2>
+        <label className="field">
+          <span className="label">{t('participants.immunityPrompt')}</span>
+          <input
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            maxLength={200}
+            autoFocus
+          />
+        </label>
+        <div className="actions">
+          <button type="submit" className="primary">
+            {t('participants.immunityButton')}
+          </button>
+          <button type="button" className="quiet" onClick={() => dialogRef.current?.close()}>
+            {t('common.cancel')}
+          </button>
+        </div>
+      </form>
+    </dialog>
   );
 }
 

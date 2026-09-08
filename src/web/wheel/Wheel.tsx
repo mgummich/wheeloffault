@@ -3,6 +3,7 @@ import type { SpinStyle, WheelStyle } from '../animSettings.ts';
 import { useI18n } from '../i18n/index.ts';
 import { DURATION_MS, ease, hashHex, targetRotation } from './anim.ts';
 import type { Participant, StageResult } from './stages.tsx';
+import { useReducedMotion } from './useReducedMotion.ts';
 
 type Props = {
   participants: Participant[];
@@ -110,7 +111,7 @@ export function Wheel({
   onFinished,
 }: Props) {
   const { t } = useI18n();
-  const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const reduced = useReducedMotion();
   const drawn = participants.filter((p) => p.weight > 0);
   const total = drawn.reduce((s, p) => s + p.weight, 0);
   const theme = themes[wheelStyle];

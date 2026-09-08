@@ -8,7 +8,7 @@ import { findMember, findSpin, type TeamState } from './team.ts';
  * `now` and ids so results are reproducible in tests.
  */
 
-const MAX_NAME = 60;
+export const MAX_NAME = 60;
 
 export function cleanName(raw: string): string {
   const name = raw.trim().replace(/\s+/g, ' ');

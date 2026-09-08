@@ -4,6 +4,7 @@ import { percent } from '../format.ts';
 import { useI18n } from '../i18n/index.ts';
 import type { MessageKey } from '../i18n/messages.ts';
 import { DURATION_MS, ease, seedNumberFor, trainDelayFor, trainKindFor } from './anim.ts';
+import { useReducedMotion } from './useReducedMotion.ts';
 
 export type Participant = { memberId: string; name: string; weight: number };
 /** The persisted spin plus the winner's display name; every visualization animates towards it. */
@@ -36,7 +37,7 @@ function useNameTicker(
   announced: boolean,
   onFinished: () => void,
 ) {
-  const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
+  const reduced = useReducedMotion();
   const [tick, setTick] = useState(0);
   const N = 26;
 
@@ -760,7 +761,11 @@ export function LineStage(props: StageProps) {
               <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {g.p.name}
               </span>
-              <span style={{ marginLeft: 'auto', color: 'var(--text-muted)' }}>{percent(g.w)}</span>
+              <span
+                style={{ marginLeft: 'auto', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}
+              >
+                {percent(g.w)}
+              </span>
             </li>
           );
         })}

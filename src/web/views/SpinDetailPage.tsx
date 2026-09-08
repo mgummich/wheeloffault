@@ -65,7 +65,11 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
           <span className="chip"> {t('common.chipOverturned')}</span>
         )}
       </p>
-      {error && <p className="error-text">{error}</p>}
+      {error && (
+        <p className="error-text" id="spin-detail-error" role="alert">
+          {error}
+        </p>
+      )}
 
       <section>
         <h2>{t('spinDetail.participantsHeading')}</h2>
@@ -211,6 +215,7 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
                   onChange={(e) => setReason(e.target.value)}
                   maxLength={500}
                   required
+                  aria-describedby={error ? 'spin-detail-error' : undefined}
                 />
               </label>
               <button type="submit">{t('spinDetail.fileAppealButton')}</button>

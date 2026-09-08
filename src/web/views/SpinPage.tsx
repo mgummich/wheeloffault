@@ -29,7 +29,7 @@ type Phase =
   | { kind: 'announced'; spin: SpinView };
 
 export function SpinPage({ team, reload }: Props) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [poolId, setPoolId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -85,13 +85,14 @@ export function SpinPage({ team, reload }: Props) {
 
   const announced = phase.kind === 'announced';
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: `lang` isn't read directly, but `t` doesn't change identity on language switch — keying on `lang` re-runs this so the title updates too.
   useEffect(() => {
     if (!result || !announced) return;
     document.title = t('spin.pageTitleWinner', { name: result.selectedName });
     return () => {
       document.title = t('app.brand');
     };
-  }, [result, announced, t]);
+  }, [result, announced, t, lang]);
 
   // Teams card auto-opens shortly after the announcement (setting-controlled, off by default).
   useEffect(() => {
@@ -180,7 +181,7 @@ export function SpinPage({ team, reload }: Props) {
             <select
               value={poolId}
               onChange={(e) => setPoolId(e.target.value)}
-              disabled={phase.kind !== 'idle'}
+              disabled={phase.kind === 'drawing' || phase.kind === 'animating'}
             >
               <option value="">{t('spin.allActive', { n: activeCount })}</option>
               {team.pools.map((p) => (
@@ -223,7 +224,11 @@ export function SpinPage({ team, reload }: Props) {
 
       {visualization}
 
-      {error && <p className="error-text">{error}</p>}
+      {error && (
+        <p className="error-text" role="alert">
+          {error}
+        </p>
+      )}
 
       {pending && (
         <p className="notice">{t('spin.pendingNotice', { label: spinLabel(pending.nonce) })}</p>

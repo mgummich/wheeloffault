@@ -52,6 +52,7 @@ export function HomePage() {
               onChange={(e) => setName(e.target.value)}
               maxLength={100}
               required
+              aria-describedby={error ? 'home-error' : undefined}
             />
           </label>
           <button
@@ -62,7 +63,11 @@ export function HomePage() {
           >
             {t('home.createButton')}
           </button>
-          {error && <p className="error-text">{error}</p>}
+          {error && (
+            <p className="error-text" id="home-error" role="alert">
+              {error}
+            </p>
+          )}
         </form>
 
         <div className="stack">
