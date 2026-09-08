@@ -18,7 +18,7 @@ Selbst gehostetes, installierbares Schuldrad für das Scrum-Ritual
   Signal, Fahrkartenstempel, Fahrplan-Rolle, Gewichtslinie.
 * **PWA** – installierbar, App-Shell offline, `prefers-reduced-motion` respektiert.
 
-Architektur: [ARCHITECTURE.md](ARCHITECTURE.md) (Englisch, kanonisch) ·
+Architektur: [ARCHITECTURE.md](ARCHITECTURE.md#en) (Englisch, kanonisch) ·
 [docs/de/architektur.md](docs/de/architektur.md) ·
 [Fairness-Protokoll](docs/de/fairness.md) ·
 [Event-Vertrag](docs/de/events.md) ·

@@ -239,7 +239,10 @@ blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 4px solid var(--
 
 const shell = (doc, lang, body) => {
   const isIndex = doc.slug === 'index';
-  const langHref = (l) => (isIndex ? `../${l}/` : `../${l}/${doc.slug}.html`);
+  // enOnly docs (SECURITY.md) have no page in the other language — route
+  // that language's switch link to its docs index instead of a page that
+  // was never rendered, so a reader isn't stranded with no way back.
+  const langHref = (l) => (isIndex || !doc.src[l] ? `../${l}/` : `../${l}/${doc.slug}.html`);
   // enOnly docs (SECURITY.md) have no page in the current language — their
   // nav tab always points at the English page, from either language shell.
   const navHref = (d) => {
@@ -267,12 +270,10 @@ const shell = (doc, lang, body) => {
       .join('\n    ')}
   </nav>
   <div class="lang-switch">
-    ${LANGS.filter((l) => l === lang || doc.src[l])
-      .map(
-        (l) =>
-          `<a href="${langHref(l)}"${l === lang ? ' class="active" aria-current="true"' : ''}>${l.toUpperCase()}</a>`,
-      )
-      .join('\n    ')}
+    ${LANGS.map(
+      (l) =>
+        `<a href="${langHref(l)}"${l === lang ? ' class="active" aria-current="true"' : ''}>${l.toUpperCase()}</a>`,
+    ).join('\n    ')}
   </div>
 </header>
 <main>
@@ -293,12 +294,19 @@ await checkCompleteness();
 await mkdir(join(outDir, 'en'), { recursive: true });
 await mkdir(join(outDir, 'de'), { recursive: true });
 
+// checkLinks() below asserts against these exact rendered bodies (the
+// markedFor() output, before shell() wraps it in nav/lang-switch markup) —
+// not by re-reading the written HTML file and substring-matching, which
+// would also match the shell's own `../en/`/`../de/` language-switch hrefs.
+const renderedBodies = new Map(); // `${lang}/${slug}` -> body HTML
+
 for (const lang of LANGS) {
   const marked = markedFor(lang);
   for (const doc of docs) {
     if (!doc.src[lang]) continue; // enOnly doc with no page in this language
     const md = await readFile(join(root, doc.src[lang]), 'utf8');
     const body = marked.parse(md);
+    renderedBodies.set(`${lang}/${doc.slug}`, body);
     const outName = doc.slug === 'index' ? 'index.html' : `${doc.slug}.html`;
     await writeFile(join(outDir, lang, outName), shell(doc, lang, body));
     console.log(`docs: ${doc.src[lang]} → dist/web/docs/${lang}/${outName}`);
@@ -315,19 +323,33 @@ console.log('docs: → dist/web/docs/index.html (redirect to en/)');
 
 // Guard against the class of bug where a link resolves to a URL that was
 // never written, resolves to the wrong language (e.g. a `de/` href landing
-// on an `en/` page), or never resolves at all because its basename isn't in
-// the docs registry.
+// on an `en/` page), never resolves at all because its basename isn't in
+// the docs registry, or renders correctly SOMEWHERE on the page without
+// the body link itself being right (e.g. the shell's own `../en/`/`../de/`
+// language-switch href for the current page happens to be the exact string
+// a broken body link was supposed to produce, masking the break).
 //
 // This scans the raw Markdown SOURCE directly and computes, from scratch,
 // what each link must resolve to — it does not call markedFor()'s link()
-// renderer or consult its bookkeeping (renderedLinks). In particular, a
-// marker-less href (no de/en directory, no .de.md suffix, no #en/#de
-// fragment) is ALWAYS asserted against the current page's own language;
-// unlike the renderer, this check never silently skips that case. That
-// independence is the point: a bug in the renderer's marker regex, or in
-// its fallback, must not also be baked into the check that's supposed to
-// catch it.
-const MD_LINK_RE = /\[[^\]]*\]\(([^)]+)\)/g;
+// renderer or consult its bookkeeping. In particular, a marker-less href
+// (no de/en directory, no .de.md suffix, no #en/#de fragment) is ALWAYS
+// asserted against the current page's own language; unlike the renderer,
+// this check never silently skips that case. That independence is the
+// point: a bug in the renderer's marker regex, or in its fallback, must
+// not also be baked into the check that's supposed to catch it.
+//
+// The assertion is SET EQUALITY between the internal hrefs the source's
+// links must produce and the internal hrefs the rendered <main> BODY
+// actually contains (renderedBodies, captured before shell() wraps it in
+// nav/lang-switch markup) — not substring-existence against the whole
+// page. Non-`.md` internal links are checked too (a dead link isn't only
+// a `.md` one).
+const MD_LINK_RE = /(?<!!)\[[^\]]*\]\(([^)]+)\)/g;
+const HTML_HREF_RE = /<a\s[^>]*\bhref="([^"]*)"/g;
+
+function isInternal(href) {
+  return !/^(https?:)?\/\//.test(href) && !href.startsWith('#') && !href.startsWith('mailto:');
+}
 
 function expectedLangFor(href, pageLang) {
   const fragMatch = /#(en|de)$/.exec(href);
@@ -341,45 +363,83 @@ function expectedLangFor(href, pageLang) {
   return { hrefBase, wantLang: markerLang || pageLang };
 }
 
+async function fileExists(path) {
+  try {
+    await readFile(path);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 async function checkLinks() {
   const problems = [];
   for (const lang of LANGS) {
     for (const doc of docs) {
       if (!doc.src[lang]) continue;
       const md = await readFile(join(root, doc.src[lang]), 'utf8');
+      const expected = new Set();
+
       for (const [, href] of md.matchAll(MD_LINK_RE)) {
-        if (/^(https?:)?\/\//.test(href) || href.startsWith('#')) continue;
+        if (!isInternal(href)) continue;
         const parsed = expectedLangFor(href, lang);
-        if (!parsed) continue; // not a .md link (image, anchor, external, ...)
-        const { hrefBase, wantLang } = parsed;
-        const target = docs.find(
-          (d) => d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
-        );
-        if (!target) {
-          problems.push(
-            `${doc.src[lang]}: link "${href}" has no matching entry in the docs registry (dead/unregistered link).`,
+        if (parsed) {
+          const { hrefBase, wantLang } = parsed;
+          const target = docs.find(
+            (d) =>
+              d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
           );
-          continue;
+          if (!target) {
+            problems.push(
+              `${doc.src[lang]}: link "${href}" has no matching entry in the docs registry (dead/unregistered link).`,
+            );
+            continue;
+          }
+          const resolvedLang = target.src[wantLang] ? wantLang : 'en';
+          const path =
+            target.slug === 'index' ? `${resolvedLang}/` : `${resolvedLang}/${target.slug}.html`;
+          const filePath = path.endsWith('/')
+            ? join(outDir, path, 'index.html')
+            : join(outDir, path);
+          if (!(await fileExists(filePath))) {
+            problems.push(
+              `${doc.src[lang]}: link "${href}" should resolve to dist/web/docs/${path}, which does not exist.`,
+            );
+            continue;
+          }
+          expected.add(`../${path}`);
+        } else {
+          // Internal non-.md link (script, asset, ...): resolved relative
+          // to the rendered page's own directory, and it must exist —
+          // dead-link detection isn't limited to .md targets.
+          const cleanHref = href.split('#')[0].split('?')[0];
+          const filePath = join(outDir, lang, cleanHref);
+          if (!(await fileExists(filePath))) {
+            problems.push(
+              `${doc.src[lang]}: link "${href}" should resolve to a file relative to dist/web/docs/${lang}/, which does not exist.`,
+            );
+            continue;
+          }
+          expected.add(href);
         }
-        const resolvedLang = target.src[wantLang] ? wantLang : 'en';
-        const path =
-          target.slug === 'index' ? `${resolvedLang}/` : `${resolvedLang}/${target.slug}.html`;
-        const filePath = path.endsWith('/') ? join(outDir, path, 'index.html') : join(outDir, path);
-        try {
-          await readFile(filePath);
-        } catch {
+      }
+
+      const body = renderedBodies.get(`${lang}/${doc.slug}`) ?? '';
+      const actual = new Set(
+        Array.from(body.matchAll(HTML_HREF_RE), ([, href]) => href).filter(isInternal),
+      );
+
+      for (const href of expected) {
+        if (!actual.has(href)) {
           problems.push(
-            `${doc.src[lang]}: link "${href}" should resolve to dist/web/docs/${path}, which does not exist.`,
+            `${doc.src[lang]}: expected href "${href}" in the rendered body, but it's not there.`,
           );
-          continue;
         }
-        const html = await readFile(
-          join(outDir, lang, doc.slug === 'index' ? 'index.html' : `${doc.slug}.html`),
-          'utf8',
-        );
-        if (!html.includes(`href="../${path}"`)) {
+      }
+      for (const href of actual) {
+        if (!expected.has(href)) {
           problems.push(
-            `${doc.src[lang]}: link "${href}" should resolve to '../${path}' (language '${resolvedLang}') but the rendered page does not contain that href.`,
+            `${doc.src[lang]}: rendered body contains href "${href}", which its source markdown does not account for.`,
           );
         }
       }

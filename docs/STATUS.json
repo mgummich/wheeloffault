@@ -1,28 +1,28 @@
 {
   "date": "2026-09-08",
-  "commit": "0fcb6c9a412965cb319f6e85aea0c4ddbf1b024f",
+  "commit": "a6e6c50a78f936f240c2b439a5fc31f00f50b96a",
   "branch": "main",
   "environment": {
     "node": "v26.8.1",
     "pnpm": "11.24.0",
     "os": "darwin (Darwin 25.6.0)"
   },
-  "note": "This file was found missing from docs/ and was restored. Investigation found no evidence in git history (git log, reflog, dangling objects) that it was ever committed or deleted by any commit, including 0fcb6c9. scripts/build-docs.mjs's doc-pair completeness check only scans docs/en and docs/de (already filtered to *.md), never docs/ itself, and does not touch source files at all (it only writes into dist/web/docs/); verified directly by running the build with this file present. The check was defensively commented to make that scope explicit. The most likely explanation is this file existed only as an untracked working-tree artifact in an earlier session and was lost when that environment was discarded, not deleted by any script or commit in this repository.",
+  "note": "Docs-critic follow-up pass on top of commit a6e6c50 (working tree has uncommitted changes on top, not committed per instructions): (1) build-docs.mjs checkLinks() rewritten from a page-wide `html.includes(...)` substring test to a set-equality check between the internal hrefs the source markdown's links must produce and the internal hrefs actually present in the rendered <main> body only (captured pre-shell, so it can no longer be satisfied by the shell's own language-switch markup) — verified against all 5 mutations the critic used to break the old check (resolver fallback, fragment-marker-disabled, dir-marker regex, dead .md link, dead non-.md link); every one now fails the build. Non-.md internal links are now dead-link-checked too. (2) README.de.md's 'ARCHITECTURE.md (Englisch, kanonisch)' link now carries a #en marker so it actually lands on the English page instead of silently resolving to German (was previously identical to the very next line's destination). (3) SECURITY.md's language switch now always renders both EN/DE entries; the DE entry on the (English-only) security page routes to ../de/ so a German reader isn't stranded. (4) docs/en+de/deployment.md's WEB_DIR description reworded: there is no compiled server directory (main.ts runs TypeScript sources directly under Node), the default resolves relative to src/server/. (5) docs/de/deployment.md dropped a redundant 'standardmäßig' from the § 4 paragraph (was stacked 3x across 2 sentences).",
   "checks": [
     {
       "name": "pnpm install",
       "status": "pass",
-      "details": "Already up to date (lockfile satisfied); completed in 262ms."
+      "details": "Already up to date (lockfile satisfied)."
     },
     {
       "name": "format:check (biome format .)",
       "status": "pass",
-      "details": "Checked 93 files in 49ms. No fixes needed."
+      "details": "Checked 93 files in 24ms. No fixes needed (after `biome format --write` on scripts/build-docs.mjs to match the rewritten checkLinks()'s formatting)."
     },
     {
       "name": "lint (biome lint .)",
       "status": "pass",
-      "details": "Checked 95 files in 61ms. 0 errors, 6 warnings, all pre-existing CSS lint warnings in src/web/styles.css (3x lint/complexity/noImportantStyles on prefers-reduced-motion !important overrides, 1x lint/style/noDescendingSpecificity on .anim-panel .field vs .policy fieldset .field). None are new; command exits 0."
+      "details": "Checked 95 files in 74ms. 0 errors, 6 warnings, all pre-existing CSS lint warnings in src/web/styles.css (3x lint/complexity/noImportantStyles on prefers-reduced-motion !important overrides, 1x lint/style/noDescendingSpecificity on .anim-panel .field vs .policy fieldset .field). None are new; command exits 0."
     },
     {
       "name": "typecheck (tsc -p tsconfig.json --noEmit)",
@@ -32,17 +32,17 @@
     {
       "name": "test:unit (vitest run --project unit)",
       "status": "pass",
-      "details": "16 test files, 97 tests passed, 0 failed. Duration ~612ms."
+      "details": "16 test files, 97 tests passed, 0 failed. Duration ~663ms."
     },
     {
       "name": "test:integration (vitest run --project integration)",
       "status": "pass",
-      "details": "5 test files, 50 tests passed, 0 failed. Duration ~1.63s."
+      "details": "5 test files, 50 tests passed, 0 failed. Duration ~1.67s."
     },
     {
       "name": "build (vite build && node scripts/build-docs.mjs)",
       "status": "pass",
-      "details": "Vite client build succeeded (59 modules, dist/web/assets/index-*.js 325.31 kB / gzip 95.89 kB). build-docs.mjs completeness and link checks passed; rendered all 8 docs x 2 languages plus the /docs/ redirect. docs/STATUS.json confirmed present in the working tree after this step (build-docs.mjs never touches source docs/, only writes to dist/web/docs/)."
+      "details": "Vite client build succeeded (59 modules, dist/web/assets/index-*.js 325.31 kB / gzip 95.89 kB). build-docs.mjs completeness check and the rewritten set-equality checkLinks() both passed; rendered all 8 docs x 2 languages plus the /docs/ redirect. docs/STATUS.json confirmed present in the working tree after this step."
     },
     {
       "name": "build:server (vite build --mode server)",
@@ -52,12 +52,12 @@
     {
       "name": "e2e (playwright test)",
       "status": "pass",
-      "details": "3 tests passed across 2 projects (static PWA offline-reload session test; server-mode team sharing across browsers; core Schuldrad journey). Duration ~4.9s."
+      "details": "3 tests passed across 2 projects (static PWA offline-reload session test; server-mode team sharing across browsers; core Schuldrad journey). Duration ~5.0s."
     },
     {
-      "name": "clean clone + install + verify + e2e",
+      "name": "checkLinks() mutation testing (scratch copy, not the repo)",
       "status": "pass",
-      "details": "Re-verified directly in this working tree (not a separate clone) on 2026-09-08 at commit 0fcb6c9: format:check, lint, typecheck, test:unit (97 passed), test:integration (50 passed), build, build:server, and e2e (3 passed) all green, matching the previously reported clean-clone run of 97 unit / 50 integration / 3 e2e tests."
+      "details": "All 5 mutations the docs critic used to defeat the old substring-based checkLinks() were re-applied one at a time to a scratch copy of the repo (symlinked node_modules, no changes to the working tree) and re-run against the new set-equality implementation: (1) renderer resolver fallback `|| lang` -> `|| 'en'` (line ~191): exit 1, caught. (2) fragment marker disabled in the renderer only (`fragMarker = null` at line ~190): exit 1, caught. (3) dir marker regex `/(^|\\/)de\\//` -> `/(^|\\/)zz\\//` (line ~184): exit 1, caught. (4) dead .md link added to docs/en/fairness.md: exit 1, caught (dead/unregistered link + set-equality mismatch). (5) dead non-.md links added to docs/en/fairness.md (`../en/nope.html`, `../../scripts/gone.mjs`): exit 1, caught (new non-.md dead-link check). 5/5 mutations now fail the build; each was reverted immediately after its run."
     },
     {
       "name": "docker: sqlite profile smoke test",

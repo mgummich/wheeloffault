@@ -91,7 +91,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | `PORT` | `3000` | HTTP-Listen-Port |
 | `DATA_DIR` | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db` |
 | `HOST` | `127.0.0.1` | Bind-Adresse — siehe § 4 |
-| `WEB_DIR` | `dist/web` (relativ zum kompilierten Server-Verzeichnis, nicht zum Arbeitsverzeichnis) | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
+| `WEB_DIR` | `dist/web` (relativ zu `src/server/`, wo die Server-Quellen liegen — Node führt das TypeScript direkt aus, nichts wird kompiliert — nicht zum Arbeitsverzeichnis) | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
 | `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
@@ -232,7 +232,7 @@ Der Server bindet standardmäßig an `127.0.0.1` — er lauscht auf keinem
 anderen Netzwerk-Interface als Loopback, sofern nicht ausdrücklich anders
 konfiguriert. Das ist ein bewusster Standard, kein Versehen: Schuldrad
 kommt standardmäßig ohne Authentifizierung (siehe [SECURITY.md](../../SECURITY.md)), also
-wäre ein standardmäßig aus dem Netz erreichbarer Server einer, den jeder in
+wäre ein aus dem Netz erreichbarer Server einer, den jeder in
 diesem Netz lesen und verändern könnte.
 
 Um den Server freizugeben:
