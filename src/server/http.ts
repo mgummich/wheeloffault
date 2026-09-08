@@ -3,16 +3,17 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createServer } from 'node:http';
 import { extname, join, normalize } from 'node:path';
 import { DomainError } from '../domain/errors.ts';
-import type { StoredEvent } from '../domain/events.ts';
 import { assertPolicy } from '../domain/fairness/policy.ts';
 import { memberReport } from '../domain/projections/report.ts';
 import {
   type Auth,
   clearSessionCookieHeader,
+  clientIp,
   createAuth,
   parseSessionCookie,
   sessionCookieHeader,
 } from './auth.ts';
+import type { PublicEventRef } from './broadcast.ts';
 import type { Commands } from './commands.ts';
 import { ConcurrencyError } from './eventStore.ts';
 import { asObject, id, optionalStr, str, strArray } from './validate.ts';
@@ -25,6 +26,7 @@ type Route = { method: string; pattern: RegExp; keys: string[]; handler: Handler
 
 const MAX_BODY = 64 * 1024;
 const MAX_SSE_CLIENTS_PER_TEAM = 100;
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
 
 /**
  * Plain node:http. ~15 routes do not justify a framework. Routes are declared
@@ -34,9 +36,19 @@ export function createHttpServer(
   commands: Commands,
   staticDir: string | null,
   auth: Auth = createAuth({}),
+  env: NodeJS.ProcessEnv = process.env,
 ) {
   const routes: Route[] = [];
   const sseClients = new Map<string, Set<Res>>();
+  // sessionId per open SSE connection, so a logout/expiry can close just that session's streams.
+  const sseSessionByClient = new Map<Res, string>();
+  auth.onSessionEnd((sid) => {
+    for (const clients of sseClients.values()) {
+      for (const res of clients) {
+        if (sseSessionByClient.get(res) === sid) res.end();
+      }
+    }
+  });
 
   function route(method: string, path: string, handler: Handler) {
     const keys: string[] = [];
@@ -57,8 +69,56 @@ export function createHttpServer(
     res.end(JSON.stringify(body));
   };
 
+  /**
+   * CSRF / DNS-rebinding defenses for every /api request:
+   *  - state-changing requests must be application/json (defeats the
+   *    text/plain "simple request" CSRF trick, since that never preflights).
+   *  - a present Origin header must match Host (same-origin only; requests
+   *    with no Origin at all — curl, server-to-server — are unaffected).
+   *  - if SCHULDRAD_ALLOWED_HOSTS is set, Host must be in that allowlist,
+   *    closing DNS-rebinding attacks. Unset by default so existing LAN
+   *    deployments (reached by IP or any hostname) keep working.
+   */
+  function checkOriginAndHost(req: Req, res: Res): boolean {
+    const host = req.headers.host;
+    const allowedHosts = env.SCHULDRAD_ALLOWED_HOSTS;
+    if (allowedHosts) {
+      const allowed = allowedHosts
+        .split(',')
+        .map((h) => h.trim())
+        .filter(Boolean);
+      if (!host || !allowed.includes(host)) {
+        json(res, 403, { error: 'Host not allowed', code: 'host_not_allowed' });
+        return false;
+      }
+    }
+    if (!STATE_CHANGING_METHODS.has(req.method ?? '')) return true;
+    const contentType = req.headers['content-type'] ?? '';
+    if (!contentType.toLowerCase().startsWith('application/json')) {
+      json(res, 415, {
+        error: 'Content-Type must be application/json',
+        code: 'unsupported_media_type',
+      });
+      return false;
+    }
+    const origin = req.headers.origin;
+    if (origin) {
+      let originHost: string | null;
+      try {
+        originHost = new URL(origin).host;
+      } catch {
+        originHost = null;
+      }
+      if (originHost === null || originHost !== host) {
+        json(res, 403, { error: 'Cross-origin request rejected', code: 'origin_mismatch' });
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** Called by the command layer after every successful append. */
-  function broadcast(teamId: string, events: StoredEvent[]) {
+  function broadcast(teamId: string, events: PublicEventRef[]) {
     for (const res of sseClients.get(teamId) ?? []) {
       for (const e of events) {
         try {
@@ -86,7 +146,7 @@ export function createHttpServer(
       json(res, 404, { error: 'Auth is not enabled', code: 'auth_disabled' });
       return;
     }
-    const ip = req.socket.remoteAddress ?? 'unknown';
+    const ip = clientIp(req, env);
     const retryAfterSec = auth.rateLimited(ip);
     if (retryAfterSec !== null) {
       res.setHeader('retry-after', String(retryAfterSec));
@@ -95,11 +155,14 @@ export function createHttpServer(
     }
     const body = asObject(await readJson(req));
     const password = str(body, 'password', 200);
+    // Recorded before the (slow) scrypt compare, not after, so a burst of
+    // concurrent requests can't all sneak past the rate limit at once.
+    const attempt = auth.recordAttempt(ip);
     if (!(await auth.verify(password))) {
-      auth.recordFailure(ip);
       json(res, 401, { error: 'Invalid password', code: 'invalid_password' });
       return;
     }
+    auth.clearAttempt(ip, attempt);
     const sid = auth.createSession();
     res.setHeader('set-cookie', sessionCookieHeader(sid, auth.secureCookie(req)));
     res.writeHead(204);
@@ -306,10 +369,13 @@ export function createHttpServer(
     const clients = sseClients.get(teamId) ?? new Set<Res>();
     clients.add(res);
     sseClients.set(teamId, clients);
+    const sid = parseSessionCookie(req);
+    if (sid) sseSessionByClient.set(res, sid);
     const heartbeat = setInterval(() => res.write(': ping\n\n'), 25_000);
     req.on('close', () => {
       clearInterval(heartbeat);
       clients.delete(res);
+      sseSessionByClient.delete(res);
       if (clients.size === 0) sseClients.delete(teamId);
     });
   });
@@ -322,6 +388,7 @@ export function createHttpServer(
       } catch {
         throw new DomainError('Invalid request URL', 'invalid_url');
       }
+      if (url.pathname.startsWith('/api/') && !checkOriginAndHost(req, res)) return;
       if (
         auth.enabled &&
         url.pathname.startsWith('/api/') &&

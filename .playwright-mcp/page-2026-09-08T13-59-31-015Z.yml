@@ -1,0 +1,63 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Hauptnavigation" [ref=f5e33]:
+      - link "Ziehung" [ref=f5e34] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Teilnehmer" [ref=f5e35] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistik" [ref=f5e36] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f5e37] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f5e5]:
+      - button "DE" [pressed] [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Darstellung
+      - button "Auto" [pressed] [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Hell" [ref=f5e13] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dunkel" [ref=f5e15] [cursor=pointer]
+  - main [ref=f5e16]:
+    - heading "Teilnehmer" [level=1] [ref=f5e68]
+    - paragraph [ref=f5e101]: Name ist zu lang.
+    - generic [ref=f5e69]:
+      - generic [ref=f5e70]:
+        - heading "Einzeln zusteigen" [level=2] [ref=f5e71]
+        - generic [ref=f5e72]:
+          - generic [ref=f5e73]: Name
+          - textbox "Name" [ref=f5e74]
+        - button "Hinzufügen" [ref=f5e75] [cursor=pointer]
+      - generic [ref=f5e76]:
+        - heading "Liste einfügen" [level=2] [ref=f5e77]
+        - generic [ref=f5e78]:
+          - generic [ref=f5e79]: Ein Name pro Zeile (Komma und Semikolon trennen auch)
+          - textbox "Ein Name pro Zeile (Komma und Semikolon trennen auch)" [ref=f5e80]: Jürgen Übelhör Zoë Åström Max Mustermann-Langenscheidt von Hohenzollernbrücke-Oberammergau 李小龙 Максим Жирновский Renée 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢 Anna
+        - button "Liste übernehmen" [active] [ref=f5e81] [cursor=pointer]
+    - generic [ref=f5e82]:
+      - heading "Aktiv (0)" [level=2] [ref=f5e83]
+      - table [ref=f5e84]:
+        - rowgroup [ref=f5e85]:
+          - row [ref=f5e86]:
+            - columnheader "Name" [ref=f5e87]
+            - columnheader "Status" [ref=f5e88]
+            - columnheader [ref=f5e89]
+        - rowgroup [ref=f5e90]:
+          - row [ref=f5e91]:
+            - cell "Niemand an Bord." [ref=f5e92]
+    - generic [ref=f5e93]:
+      - heading "Gleise (Pools)" [level=2] [ref=f5e94]
+      - paragraph [ref=f5e95]: Optionale Teilmengen, z. B. „Backend“ oder „Daily“. Ohne Pool fahren alle Aktiven.
+      - generic [ref=f5e96]:
+        - generic [ref=f5e97]:
+          - generic [ref=f5e98]: Neues Gleis
+          - textbox "Neues Gleis" [ref=f5e99]
+        - button "Gleis anlegen" [ref=f5e100] [cursor=pointer]
+  - contentinfo [ref=f5e31]:
+    - text: Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben ohne Gewähr, außer den Schuldsprüchen.
+    - link "Dokumentation" [ref=f5e32] [cursor=pointer]:
+      - /url: /docs/

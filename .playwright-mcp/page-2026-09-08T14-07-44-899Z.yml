@@ -1,0 +1,125 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Hauptnavigation" [ref=f5e33]:
+      - link "Ziehung" [ref=f5e34] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Teilnehmer" [ref=f5e35] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistik" [ref=f5e36] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f5e37] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f5e5]:
+      - button "DE" [pressed] [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Darstellung
+      - button "Auto" [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Hell" [ref=f5e13] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dunkel" [active] [pressed] [ref=f5e15] [cursor=pointer]
+  - main [ref=f5e16]:
+    - generic [ref=f5e184]:
+      - generic [ref=f5e185]:
+        - paragraph [ref=f5e186]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f5e187]
+      - generic [ref=f5e188]:
+        - generic [ref=f5e189]:
+          - generic [ref=f5e190]: Gleis
+          - combobox "Gleis" [disabled] [ref=f5e191]:
+            - option "Alle Aktiven (8)" [selected]
+        - button "Animation Linie" [expanded] [ref=f5e843] [cursor=pointer]:
+          - generic [ref=f5e194]: Animation
+          - generic [ref=f5e195]: Linie
+    - generic [ref=f5e269]:
+      - generic [ref=f5e270]:
+        - generic [ref=f5e271]: Darstellung
+        - combobox "Darstellung" [ref=f5e272]:
+          - option "Drehscheibe"
+          - option "Zugeinfahrt"
+          - option "Fallblattanzeige"
+          - option "Gleis & Signal"
+          - option "Fahrkartenstempel"
+          - option "Fahrplan-Rolle"
+          - option "Gewichtslinie" [selected]
+      - generic [ref=f5e279]:
+        - generic [ref=f5e280]: Ergebnis
+        - combobox "Ergebnis" [ref=f5e281]:
+          - option "Einblenden" [selected]
+          - option "Einfahren"
+          - option "Fallen"
+          - option "Rot aufblitzen"
+          - option "Rütteln"
+          - option "Ohne"
+      - generic [ref=f5e282]:
+        - generic [ref=f5e283]: Ansage
+        - combobox "Ansage" [ref=f5e284]:
+          - option "Aufsteigen" [selected]
+          - option "Fallblatt"
+          - option "Schreibmaschine"
+          - option "Leuchtanzeige"
+          - option "Stempel"
+      - generic [ref=f5e285]:
+        - generic [ref=f5e286]: Teams-Karte
+        - switch "Automatisch öffnen" [ref=f5e287] [cursor=pointer]
+    - paragraph [ref=f5e196]: 8 aktive Teilnehmer im Lostopf.
+    - generic [ref=f5e844]:
+      - generic [ref=f5e846]:
+        - generic "Zoë Åström" [ref=f5e847]
+        - generic "Anna" [ref=f5e848]
+        - generic "Jürgen Übelhör" [ref=f5e849]
+        - generic "Maximilian von Hohenzollernbrücke" [ref=f5e850]
+        - generic "李小龙" [ref=f5e851]
+        - generic "Renée" [ref=f5e852]
+        - generic "Максим Жирновский" [ref=f5e853]
+        - generic "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f5e854]
+      - list [ref=f5e858]:
+        - listitem [ref=f5e859]:
+          - generic [ref=f5e861]: Zoë Åström
+          - generic [ref=f5e862]: 12,5 %
+        - listitem [ref=f5e863]:
+          - generic [ref=f5e865]: Anna
+          - generic [ref=f5e866]: 12,5 %
+        - listitem [ref=f5e867]:
+          - generic [ref=f5e869]: Jürgen Übelhör
+          - generic [ref=f5e870]: 12,5 %
+        - listitem [ref=f5e871]:
+          - generic [ref=f5e873]: Maximilian von Hohenzollernbrücke
+          - generic [ref=f5e874]: 12,5 %
+        - listitem [ref=f5e875]:
+          - generic [ref=f5e877]: 李小龙
+          - generic [ref=f5e878]: 12,5 %
+        - listitem [ref=f5e879]:
+          - generic [ref=f5e881]: Renée
+          - generic [ref=f5e882]: 12,5 %
+        - listitem [ref=f5e883]:
+          - generic [ref=f5e885]: Максим Жирновский
+          - generic [ref=f5e886]: 12,5 %
+        - listitem [ref=f5e887]:
+          - generic [ref=f5e889]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+          - generic [ref=f5e890]: 12,5 %
+      - paragraph [ref=f5e891]: Der HMAC bestimmt einen Punkt auf der Gewichtslinie. Breite = Wahrscheinlichkeit.
+    - button "Nächste Ziehung" [ref=f5e893] [cursor=pointer]
+    - status [ref=f5e243]: "Schuldig: Anna"
+    - generic [ref=f5e894]:
+      - paragraph [ref=f5e895]: Nächster Halt
+      - paragraph [ref=f5e896]: Verantwortung
+      - paragraph [ref=f5e897]: Schuldig
+      - paragraph [ref=f5e898]:
+        - generic [ref=f5e899]: Anna
+        - generic [aria-hidden] [ref=f5e900]: Anna
+      - paragraph [ref=f5e901]: Zug SR 0007 · Wahrscheinlichkeit 12,5 %
+      - generic [ref=f5e902]:
+        - link "Schuldbericht öffnen" [ref=f5e903] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/8d59c651-0c4f-4544-b933-71d07cacca66"
+        - button "Für Teams teilen" [ref=f5e904] [cursor=pointer]
+        - link "Einspruch / Nachweis" [ref=f5e905] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/3109e870-173e-4caa-9185-d65b8e4058a7"
+  - contentinfo [ref=f5e31]:
+    - text: Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben ohne Gewähr, außer den Schuldsprüchen.
+    - link "Dokumentation" [ref=f5e32] [cursor=pointer]:
+      - /url: /docs/

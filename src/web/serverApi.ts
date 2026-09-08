@@ -6,10 +6,13 @@ import { ApiError } from './apiError.ts';
 import { markUnauthenticated } from './authState.ts';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+  // The server requires application/json on every state-changing request (CSRF
+  // defense), so send it — and a body to match — even when there's nothing to say.
+  const hasBody = method !== 'GET';
   const res = await fetch(`/api${path}`, {
     method,
-    headers: body === undefined ? {} : { 'content-type': 'application/json' },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    headers: hasBody ? { 'content-type': 'application/json' } : {},
+    ...(hasBody ? { body: JSON.stringify(body ?? {}) } : {}),
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {

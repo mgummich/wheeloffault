@@ -16,6 +16,7 @@ export type ErrorCode =
   | 'member_not_found'
   | 'spin_not_found'
   | 'no_participants'
+  | 'duplicate_member_id'
   | 'invalid_weight'
   | 'all_weights_zero'
   | 'spin_without_result'
@@ -54,6 +55,7 @@ const STATUS_BY_CODE: Record<ErrorCode, Status> = {
   member_not_found: 'not_found',
   spin_not_found: 'not_found',
   no_participants: 'invalid',
+  duplicate_member_id: 'invalid',
   invalid_weight: 'invalid',
   all_weights_zero: 'invalid',
   spin_without_result: 'invalid',

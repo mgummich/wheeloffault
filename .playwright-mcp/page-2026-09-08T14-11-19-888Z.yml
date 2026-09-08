@@ -1,0 +1,256 @@
+- generic [ref=f6e2]:
+  - banner [ref=f6e3]:
+    - link "Schuldrad" [ref=f6e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Main navigation" [ref=f6e5]:
+      - link "Draw" [ref=f6e6] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Participants" [ref=f6e7] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistics" [ref=f6e8] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f6e9] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f6e10]:
+      - button "DE" [ref=f6e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e12]: "|"
+      - button "EN" [pressed] [ref=f6e13] [cursor=pointer]
+    - generic [ref=f6e14]:
+      - generic [ref=f6e15]: Theme
+      - button "Auto" [ref=f6e16] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e17]: "|"
+      - button "Light" [ref=f6e18] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e19]: "|"
+      - button "Dark" [pressed] [ref=f6e20] [cursor=pointer]
+  - main [ref=f6e21]:
+    - heading "Team statistics" [level=1] [ref=f6e101]
+    - generic [ref=f6e102]:
+      - generic [ref=f6e103]:
+        - paragraph [ref=f6e104]: Draws
+        - paragraph [ref=f6e105]: "8"
+      - generic [ref=f6e106]:
+        - paragraph [ref=f6e107]: Valid
+        - paragraph [ref=f6e108]: "8"
+      - generic [ref=f6e109]:
+        - paragraph [ref=f6e110]: Overturned
+        - paragraph [ref=f6e111]: "0"
+      - generic [ref=f6e112]:
+        - paragraph [ref=f6e113]: Open appeals
+        - paragraph [ref=f6e114]: "0"
+      - generic [ref=f6e115]:
+        - paragraph [ref=f6e116]: Max. deviation
+        - paragraph [ref=f6e117]: "1"
+    - generic [ref=f6e118]:
+      - heading "Guilt ranking" [level=2] [ref=f6e119]
+      - table [ref=f6e120]:
+        - rowgroup [ref=f6e121]:
+          - row [ref=f6e122]:
+            - columnheader "#" [ref=f6e123]
+            - columnheader "Name" [ref=f6e124]
+            - columnheader "Points" [ref=f6e125]
+            - columnheader "Guilt" [ref=f6e126]
+            - columnheader "Expected" [ref=f6e127]
+            - columnheader "Index" [ref=f6e128]
+            - columnheader "Streak" [ref=f6e129]
+            - columnheader "Last" [ref=f6e130]
+        - rowgroup [ref=f6e131]:
+          - row [ref=f6e132]:
+            - cell "1" [ref=f6e133]
+            - cell "Maximilian von Hohenzollernbrücke · 3 achievements" [ref=f6e134]:
+              - link "Maximilian von Hohenzollernbrücke" [ref=f6e135] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/987e5c36-e43f-485b-8651-02a6efdcd654"
+              - generic [ref=f6e136]: · 3 achievements
+            - cell "300" [ref=f6e137]
+            - cell "2" [ref=f6e138]
+            - cell "1" [ref=f6e139]
+            - cell "2.00" [ref=f6e140]
+            - cell "0" [ref=f6e141]
+            - cell "8 minutes ago" [ref=f6e142]
+          - row [ref=f6e143]:
+            - cell "2" [ref=f6e144]
+            - cell "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢 · 2 achievements" [ref=f6e145]:
+              - link "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f6e146] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/dde5ad45-04d8-4c08-ac5d-0d698b6cadd0"
+              - generic [ref=f6e147]: · 2 achievements
+            - cell "250" [ref=f6e148]
+            - cell "2" [ref=f6e149]
+            - cell "1" [ref=f6e150]
+            - cell "2.00" [ref=f6e151]
+            - cell "1" [ref=f6e152]
+            - cell "2 minutes ago" [ref=f6e153]
+          - row [ref=f6e154]:
+            - cell "3" [ref=f6e155]
+            - cell "Zoë Åström · 2 achievements" [ref=f6e156]:
+              - link "Zoë Åström" [ref=f6e157] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/6c88a372-79cc-4bb8-85c1-c5f30f61a9db"
+              - generic [ref=f6e158]: · 2 achievements
+            - cell "250" [ref=f6e159]
+            - cell "2" [ref=f6e160]
+            - cell "1" [ref=f6e161]
+            - cell "2.00" [ref=f6e162]
+            - cell "0" [ref=f6e163]
+            - cell "6 minutes ago" [ref=f6e164]
+          - row [ref=f6e165]:
+            - cell "4" [ref=f6e166]
+            - cell "Anna · 1 achievement" [ref=f6e167]:
+              - link "Anna" [ref=f6e168] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/8d59c651-0c4f-4544-b933-71d07cacca66"
+              - generic [ref=f6e169]: · 1 achievement
+            - cell "125" [ref=f6e170]
+            - cell "1" [ref=f6e171]
+            - cell "1" [ref=f6e172]
+            - cell "1.00" [ref=f6e173]
+            - cell "0" [ref=f6e174]
+            - cell "5 minutes ago" [ref=f6e175]
+          - row [ref=f6e176]:
+            - cell "5" [ref=f6e177]
+            - cell "Максим Жирновский · 1 achievement" [ref=f6e178]:
+              - link "Максим Жирновский" [ref=f6e179] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/c1bc8792-5af8-49b4-85a6-f74a3c6e2dae"
+              - generic [ref=f6e180]: · 1 achievement
+            - cell "125" [ref=f6e181]
+            - cell "1" [ref=f6e182]
+            - cell "1" [ref=f6e183]
+            - cell "1.00" [ref=f6e184]
+            - cell "0" [ref=f6e185]
+            - cell "7 minutes ago" [ref=f6e186]
+          - row [ref=f6e187]:
+            - cell "6" [ref=f6e188]
+            - cell [ref=f6e189]:
+              - link "Jürgen Übelhör" [ref=f6e190] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/97e4707c-bd55-4ff3-a078-96f71d027278"
+            - cell "0" [ref=f6e191]
+            - cell "0" [ref=f6e192]
+            - cell "1" [ref=f6e193]
+            - cell "0.00" [ref=f6e194]
+            - cell "0" [ref=f6e195]
+            - cell "never" [ref=f6e196]
+          - row [ref=f6e197]:
+            - cell "7" [ref=f6e198]
+            - cell [ref=f6e199]:
+              - link "Renée" [ref=f6e200] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/c13b0b4e-8795-433a-9e9e-7b2410dd73d9"
+            - cell "0" [ref=f6e201]
+            - cell "0" [ref=f6e202]
+            - cell "1" [ref=f6e203]
+            - cell "0.00" [ref=f6e204]
+            - cell "0" [ref=f6e205]
+            - cell "never" [ref=f6e206]
+          - row [ref=f6e207]:
+            - cell "8" [ref=f6e208]
+            - cell [ref=f6e209]:
+              - link "李小龙" [ref=f6e210] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/997f578a-7a17-4e2a-9637-19eb930d60bb"
+            - cell "0" [ref=f6e211]
+            - cell "0" [ref=f6e212]
+            - cell "1" [ref=f6e213]
+            - cell "0.00" [ref=f6e214]
+            - cell "0" [ref=f6e215]
+            - cell "never" [ref=f6e216]
+    - generic [ref=f6e217]:
+      - heading "Actual vs. expected" [level=2] [ref=f6e218]
+      - generic [ref=f6e219]:
+        - generic [ref=f6e220]:
+          - generic [ref=f6e221]: Maximilian von Hohenzollernbrücke
+          - generic [ref=f6e225]: 2 / 1
+        - generic [ref=f6e226]:
+          - generic [ref=f6e227]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+          - generic [ref=f6e231]: 2 / 1
+        - generic [ref=f6e232]:
+          - generic [ref=f6e233]: Zoë Åström
+          - generic [ref=f6e237]: 2 / 1
+        - generic [ref=f6e238]:
+          - generic [ref=f6e239]: Anna
+          - generic [ref=f6e243]: 1 / 1
+        - generic [ref=f6e244]:
+          - generic [ref=f6e245]: Максим Жирновский
+          - generic [ref=f6e249]: 1 / 1
+        - generic [ref=f6e250]:
+          - generic [ref=f6e251]: Jürgen Übelhör
+          - generic [ref=f6e254]: 0 / 1
+        - generic [ref=f6e255]:
+          - generic [ref=f6e256]: Renée
+          - generic [ref=f6e259]: 0 / 1
+        - generic [ref=f6e260]:
+          - generic [ref=f6e261]: 李小龙
+          - generic [ref=f6e264]: 0 / 1
+      - paragraph [ref=f6e265]: "Red: actual verdicts. Grey: statistical expectation from the committed weights."
+    - generic [ref=f6e266]:
+      - heading "Train history" [level=2] [ref=f6e267]
+      - table [ref=f6e268]:
+        - rowgroup [ref=f6e269]:
+          - row [ref=f6e270]:
+            - columnheader "Train" [ref=f6e271]
+            - columnheader "Departure" [ref=f6e272]
+            - columnheader "Guilty" [ref=f6e273]
+            - columnheader "Participants" [ref=f6e274]
+            - columnheader "Status" [ref=f6e275]
+        - rowgroup [ref=f6e276]:
+          - row [ref=f6e277]:
+            - cell [ref=f6e278]:
+              - link "SR 0008" [ref=f6e279] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/71687b82-35a8-4611-8e4b-13e376e91d93"
+            - cell "Sep 8, 2026, 4:09 PM" [ref=f6e280]
+            - cell "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f6e281]
+            - cell "8" [ref=f6e282]
+            - cell "valid" [ref=f6e283]
+          - row [ref=f6e285]:
+            - cell [ref=f6e286]:
+              - link "SR 0007" [ref=f6e287] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/3109e870-173e-4caa-9185-d65b8e4058a7"
+            - cell "Sep 8, 2026, 4:06 PM" [ref=f6e288]
+            - cell "Anna" [ref=f6e289]
+            - cell "8" [ref=f6e290]
+            - cell "valid" [ref=f6e291]
+          - row [ref=f6e293]:
+            - cell [ref=f6e294]:
+              - link "SR 0006" [ref=f6e295] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/99681ce9-35e2-4e99-a181-4542cf85142f"
+            - cell "Sep 8, 2026, 4:06 PM" [ref=f6e296]
+            - cell "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f6e297]
+            - cell "8" [ref=f6e298]
+            - cell "valid" [ref=f6e299]
+          - row [ref=f6e301]:
+            - cell [ref=f6e302]:
+              - link "SR 0005" [ref=f6e303] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/5de36927-1c66-4895-af6c-98ea14da47da"
+            - cell "Sep 8, 2026, 4:05 PM" [ref=f6e304]
+            - cell "Zoë Åström" [ref=f6e305]
+            - cell "8" [ref=f6e306]
+            - cell "valid" [ref=f6e307]
+          - row [ref=f6e309]:
+            - cell [ref=f6e310]:
+              - link "SR 0004" [ref=f6e311] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/17e9e91e-1d54-4c8e-b46b-6cacc3e9e63f"
+            - cell "Sep 8, 2026, 4:04 PM" [ref=f6e312]
+            - cell "Максим Жирновский" [ref=f6e313]
+            - cell "8" [ref=f6e314]
+            - cell "valid" [ref=f6e315]
+          - row [ref=f6e317]:
+            - cell [ref=f6e318]:
+              - link "SR 0003" [ref=f6e319] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/c82bc03a-a227-4741-858c-7021e0da6176"
+            - cell "Sep 8, 2026, 4:03 PM" [ref=f6e320]
+            - cell "Maximilian von Hohenzollernbrücke" [ref=f6e321]
+            - cell "8" [ref=f6e322]
+            - cell "valid" [ref=f6e323]
+          - row [ref=f6e325]:
+            - cell [ref=f6e326]:
+              - link "SR 0002" [ref=f6e327] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/22b7131f-2a99-4494-a8d0-20eda8a7e7e0"
+            - cell "Sep 8, 2026, 4:02 PM" [ref=f6e328]
+            - cell "Maximilian von Hohenzollernbrücke" [ref=f6e329]
+            - cell "8" [ref=f6e330]
+            - cell "valid" [ref=f6e331]
+          - row [ref=f6e333]:
+            - cell [ref=f6e334]:
+              - link "SR 0001" [ref=f6e335] [cursor=pointer]:
+                - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/ce6575eb-1307-4d16-9b9f-bde458af7e67"
+            - cell "Sep 8, 2026, 4:00 PM" [ref=f6e336]
+            - cell "Zoë Åström" [ref=f6e337]
+            - cell "8" [ref=f6e338]
+            - cell "valid" [ref=f6e339]
+  - contentinfo [ref=f6e86]:
+    - text: Results are fixed before the animation and can be verified in the browser. No warranty for any of this, except the verdicts.
+    - link "Documentation" [ref=f6e87] [cursor=pointer]:
+      - /url: /docs/

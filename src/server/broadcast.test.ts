@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { StoredEvent } from '../domain/events.ts';
-import { createBroadcastHub, createRedisBroadcastHub } from './broadcast.ts';
+import { createBroadcastHub, createRedisBroadcastHub, type PublicEventRef } from './broadcast.ts';
 
 const event: StoredEvent = {
   type: 'TeamCreated',
@@ -35,7 +35,7 @@ class FakeRedisClient {
 
 describe('broadcast hubs', () => {
   it('delivers in-process broadcasts locally', async () => {
-    const delivered: [string, StoredEvent[]][] = [];
+    const delivered: [string, PublicEventRef[]][] = [];
     const hub = createBroadcastHub((teamId, events) => delivered.push([teamId, events]));
 
     await hub.broadcast('t1', [event]);
@@ -44,7 +44,7 @@ describe('broadcast hubs', () => {
   });
 
   it('publishes local broadcasts and forwards remote redis messages', async () => {
-    const delivered: [string, StoredEvent[]][] = [];
+    const delivered: [string, PublicEventRef[]][] = [];
     const publisher = new FakeRedisClient();
     const subscriber = new FakeRedisClient();
     publisher.duplicate = () => subscriber;
@@ -80,7 +80,7 @@ describe('broadcast hubs', () => {
   });
 
   it('ignores malformed redis messages', async () => {
-    const delivered: [string, StoredEvent[]][] = [];
+    const delivered: [string, PublicEventRef[]][] = [];
     const publisher = new FakeRedisClient();
     const subscriber = new FakeRedisClient();
     publisher.duplicate = () => subscriber;

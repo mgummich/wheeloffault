@@ -35,9 +35,26 @@ cookie/session semantics.
 
 **What it protects against:** a passer-by who can reach the server (on a
 LAN, over a VPN, or through a reverse proxy without its own auth) but does
-not know the deployment password. Login attempts are rate-limited (5
-failed attempts per IP per minute); the password is verified with scrypt
+not know the deployment password. Login attempts are rate-limited (5 per
+IP per minute, counted from the moment a request arrives — not from the
+moment a wrong password is confirmed — so a burst of concurrent requests
+cannot all slip in under the limit); the password is verified with scrypt
 and a constant-time comparison, never logged, never written to disk.
+Sessions slide their expiry on use (12h) but always expire after 7 days
+regardless of activity, and every session tied to a still-open SSE stream
+is closed the moment it ends (logout, expiry, or the periodic sweep) —
+a stolen cookie does not buy an indefinitely live event feed.
+
+The rate limiter keys on the connecting socket's IP address, which is the
+reverse proxy's IP if you run one — meaning by default every request
+through the same proxy shares one limit. Set `SCHULDRAD_TRUST_PROXY=1` to
+key on `x-forwarded-for` instead, but only behind a proxy that overwrites
+that header rather than appending to it, or clients can spoof their way
+around the limit. See
+[docs/en/deployment.md](docs/en/deployment.md) § 3a. This does not add
+anti-DoS machinery beyond that — a single IP behind a shared proxy that
+you choose not to unmask can still lock the login for everyone behind it;
+that trade-off is deliberate given the deployment target (§ 1).
 
 **What it does not protect against, and is not trying to:**
 
@@ -67,6 +84,37 @@ obfuscated JavaScript the browser itself executes, trivially bypassed by
 reading the source or the network tab. A real password gate needs a party
 other than the requester to hold the secret and decide — that party is the
 server, which is why this feature exists only in server mode.
+
+## § 1b CSRF and DNS rebinding
+
+Every `/api/*` request is checked against three cheap rules, applied
+regardless of whether § 1a's password is enabled — they hold even in the
+fully-open default mode:
+
+* **Content-Type.** A state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`)
+  must be `application/json`. This alone defeats the classic browser CSRF
+  trick of a `<form>` posting `text/plain`, which never triggers a CORS
+  preflight and would otherwise reach the handler with attacker-controlled
+  cross-site credentials attached.
+* **Origin.** If a request carries an `Origin` header, it must match the
+  request's `Host`. Requests with no `Origin` at all — curl, scripts,
+  server-to-server calls — are unaffected; browsers only omit `Origin` on
+  requests a same-origin script could have made anyway.
+* **Host allowlist.** Optional. Set `SCHULDRAD_ALLOWED_HOSTS` (comma-separated)
+  to reject any request whose `Host` header isn't in the list. This is what
+  closes DNS rebinding — an attacker page whose domain resolves to your
+  server's address, tricking the browser's same-origin check into treating
+  attacker-origin requests as same-origin. Left unset by default, because
+  the default has no way to know which hostnames your LAN deployment is
+  legitimately reached by; setting it is what actually closes the hole, and
+  is worth doing wherever the reachable hostnames are known ahead of time.
+  See [docs/en/deployment.md](docs/en/deployment.md) § 3b.
+
+Without `SCHULDRAD_ALLOWED_HOSTS` set, a DNS-rebinding attacker can still
+reach the API with a same-origin-looking request (Origin and Host both
+resolve to the attacker's own domain, so the Origin check passes) — the
+Content-Type and Origin checks above narrow the CSRF surface but do not by
+themselves close DNS rebinding. Setting the allowlist does.
 
 ## § 2 `teamId` is not a capability
 
@@ -117,8 +165,9 @@ database the operator's browser does not control.
   knows the deployment password, if one is set (no per-team access control
   even with § 1a enabled — see § 2). Without § 1a, from anyone who can
   reach the server at all.
-* Availability — there is no rate limiting; a server exposed to an
-  untrusted network can be flooded.
+* Availability — outside of § 1a's login rate limiting, there is no
+  general request rate limiting; a server exposed to an untrusted network
+  can still be flooded on any other route.
 * Anything about the underlying host, container runtime, SQLite/Postgres
   instance, or Redis instance beyond what the Dockerfile itself does (runs
   as non-root, strips the npm CLI from the runtime image, applies OS

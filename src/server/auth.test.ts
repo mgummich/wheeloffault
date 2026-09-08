@@ -169,7 +169,10 @@ describe('auth enabled', () => {
     });
     const cookie = cookiePair(login);
 
-    const logout = await fetch(`${base}/api/auth/logout`, { method: 'POST', headers: { cookie } });
+    const logout = await fetch(`${base}/api/auth/logout`, {
+      method: 'POST',
+      headers: { cookie, 'content-type': 'application/json' },
+    });
     expect(logout.status).toBe(204);
     expect(logout.headers.get('set-cookie')).toContain('Max-Age=0');
 

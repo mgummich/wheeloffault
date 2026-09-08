@@ -1,0 +1,61 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Hauptnavigation" [ref=f5e33]:
+      - link "Ziehung" [active] [ref=f5e34] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Teilnehmer" [ref=f5e35] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistik" [ref=f5e36] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f5e37] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f5e5]:
+      - button "DE" [pressed] [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Darstellung
+      - button "Auto" [pressed] [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Hell" [ref=f5e13] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dunkel" [ref=f5e15] [cursor=pointer]
+  - main [ref=f5e16]:
+    - generic [ref=f5e184]:
+      - generic [ref=f5e185]:
+        - paragraph [ref=f5e186]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f5e187]
+      - generic [ref=f5e188]:
+        - generic [ref=f5e189]:
+          - generic [ref=f5e190]: Gleis
+          - combobox "Gleis" [ref=f5e191]:
+            - option "Alle Aktiven (8)" [selected]
+        - button "Animation Drehscheibe · Bahn" [ref=f5e192] [cursor=pointer]:
+          - generic [ref=f5e194]: Animation
+          - generic [ref=f5e195]: Drehscheibe · Bahn
+    - paragraph [ref=f5e196]: 8 aktive Teilnehmer im Lostopf.
+    - generic [ref=f5e197]:
+      - generic [ref=f5e198]:
+        - generic [ref=f5e199]: Zug
+        - generic [ref=f5e200]: SR ––––
+        - generic [ref=f5e201]: Nach
+        - generic [ref=f5e202]: Verantwortung
+        - generic [ref=f5e203]: Status
+        - generic [ref=f5e204]: Abfahrtbereit
+      - img "Drehscheibe mit 8 Abschnitten" [ref=f5e206]:
+        - generic [ref=f5e207]: Jürgen Übelhör
+        - generic [ref=f5e211]: Zoë Åström
+        - generic [ref=f5e215]: Maximilian von…
+        - generic [ref=f5e219]: 李小龙
+        - generic [ref=f5e223]: Максим Жирновс…
+        - generic [ref=f5e227]: Renée
+        - generic [ref=f5e231]: 𝔊𝔬𝔱𝔥𝔦𝔠 �…
+        - generic [ref=f5e235]: Anna
+    - button "Ziehung starten" [ref=f5e242] [cursor=pointer]
+    - status [ref=f5e243]
+  - contentinfo [ref=f5e31]:
+    - text: Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben ohne Gewähr, außer den Schuldsprüchen.
+    - link "Dokumentation" [ref=f5e32] [cursor=pointer]:
+      - /url: /docs/

@@ -97,6 +97,8 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | `SCHULDRAD_PASSWORD` | — | optionales Betriebspasswort — siehe § 3a |
 | `SCHULDRAD_PASSWORD_FILE` | — | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind |
 | `SCHULDRAD_SECURE_COOKIES` | — | auf `1` setzen, um das `Secure`-Cookie-Attribut zu erzwingen — siehe § 3a |
+| `SCHULDRAD_TRUST_PROXY` | — | auf `1` setzen hinter einem Reverse Proxy, der `x-forwarded-for`/`x-forwarded-proto` überschreibt (nicht anhängt) — siehe § 3a und § 3b |
+| `SCHULDRAD_ALLOWED_HOSTS` | — | optionale, kommagetrennte `Host`-Allowlist für `/api/*`-Anfragen, schließt DNS-Rebinding — siehe § 3b |
 
 ## § 3a Optionaler Passwortschutz
 
@@ -136,19 +138,51 @@ meldet alle ab**, mit Absicht; es gibt keine Sitzungs-Persistenz, die
 verloren gehen könnte.
 
 Das Session-Cookie (`schuldrad_session`) ist `HttpOnly` und
-`SameSite=Strict`. Es trägt außerdem `Secure`, sobald die Anfrage mit
-`x-forwarded-proto: https` ankommt (der Standard-Header, den ein
-TLS-terminierender Reverse Proxy setzt) oder wenn `SCHULDRAD_SECURE_COOKIES=1`
-explizit gesetzt ist. Wird TLS an einem Proxy terminiert, der diesen
-Header nicht setzt, die Umgebungsvariable selbst setzen — sonst wird das
-Cookie auf der Strecke Proxy→App nur dann unverschlüsselt übertragen,
-wenn diese Strecke selbst unverschlüsselt ist, was auf localhost/privaten
-Netzen unproblematisch ist, sonst aber nicht.
+`SameSite=Strict`. Es trägt außerdem `Secure`, wenn `SCHULDRAD_SECURE_COOKIES=1`
+explizit gesetzt ist, oder wenn die Anfrage mit `x-forwarded-proto: https`
+ankommt **und** `SCHULDRAD_TRUST_PROXY=1` gesetzt ist — der
+`x-forwarded-proto`-Header ist sonst von jedem fälschbar, der den Server
+direkt erreicht, daher wird er erst berücksichtigt, wenn bestätigt ist,
+dass ein Proxy davor steht und ihn kontrolliert. Wird TLS an einem Proxy
+terminiert, sowohl `SCHULDRAD_TRUST_PROXY=1` setzen als auch, falls der
+Proxy diesen Header nicht selbst setzt, `SCHULDRAD_SECURE_COOKIES=1`.
+
+`SCHULDRAD_TRUST_PROXY=1` stellt außerdem das Login-Rate-Limiting auf den
+ersten Eintrag von `x-forwarded-for` statt auf die Socket-IP um — nur
+hinter einem Reverse Proxy setzen, der diesen Header überschreibt (nicht
+anhängt), sonst kann ein Client sich einen eigenen Wert einschleusen und
+das Limit umgehen.
+
+Sitzungen verlängern sich bei Nutzung gleitend (12h), laufen aber
+unabhängig von der Aktivität nach 7 Tagen endgültig ab.
 
 Das schützt Team-Daten hinter einem gemeinsamen Geheimnis; es ist keine
 Mehrbenutzer-Authentifizierung (keine Einzelkonten, Rollen oder
 Audit-Trail) — siehe [SECURITY.md](../../SECURITY.md) für das genaue
 Bedrohungsmodell.
+
+## § 3b CSRF- und DNS-Rebinding-Härtung
+
+Unabhängig von § 3a muss jede `/api/*`-Anfrage bei zustandsänderenden
+Methoden `application/json` sein, und ein vorhandener `Origin`-Header muss
+mit `Host` übereinstimmen. Beides ist immer aktiv und braucht keine
+Konfiguration.
+
+DNS-Rebinding — eine von einem Angreifer kontrollierte Domain, die auf die
+Adresse des Servers auflöst, sodass ein Browser eine Angreiferseite als
+Same-Origin damit behandelt — wird nur geschlossen, indem
+`SCHULDRAD_ALLOWED_HOSTS` auf eine kommagetrennte Liste der Hostnamen
+(mit Port, falls nicht Standard) gesetzt wird, unter denen die Instanz
+legitim erreichbar ist, z. B.:
+
+```bash
+-e SCHULDRAD_ALLOWED_HOSTS=schuldrad.internal,schuldrad.internal:3000
+```
+
+Standardmäßig nicht gesetzt, damit bestehende LAN-Deployments, die über
+rohe IP oder einen nicht gelisteten Hostnamen erreicht werden,
+unverändert weiterlaufen. Siehe [SECURITY.md](../../SECURITY.md) § 1b für
+das vollständige Bedrohungsmodell.
 
 ## § 4 Bind-Adresse, Reverse Proxy und TLS
 

@@ -1,10 +1,13 @@
 import type { AuthState } from './authState.ts';
 
 async function call(method: string, path: string, body?: unknown): Promise<Response> {
+  // The server requires application/json on every state-changing request (CSRF
+  // defense), so send it — and a body to match — even when there's nothing to say.
+  const hasBody = method !== 'GET';
   return fetch(`/api/auth${path}`, {
     method,
-    headers: body === undefined ? {} : { 'content-type': 'application/json' },
-    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    headers: hasBody ? { 'content-type': 'application/json' } : {},
+    ...(hasBody ? { body: JSON.stringify(body ?? {}) } : {}),
   });
 }
 

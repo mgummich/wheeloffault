@@ -1,0 +1,94 @@
+- generic [ref=f6e2]:
+  - banner [ref=f6e3]:
+    - link "Schuldrad" [ref=f6e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Main navigation" [ref=f6e5]:
+      - link "Draw" [ref=f6e6] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Participants" [ref=f6e7] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistics" [ref=f6e8] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f6e9] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f6e10]:
+      - button "DE" [ref=f6e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e12]: "|"
+      - button "EN" [pressed] [ref=f6e13] [cursor=pointer]
+    - generic [ref=f6e14]:
+      - generic [ref=f6e15]: Theme
+      - button "Auto" [ref=f6e16] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e17]: "|"
+      - button "Light" [ref=f6e18] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e19]: "|"
+      - button "Dark" [pressed] [ref=f6e20] [cursor=pointer]
+  - main [ref=f6e21]:
+    - generic [ref=f6e22]:
+      - generic [ref=f6e23]:
+        - paragraph [ref=f6e24]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f6e25]
+      - generic [ref=f6e26]:
+        - generic [ref=f6e27]:
+          - generic [ref=f6e28]: Track
+          - combobox "Track" [disabled] [ref=f6e29]:
+            - option "All active (8)" [selected]
+        - button "Animation Line" [ref=f6e30] [cursor=pointer]:
+          - generic [ref=f6e32]: Animation
+          - generic [ref=f6e33]: Line
+    - paragraph [ref=f6e34]: 8 active participants in the pool.
+    - generic [ref=f6e35]:
+      - generic [ref=f6e37]:
+        - generic "Zoë Åström" [ref=f6e38]
+        - generic "Anna" [ref=f6e39]
+        - generic "Jürgen Übelhör" [ref=f6e40]
+        - generic "Maximilian von Hohenzollernbrücke" [ref=f6e41]
+        - generic "李小龙" [ref=f6e42]
+        - generic "Renée" [ref=f6e43]
+        - generic "Максим Жирновский" [ref=f6e44]
+        - generic "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f6e45]
+      - list [ref=f6e49]:
+        - listitem [ref=f6e50]:
+          - generic [ref=f6e52]: Zoë Åström
+          - generic [ref=f6e53]: 12.5 %
+        - listitem [ref=f6e54]:
+          - generic [ref=f6e56]: Anna
+          - generic [ref=f6e57]: 12.5 %
+        - listitem [ref=f6e58]:
+          - generic [ref=f6e60]: Jürgen Übelhör
+          - generic [ref=f6e61]: 12.5 %
+        - listitem [ref=f6e62]:
+          - generic [ref=f6e64]: Maximilian von Hohenzollernbrücke
+          - generic [ref=f6e65]: 12.5 %
+        - listitem [ref=f6e66]:
+          - generic [ref=f6e68]: 李小龙
+          - generic [ref=f6e69]: 12.5 %
+        - listitem [ref=f6e70]:
+          - generic [ref=f6e72]: Renée
+          - generic [ref=f6e73]: 12.5 %
+        - listitem [ref=f6e74]:
+          - generic [ref=f6e76]: Максим Жирновский
+          - generic [ref=f6e77]: 12.5 %
+        - listitem [ref=f6e78]:
+          - generic [ref=f6e80]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+          - generic [ref=f6e81]: 12.5 %
+      - paragraph [ref=f6e82]: The HMAC determines a point on the weight line. Width = probability.
+    - button "Next draw" [active] [ref=f6e88] [cursor=pointer]
+    - status [ref=f6e85]: "Guilty: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢"
+    - generic [ref=f6e89]:
+      - paragraph [ref=f6e90]: Next stop
+      - paragraph [ref=f6e91]: Responsibility
+      - paragraph [ref=f6e92]: Guilty
+      - paragraph [ref=f6e93]:
+        - generic [ref=f6e94]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+        - generic [aria-hidden] [ref=f6e95]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+      - paragraph [ref=f6e96]: Train SR 0008 · probability 12.5 %
+      - generic [ref=f6e97]:
+        - link "Open guilt report" [ref=f6e98] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/dde5ad45-04d8-4c08-ac5d-0d698b6cadd0"
+        - button "Share to Teams" [ref=f6e99] [cursor=pointer]
+        - link "Appeal / proof" [ref=f6e100] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/71687b82-35a8-4611-8e4b-13e376e91d93"
+  - contentinfo [ref=f6e86]:
+    - text: Results are fixed before the animation and can be verified in the browser. No warranty for any of this, except the verdicts.
+    - link "Documentation" [ref=f6e87] [cursor=pointer]:
+      - /url: /docs/

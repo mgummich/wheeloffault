@@ -1,0 +1,124 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Hauptnavigation" [ref=f5e33]:
+      - link "Ziehung" [ref=f5e34] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Teilnehmer" [ref=f5e35] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistik" [ref=f5e36] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f5e37] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f5e5]:
+      - button "DE" [pressed] [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Darstellung
+      - button "Auto" [pressed] [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Hell" [ref=f5e13] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dunkel" [ref=f5e15] [cursor=pointer]
+  - main [ref=f5e16]:
+    - generic [ref=f5e184]:
+      - generic [ref=f5e185]:
+        - paragraph [ref=f5e186]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f5e187]
+      - generic [ref=f5e188]:
+        - generic [ref=f5e189]:
+          - generic [ref=f5e190]: Gleis
+          - combobox "Gleis" [disabled] [ref=f5e191]:
+            - option "Alle Aktiven (8)" [selected]
+        - button "Animation Drehscheibe · Bahn" [expanded] [active] [ref=f5e192] [cursor=pointer]:
+          - generic [ref=f5e194]: Animation
+          - generic [ref=f5e195]: Drehscheibe · Bahn
+    - generic [ref=f5e269]:
+      - generic [ref=f5e270]:
+        - generic [ref=f5e271]: Darstellung
+        - combobox "Darstellung" [ref=f5e272]:
+          - option "Drehscheibe" [selected]
+          - option "Zugeinfahrt"
+          - option "Fallblattanzeige"
+          - option "Gleis & Signal"
+          - option "Fahrkartenstempel"
+          - option "Fahrplan-Rolle"
+          - option "Gewichtslinie"
+      - generic [ref=f5e273]:
+        - generic [ref=f5e274]: Rad-Stil
+        - combobox "Rad-Stil" [ref=f5e275]:
+          - option "Bahn (grau)" [selected]
+          - option "Bunt & Konfetti"
+          - option "Nachtzug"
+          - option "Pastell"
+      - generic [ref=f5e276]:
+        - generic [ref=f5e277]: Drehung
+        - combobox "Drehung" [ref=f5e278]:
+          - option "Ausrollen" [selected]
+          - option "Überschwingen"
+          - option "Anlauf rückwärts"
+          - option "Lange Fahrt"
+          - option "Schnellstopp"
+      - generic [ref=f5e279]:
+        - generic [ref=f5e280]: Ergebnis
+        - combobox "Ergebnis" [ref=f5e281]:
+          - option "Einblenden" [selected]
+          - option "Einfahren"
+          - option "Fallen"
+          - option "Rot aufblitzen"
+          - option "Rütteln"
+          - option "Ohne"
+      - generic [ref=f5e282]:
+        - generic [ref=f5e283]: Ansage
+        - combobox "Ansage" [ref=f5e284]:
+          - option "Aufsteigen" [selected]
+          - option "Fallblatt"
+          - option "Schreibmaschine"
+          - option "Leuchtanzeige"
+          - option "Stempel"
+      - generic [ref=f5e285]:
+        - generic [ref=f5e286]: Teams-Karte
+        - switch "Automatisch öffnen" [ref=f5e287] [cursor=pointer]
+      - generic [ref=f5e291]:
+        - generic [ref=f5e292]: Ton
+        - switch "Ticken" [ref=f5e293] [cursor=pointer]
+    - paragraph [ref=f5e196]: 8 aktive Teilnehmer im Lostopf.
+    - generic [ref=f5e197]:
+      - generic [ref=f5e198]:
+        - generic [ref=f5e199]: Zug
+        - generic [ref=f5e200]: SR 0001
+        - generic [ref=f5e201]: Nach
+        - generic [ref=f5e202]: Verantwortung
+        - generic [ref=f5e203]: Status
+        - generic [ref=f5e204]: Angekommen
+      - img "Drehscheibe mit 8 Abschnitten" [ref=f5e206]:
+        - generic [ref=f5e211]: Zoë Åström
+        - generic [ref=f5e235]: Anna
+        - generic [ref=f5e207]: Jürgen Übelhör
+        - generic [ref=f5e215]: Maximilian von…
+        - generic [ref=f5e219]: 李小龙
+        - generic [ref=f5e227]: Renée
+        - generic [ref=f5e223]: Максим Жирновс…
+        - generic [ref=f5e231]: 𝔊𝔬𝔱𝔥𝔦𝔠 �…
+    - button "Nächste Ziehung" [ref=f5e245] [cursor=pointer]
+    - status [ref=f5e243]: "Schuldig: Zoë Åström"
+    - generic [ref=f5e246]:
+      - paragraph [ref=f5e247]: Nächster Halt
+      - paragraph [ref=f5e248]: Verantwortung
+      - paragraph [ref=f5e249]: Schuldig
+      - paragraph [ref=f5e250]:
+        - generic [ref=f5e251]: Zoë Åström
+        - generic [aria-hidden] [ref=f5e252]: Zoë Åström
+      - paragraph [ref=f5e253]: Zug SR 0001 · Wahrscheinlichkeit 12,5 %
+      - generic [ref=f5e254]:
+        - link "Schuldbericht öffnen" [ref=f5e255] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/6c88a372-79cc-4bb8-85c1-c5f30f61a9db"
+        - button "Für Teams teilen" [ref=f5e256] [cursor=pointer]
+        - link "Einspruch / Nachweis" [ref=f5e257] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/ce6575eb-1307-4d16-9b9f-bde458af7e67"
+  - contentinfo [ref=f5e31]:
+    - text: Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben ohne Gewähr, außer den Schuldsprüchen.
+    - link "Dokumentation" [ref=f5e32] [cursor=pointer]:
+      - /url: /docs/

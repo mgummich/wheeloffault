@@ -16,10 +16,20 @@ type RedisClient = {
   quit(): Promise<unknown>;
 };
 
-type BroadcastSink = (teamId: string, events: StoredEvent[]) => void;
-
 /** Only what SSE clients need; never leaks a pre-reveal SpinCommitted.serverSeed over Redis. */
-type PublicEvent = { type: StoredEvent['type']; version: number };
+export type PublicEventRef = { type: StoredEvent['type']; version: number };
+
+/** deliver() only ever touches `type`/`version` — events arriving over Redis truly are this shape, not a `StoredEvent[]` cast pretending they are. */
+type BroadcastSink = (teamId: string, events: PublicEventRef[]) => void;
+
+function isPublicEventRef(value: unknown): value is PublicEventRef {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as { type: unknown }).type === 'string' &&
+    typeof (value as { version: unknown }).version === 'number'
+  );
+}
 
 export function createBroadcastHub(deliver: BroadcastSink): BroadcastHub {
   return {
@@ -49,20 +59,28 @@ export async function createRedisBroadcastHub(
   await Promise.all([publisher.connect(), subscriber.connect()]);
 
   await subscriber.subscribe(CHANNEL, async (message) => {
-    let envelope: { origin: string; teamId: string; events: PublicEvent[] };
+    let envelope: unknown;
     try {
       envelope = JSON.parse(message);
     } catch {
       return;
     }
-    if (envelope.origin === origin) return;
-    deliver(envelope.teamId, envelope.events as StoredEvent[]);
+    if (typeof envelope !== 'object' || envelope === null) return;
+    const { origin: msgOrigin, teamId, events } = envelope as Record<string, unknown>;
+    if (msgOrigin === origin) return;
+    if (typeof teamId !== 'string' || !Array.isArray(events)) return;
+    const publicEvents = events.filter(isPublicEventRef);
+    if (publicEvents.length === 0) return;
+    deliver(teamId, publicEvents);
   });
 
   return {
     async broadcast(teamId, events) {
       deliver(teamId, events);
-      const publicEvents: PublicEvent[] = events.map((e) => ({ type: e.type, version: e.version }));
+      const publicEvents: PublicEventRef[] = events.map((e) => ({
+        type: e.type,
+        version: e.version,
+      }));
       await publisher.publish(CHANNEL, JSON.stringify({ origin, teamId, events: publicEvents }));
     },
     async close() {

@@ -1,4 +1,5 @@
 import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { request as httpRequest } from 'node:http';
 import { type AddressInfo, connect } from 'node:net';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -330,7 +331,11 @@ describe('API', () => {
         })
       ).status,
     ).toBe(400);
-    const res = await fetch(`${base}/api/teams`, { method: 'POST', body: '{not json' });
+    const res = await fetch(`${base}/api/teams`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: '{not json',
+    });
     expect(res.status).toBe(400);
     const ok = await call<TeamView>('PUT', `/api/teams/${team.teamId}/policy`, {
       ...team.policy,
@@ -355,6 +360,77 @@ describe('API', () => {
     expect(text).toContain('event: appended');
     expect(text).toContain('"type":"MemberJoined"');
     await reader.cancel();
+  });
+});
+
+describe('CSRF / DNS-rebinding defenses', () => {
+  it('rejects a state-changing request whose Content-Type is not application/json', async () => {
+    const res = await fetch(`${base}/api/teams`, {
+      method: 'POST',
+      headers: { 'content-type': 'text/plain' },
+      body: JSON.stringify({ name: 'Team' }),
+    });
+    expect([400, 415]).toContain(res.status);
+  });
+
+  it('rejects a cross-origin Origin header', async () => {
+    const res = await fetch(`${base}/api/teams`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'https://evil.example' },
+      body: JSON.stringify({ name: 'Team' }),
+    });
+    expect(res.status).toBe(403);
+  });
+
+  it('allows a same-origin Origin header', async () => {
+    const res = await fetch(`${base}/api/teams`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: base },
+      body: JSON.stringify({ name: 'Team' }),
+    });
+    expect(res.status).toBe(201);
+  });
+
+  it('allows a request with no Origin header at all (curl-style)', async () => {
+    const res = await fetch(`${base}/api/teams`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: 'Team' }),
+    });
+    expect(res.status).toBe(201);
+  });
+
+  it('enforces SCHULDRAD_ALLOWED_HOSTS when set', async () => {
+    const store = openEventStore(':memory:');
+    const commands = createCommands(store);
+    const http = createHttpServer(commands, null, undefined, {
+      SCHULDRAD_ALLOWED_HOSTS: 'schuldrad.internal',
+    });
+    await new Promise<void>((r) => http.server.listen(0, '127.0.0.1', r));
+    const allowlistedBase = `http://127.0.0.1:${(http.server.address() as AddressInfo).port}`;
+    try {
+      const blocked = await fetch(`${allowlistedBase}/api/teams`);
+      expect(blocked.status).toBe(403);
+
+      // fetch()/undici refuse to let user code override the Host header, so
+      // hitting the allowed path needs a raw request instead.
+      const port = (http.server.address() as AddressInfo).port;
+      const allowedStatus = await new Promise<number>((resolve, reject) => {
+        const req = httpRequest(
+          { host: '127.0.0.1', port, path: '/api/teams', headers: { host: 'schuldrad.internal' } },
+          (res) => {
+            res.resume();
+            resolve(res.statusCode ?? 0);
+          },
+        );
+        req.on('error', reject);
+        req.end();
+      });
+      expect(allowedStatus).toBe(200);
+    } finally {
+      await new Promise<void>((r) => http.server.close(() => r()));
+      store.close();
+    }
   });
 });
 

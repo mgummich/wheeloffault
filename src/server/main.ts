@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { StoredEvent } from '../domain/events.ts';
 import { createAuth } from './auth.ts';
 import { createBroadcastHub, openRedisBroadcastHub } from './broadcast.ts';
 import { createCommands } from './commands.ts';
@@ -18,7 +19,7 @@ const webDir = process.env.WEB_DIR ?? join(here, '..', '..', 'dist', 'web');
 
 const store = await openConfiguredEventStore(process.env, dataDir);
 // The command layer and the HTTP layer reference each other only through this callback.
-let broadcast: (teamId: string, events: Parameters<typeof http.broadcast>[1]) => void = () => {};
+let broadcast: (teamId: string, events: StoredEvent[]) => void = () => {};
 const commands = createCommands(store, (teamId, events) => broadcast(teamId, events));
 const auth = createAuth(process.env);
 const http = createHttpServer(commands, process.env.WEB_DIR === '' ? null : webDir, auth);

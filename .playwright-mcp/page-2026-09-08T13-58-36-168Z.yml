@@ -1,0 +1,36 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - generic [ref=f5e5]:
+      - button "DE" [pressed] [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Darstellung
+      - button "Auto" [pressed] [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Hell" [ref=f5e13] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dunkel" [ref=f5e15] [cursor=pointer]
+  - main [ref=f5e16]:
+    - generic [ref=f5e17]:
+      - paragraph [ref=f5e18]: Betriebszentrale
+      - heading "Wer ist diesmal schuldig?" [level=1] [ref=f5e19]
+      - paragraph [ref=f5e20]: Nachvollziehbare Ziehungen nach Commit/Reveal-Verfahren, lückenlose Historie, Schuldberichte nach Fahrgastrechte-Standard.
+    - generic [ref=f5e21]:
+      - generic [ref=f5e22]:
+        - heading "Neues Team anlegen" [level=2] [ref=f5e23]
+        - generic [ref=f5e24]:
+          - generic [ref=f5e25]: Teamname
+          - textbox "Teamname" [ref=f5e26]
+        - button "Team eröffnen" [ref=f5e27] [cursor=pointer]
+      - generic [ref=f5e28]:
+        - heading "Abfahrten" [level=2] [ref=f5e29]
+        - paragraph [ref=f5e30]: Noch keine Teams. Der Bahnsteig ist leer.
+        - table:
+          - rowgroup
+  - contentinfo [ref=f5e31]:
+    - text: Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben ohne Gewähr, außer den Schuldsprüchen.
+    - link "Dokumentation" [ref=f5e32] [cursor=pointer]:
+      - /url: /docs/

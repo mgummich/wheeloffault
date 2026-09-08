@@ -1,0 +1,57 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Hauptnavigation" [ref=f5e33]:
+      - link "Ziehung" [ref=f5e34] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Teilnehmer" [ref=f5e35] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistik" [ref=f5e36] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f5e37] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f5e5]:
+      - button "DE" [pressed] [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Darstellung
+      - button "Auto" [pressed] [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Hell" [ref=f5e13] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dunkel" [ref=f5e15] [cursor=pointer]
+  - main [ref=f5e16]:
+    - generic [ref=f5e38]:
+      - generic [ref=f5e39]:
+        - paragraph [ref=f5e40]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f5e41]
+      - generic [ref=f5e42]:
+        - generic [ref=f5e43]:
+          - generic [ref=f5e44]: Gleis
+          - combobox "Gleis" [ref=f5e45]:
+            - option "Alle Aktiven (0)" [selected]
+        - button "Animation Drehscheibe · Bahn" [ref=f5e46] [cursor=pointer]:
+          - generic [ref=f5e48]: Animation
+          - generic [ref=f5e49]: Drehscheibe · Bahn
+    - paragraph [ref=f5e50]: 0 aktive Teilnehmer im Lostopf.
+    - paragraph [ref=f5e51]:
+      - text: Keine aktiven Teilnehmer.
+      - link "Teilnehmer verwalten" [ref=f5e52] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+    - generic [ref=f5e53]:
+      - generic [ref=f5e54]:
+        - generic [ref=f5e55]: Zug
+        - generic [ref=f5e56]: SR ––––
+        - generic [ref=f5e57]: Nach
+        - generic [ref=f5e58]: Verantwortung
+        - generic [ref=f5e59]: Status
+        - generic [ref=f5e60]: Abfahrtbereit
+      - img "Drehscheibe mit 0 Abschnitten" [ref=f5e62]
+    - button "Ziehung starten" [disabled] [ref=f5e66]
+    - status [ref=f5e67]
+  - contentinfo [ref=f5e31]:
+    - text: Ergebnisse werden vor der Animation festgelegt und sind im Browser nachprüfbar. Alle Angaben ohne Gewähr, außer den Schuldsprüchen.
+    - link "Dokumentation" [ref=f5e32] [cursor=pointer]:
+      - /url: /docs/

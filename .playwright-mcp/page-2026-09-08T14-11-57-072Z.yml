@@ -1,0 +1,80 @@
+- generic [ref=f6e2]:
+  - banner [ref=f6e3]:
+    - link "Schuldrad" [ref=f6e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Main navigation" [ref=f6e5]:
+      - link "Draw" [ref=f6e6] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Participants" [ref=f6e7] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistics" [ref=f6e8] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f6e9] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f6e10]:
+      - button "DE" [ref=f6e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e12]: "|"
+      - button "EN" [pressed] [ref=f6e13] [cursor=pointer]
+    - generic [ref=f6e14]:
+      - generic [ref=f6e15]: Theme
+      - button "Auto" [ref=f6e16] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e17]: "|"
+      - button "Light" [ref=f6e18] [cursor=pointer]
+      - generic [aria-hidden] [ref=f6e19]: "|"
+      - button "Dark" [pressed] [ref=f6e20] [cursor=pointer]
+  - main [ref=f6e21]:
+    - generic [ref=f6e433]:
+      - generic [ref=f6e434]:
+        - paragraph [ref=f6e435]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f6e436]
+      - generic [ref=f6e437]:
+        - generic [ref=f6e438]:
+          - generic [ref=f6e439]: Track
+          - combobox "Track" [ref=f6e440]:
+            - option "All active (8)" [selected]
+        - button "Animation Line" [ref=f6e441] [cursor=pointer]:
+          - generic [ref=f6e443]: Animation
+          - generic [ref=f6e444]: Line
+    - paragraph [ref=f6e445]: 8 active participants in the pool.
+    - generic [ref=f6e446]:
+      - generic [ref=f6e448]:
+        - generic "Zoë Åström" [ref=f6e449]
+        - generic "Anna" [ref=f6e450]
+        - generic "Jürgen Übelhör" [ref=f6e451]
+        - generic "Maximilian von Hohenzollernbrücke" [ref=f6e452]
+        - generic "李小龙" [ref=f6e453]
+        - generic "Renée" [ref=f6e454]
+        - generic "Максим Жирновский" [ref=f6e455]
+        - generic "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f6e456]
+      - list [ref=f6e460]:
+        - listitem [ref=f6e461]:
+          - generic [ref=f6e463]: Zoë Åström
+          - generic [ref=f6e464]: 12.5 %
+        - listitem [ref=f6e465]:
+          - generic [ref=f6e467]: Anna
+          - generic [ref=f6e468]: 12.5 %
+        - listitem [ref=f6e469]:
+          - generic [ref=f6e471]: Jürgen Übelhör
+          - generic [ref=f6e472]: 12.5 %
+        - listitem [ref=f6e473]:
+          - generic [ref=f6e475]: Maximilian von Hohenzollernbrücke
+          - generic [ref=f6e476]: 12.5 %
+        - listitem [ref=f6e477]:
+          - generic [ref=f6e479]: 李小龙
+          - generic [ref=f6e480]: 12.5 %
+        - listitem [ref=f6e481]:
+          - generic [ref=f6e483]: Renée
+          - generic [ref=f6e484]: 12.5 %
+        - listitem [ref=f6e485]:
+          - generic [ref=f6e487]: Максим Жирновский
+          - generic [ref=f6e488]: 12.5 %
+        - listitem [ref=f6e489]:
+          - generic [ref=f6e491]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+          - generic [ref=f6e492]: 12.5 %
+      - paragraph [ref=f6e493]: The HMAC determines a point on the weight line. Width = probability.
+    - button "Start draw" [ref=f6e495] [cursor=pointer]
+    - status [ref=f6e496]
+  - contentinfo [ref=f6e86]:
+    - text: Results are fixed before the animation and can be verified in the browser. No warranty for any of this, except the verdicts.
+    - link "Documentation" [ref=f6e87] [cursor=pointer]:
+      - /url: /docs/

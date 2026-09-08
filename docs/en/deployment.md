@@ -92,6 +92,8 @@ checked-in `src/web/.env.server`), which switches the client from the
 | `SCHULDRAD_PASSWORD` | — | optional deployment password — see § 3a |
 | `SCHULDRAD_PASSWORD_FILE` | — | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set |
 | `SCHULDRAD_SECURE_COOKIES` | — | set to `1` to force the `Secure` cookie attribute — see § 3a |
+| `SCHULDRAD_TRUST_PROXY` | — | set to `1` behind a reverse proxy that overwrites (not appends to) `x-forwarded-for`/`x-forwarded-proto` — see § 3a and § 3b |
+| `SCHULDRAD_ALLOWED_HOSTS` | — | optional comma-separated `Host` allowlist for `/api/*` requests, closes DNS rebinding — see § 3b |
 
 ## § 3a Optional password protection
 
@@ -129,17 +131,46 @@ TTL, refreshed on use) — **restarting the server logs everyone out**, by
 design; there is no session persistence to lose.
 
 The session cookie (`schuldrad_session`) is `HttpOnly` and
-`SameSite=Strict`. It also carries `Secure` whenever the request arrives
-with `x-forwarded-proto: https` (the standard header a TLS-terminating
-reverse proxy sets) or when `SCHULDRAD_SECURE_COOKIES=1` is set explicitly.
-If you terminate TLS at a proxy that does not set that header, set the env
-var yourself — otherwise the cookie is sent in the clear over the
-proxy-to-app hop only if that hop is itself unencrypted, which is fine on
-localhost/private networks but not otherwise.
+`SameSite=Strict`. It also carries `Secure` when `SCHULDRAD_SECURE_COOKIES=1`
+is set explicitly, or when the request arrives with `x-forwarded-proto:
+https` **and** `SCHULDRAD_TRUST_PROXY=1` is set — the `x-forwarded-proto`
+header is otherwise attacker-settable by anyone who can reach the server
+directly, so it is only honored once you've confirmed a proxy sits in
+front and controls it. If you terminate TLS at a proxy, set both
+`SCHULDRAD_TRUST_PROXY=1` and, if the proxy doesn't set that header,
+`SCHULDRAD_SECURE_COOKIES=1` yourself.
+
+`SCHULDRAD_TRUST_PROXY=1` also switches login rate-limiting to key on the
+first entry of `x-forwarded-for` instead of the socket's IP — set it only
+behind a reverse proxy that overwrites (not appends to) that header, since
+otherwise a client can inject their own value and dodge the limit.
+
+Sessions slide their expiry on use (12h) but always expire after 7 days of
+elapsed time regardless of activity.
 
 This protects team data behind one shared secret; it is not multi-user
 auth (no per-user accounts, roles, or audit trail) — see
 [SECURITY.md](../../SECURITY.md) for the exact threat model.
+
+## § 3b CSRF and DNS-rebinding hardening
+
+Independently of § 3a's password, every `/api/*` request must be
+`application/json` on state-changing methods, and a present `Origin`
+header must match `Host`. These are always on and need no configuration.
+
+DNS rebinding — an attacker-controlled domain that resolves to your
+server's address, so a browser treats an attacker page as same-origin with
+it — is closed only by setting `SCHULDRAD_ALLOWED_HOSTS` to a
+comma-separated list of the hostnames (with port, if non-default) your
+deployment is legitimately reached by, e.g.:
+
+```bash
+-e SCHULDRAD_ALLOWED_HOSTS=schuldrad.internal,schuldrad.internal:3000
+```
+
+Left unset by default so existing LAN deployments reached by raw IP or an
+unlisted hostname keep working unmodified. See
+[SECURITY.md](../../SECURITY.md) § 1b for the full threat model.
 
 ## § 4 Bind address, reverse proxy, and TLS
 

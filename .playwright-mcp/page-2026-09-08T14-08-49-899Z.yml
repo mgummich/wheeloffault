@@ -1,0 +1,125 @@
+- generic [ref=f5e2]:
+  - banner [ref=f5e3]:
+    - link "Schuldrad" [ref=f5e4] [cursor=pointer]:
+      - /url: "#/"
+    - navigation "Main navigation" [ref=f5e906]:
+      - link "Draw" [ref=f5e907] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc"
+      - link "Participants" [ref=f5e908] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/teilnehmer"
+      - link "Statistics" [ref=f5e909] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/statistik"
+      - link "Fairness" [ref=f5e37] [cursor=pointer]:
+        - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/fairness"
+    - generic [ref=f5e5]:
+      - button "DE" [ref=f5e6] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e7]: "|"
+      - button "EN" [active] [pressed] [ref=f5e8] [cursor=pointer]
+    - generic [ref=f5e9]:
+      - generic [ref=f5e10]: Theme
+      - button "Auto" [ref=f5e11] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e12]: "|"
+      - button "Light" [ref=f5e910] [cursor=pointer]
+      - generic [aria-hidden] [ref=f5e14]: "|"
+      - button "Dark" [pressed] [ref=f5e911] [cursor=pointer]
+  - main [ref=f5e16]:
+    - generic [ref=f5e184]:
+      - generic [ref=f5e185]:
+        - paragraph [ref=f5e186]: Team
+        - heading "Stellwerk 9" [level=1] [ref=f5e187]
+      - generic [ref=f5e188]:
+        - generic [ref=f5e189]:
+          - generic [ref=f5e190]: Track
+          - combobox "Track" [disabled] [ref=f5e912]:
+            - option "All active (8)" [selected]
+        - button "Animation Line" [expanded] [ref=f5e913] [cursor=pointer]:
+          - generic [ref=f5e194]: Animation
+          - generic [ref=f5e195]: Line
+    - generic [ref=f5e269]:
+      - generic [ref=f5e270]:
+        - generic [ref=f5e271]: Visualization
+        - combobox "Visualization" [ref=f5e914]:
+          - option "Wheel"
+          - option "Train arrival"
+          - option "Split-flap board"
+          - option "Track & signal"
+          - option "Ticket stamp"
+          - option "Timetable scroll"
+          - option "Weight line" [selected]
+      - generic [ref=f5e279]:
+        - generic [ref=f5e280]: Result
+        - combobox "Result" [ref=f5e915]:
+          - option "Pop in" [selected]
+          - option "Slide in"
+          - option "Drop"
+          - option "Flash red"
+          - option "Shake"
+          - option "None"
+      - generic [ref=f5e282]:
+        - generic [ref=f5e283]: Announcement
+        - combobox "Announcement" [ref=f5e916]:
+          - option "Rise" [selected]
+          - option "Split-flap"
+          - option "Typewriter"
+          - option "Flicker sign"
+          - option "Stamp"
+      - generic [ref=f5e285]:
+        - generic [ref=f5e286]: Teams card
+        - switch "Open automatically" [ref=f5e917] [cursor=pointer]
+    - paragraph [ref=f5e196]: 8 active participants in the pool.
+    - generic [ref=f5e844]:
+      - generic [ref=f5e846]:
+        - generic "Zoë Åström" [ref=f5e847]
+        - generic "Anna" [ref=f5e848]
+        - generic "Jürgen Übelhör" [ref=f5e849]
+        - generic "Maximilian von Hohenzollernbrücke" [ref=f5e850]
+        - generic "李小龙" [ref=f5e851]
+        - generic "Renée" [ref=f5e852]
+        - generic "Максим Жирновский" [ref=f5e853]
+        - generic "𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢" [ref=f5e854]
+      - list [ref=f5e858]:
+        - listitem [ref=f5e859]:
+          - generic [ref=f5e861]: Zoë Åström
+          - generic [ref=f5e862]: 12.5 %
+        - listitem [ref=f5e863]:
+          - generic [ref=f5e865]: Anna
+          - generic [ref=f5e866]: 12.5 %
+        - listitem [ref=f5e867]:
+          - generic [ref=f5e869]: Jürgen Übelhör
+          - generic [ref=f5e870]: 12.5 %
+        - listitem [ref=f5e871]:
+          - generic [ref=f5e873]: Maximilian von Hohenzollernbrücke
+          - generic [ref=f5e874]: 12.5 %
+        - listitem [ref=f5e875]:
+          - generic [ref=f5e877]: 李小龙
+          - generic [ref=f5e878]: 12.5 %
+        - listitem [ref=f5e879]:
+          - generic [ref=f5e881]: Renée
+          - generic [ref=f5e882]: 12.5 %
+        - listitem [ref=f5e883]:
+          - generic [ref=f5e885]: Максим Жирновский
+          - generic [ref=f5e886]: 12.5 %
+        - listitem [ref=f5e887]:
+          - generic [ref=f5e889]: 𝔊𝔬𝔱𝔥𝔦𝔠 𝔑𝔞𝔪𝔢
+          - generic [ref=f5e890]: 12.5 %
+      - paragraph [ref=f5e891]: The HMAC determines a point on the weight line. Width = probability.
+    - button "Next draw" [ref=f5e918] [cursor=pointer]
+    - status [ref=f5e243]: "Guilty: Anna"
+    - generic [ref=f5e894]:
+      - paragraph [ref=f5e895]: Next stop
+      - paragraph [ref=f5e896]: Responsibility
+      - paragraph [ref=f5e897]: Guilty
+      - paragraph [ref=f5e898]:
+        - generic [ref=f5e899]: Anna
+        - generic [aria-hidden] [ref=f5e900]: Anna
+      - paragraph [ref=f5e901]: Train SR 0007 · probability 12.5 %
+      - generic [ref=f5e902]:
+        - link "Open guilt report" [ref=f5e919] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/bericht/8d59c651-0c4f-4544-b933-71d07cacca66"
+        - button "Share to Teams" [ref=f5e920] [cursor=pointer]
+        - link "Appeal / proof" [ref=f5e921] [cursor=pointer]:
+          - /url: "#/team/328968a6-ff6f-468a-aab1-f9b2a1c198bc/ziehung/3109e870-173e-4caa-9185-d65b8e4058a7"
+  - contentinfo [ref=f5e31]:
+    - text: Results are fixed before the animation and can be verified in the browser. No warranty for any of this, except the verdicts.
+    - link "Documentation" [ref=f5e922] [cursor=pointer]:
+      - /url: /docs/

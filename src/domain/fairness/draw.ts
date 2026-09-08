@@ -72,8 +72,15 @@ export function drawMessage(commitment: string, clientSeed: string, nonce: numbe
 
 export function assertValidWeights(participants: WeightedParticipant[]): void {
   if (participants.length === 0) throw new DomainError('No participants', 'no_participants');
+  const seen = new Set<string>();
   let total = 0;
   for (const p of participants) {
+    if (seen.has(p.memberId)) {
+      throw new DomainError(`Duplicate memberId: ${p.memberId}`, 'duplicate_member_id', {
+        memberId: p.memberId,
+      });
+    }
+    seen.add(p.memberId);
     if (!Number.isSafeInteger(p.weight) || p.weight < 0) {
       throw new DomainError(`Invalid weight for ${p.memberId}: ${p.weight}`, 'invalid_weight', {
         memberId: p.memberId,

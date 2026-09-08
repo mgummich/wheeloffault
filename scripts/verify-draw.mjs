@@ -70,11 +70,22 @@ const {
   selectedMemberId: expectedSelectedMemberId,
 } = record;
 
-for (const [field, value] of Object.entries({ serverSeed, clientSeed, nonce, participants })) {
+for (const [field, value] of Object.entries({
+  serverSeed,
+  clientSeed,
+  nonce,
+  participants,
+  commitment: expectedCommitment,
+  digest: expectedDigest,
+  selectedMemberId: expectedSelectedMemberId,
+})) {
   if (value === undefined) usageAndExit(`missing required field "${field}"`);
 }
 if (!Array.isArray(participants) || participants.length === 0) {
   usageAndExit('participants must be a non-empty array of { memberId, weight }');
+}
+if (!Number.isInteger(nonce) || nonce < 0) {
+  usageAndExit(`nonce must be a non-negative integer, got "${record.nonce}"`);
 }
 
 // --- Protocol re-implementation (mirrors src/domain/fairness/draw.ts) -------
@@ -134,8 +145,11 @@ function drawMessage(commitment, client, n) {
 }
 
 function assertValidWeights(list) {
+  const seen = new Set();
   let total = 0;
   for (const p of list) {
+    if (seen.has(p.memberId)) throw new Error(`duplicate memberId: ${p.memberId}`);
+    seen.add(p.memberId);
     if (!Number.isSafeInteger(p.weight) || p.weight < 0) {
       throw new Error(`invalid weight for ${p.memberId}: ${p.weight}`);
     }

@@ -69,6 +69,15 @@ describe('selectParticipant', () => {
     expect(() => selectParticipant('00', [{ memberId: 'a', weight: Number.NaN }])).toThrow();
     expect(() => selectParticipant('00', [])).toThrow(/No participants/);
   });
+
+  it('rejects duplicate memberIds', () => {
+    expect(() =>
+      selectParticipant('00', [
+        { memberId: 'a', weight: 1000 },
+        { memberId: 'a', weight: 2000 },
+      ]),
+    ).toThrow(/Duplicate memberId/);
+  });
 });
 
 describe('commit/reveal', () => {
