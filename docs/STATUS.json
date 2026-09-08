@@ -1,13 +1,23 @@
 {
   "date": "2026-09-08",
-  "commit": "7f90f263f1f352a2c89a94b75df3d784247a31b4",
+  "checkedAgainstCommit": "550179a7f4abb189967a05217fd7a8ddc7b68c40",
   "branch": "main",
   "environment": {
     "node": "v26.8.1",
     "pnpm": "11.24.0",
     "os": "darwin (Darwin 25.6.0)"
   },
-  "note": "Working tree has uncommitted changes on top of commit 7f90f26, not committed per instructions. (1) scripts/build-docs.mjs's link checker was redesigned: the hand-rolled regex markdown parser is gone, replaced by walking marked's own lexer token stream for source links (so code fences and reference-style links behave exactly as they render); after the build writes all pages, a single artifact-wide pass reads every generated HTML file's href=\"...\" (shell, nav, language switch, and body alike) and asserts each resolves to a file actually written, plus validates in-page #anchor links against the heading ids the build generates; a separate content-language check, independent of the renderer, asserts marker-carrying links resolve to that language and that each paired doc's crossover link resolves to its own counterpart page. Verified against a 9-case mutation table (resolver fallback, fragment-marker-disabled, dir-marker-regex-broken, dead .md link, dead non-.md link, broken nav href, broken language-switch fallback, inverted #en/#de marker, dead in-page anchor) — every mutation fails the build — and against 3 previously-false-positive cases (a deep link into another doc's section, a link inside a code fence, a bare directory link) — all 3 now pass. Net change to build-docs.mjs: +3 lines (123 insertions, 120 deletions), i.e. materially flat despite deleting the old parser and adding the artifact-wide check. (2) A round of accuracy fixes to WEB_DIR's actual resolved path (repo root, not src/server/), calculateWeights' real signature, the digest slice notation (hex chars, not bytes), a wrong section cross-reference (§ 2 -> § 3), the #/team/:id route (no literal /spin segment), the Docker volume path (/data), a stale nonce example, the audit CI job's real (parallel, no needs:) relationship to verify, upcast's real behavior (identity function, not empty), README.de.md's missing canonical marker and translation-lag banner, a German calque ('Auf blankem Metall' -> 'Auf Bare Metal'), and a dropped counterfactual qualifier in a German paragraph about default network reachability. (3) docs/superpowers/plans/2026-09-04-optional-postgres-redis.md marked historical (Postgres/Redis support has shipped; its 21 checkboxes were never updated retroactively).",
+  "uncommittedChangesOnTopOfCheckedAgainstCommit": {
+    "numstat": [
+      "3\t4\tdocs/de/architektur.md",
+      "1\t1\tdocs/de/contributing.md",
+      "1\t1\tdocs/de/deployment.md",
+      "1\t1\tdocs/de/events.md",
+      "46\t4\tscripts/build-docs.mjs"
+    ],
+    "summary": "5 files changed, 52 insertions(+), 11 deletions(-)"
+  },
+  "note": "(1) scripts/build-docs.mjs's artifact-wide link check now also validates cross-document fragments: a link like events.md#no-such-heading is resolved against its TARGET file's generated heading ids (previously only bare #in-page anchors were checked, and the marker-preserving keepFrag added in 550179a meant cross-doc fragments reached the output unchecked, with zero '](#'-prefixed links in the repo to exercise the old check). (2) The content-language check was generalized from 'a doc's own translation link must carry a marker' to 'any internal link whose target has a same-language counterpart for the current page must use it (or an explicit marker)' — this caught three live wrong-language links (docs/de/events.md and docs/de/contributing.md linking ../../ARCHITECTURE.md instead of the sibling architektur.md; docs/de/deployment.md linking ../../README.md instead of ../../README.de.md) that rendered correctly on the built site (marker-less fallback to the current page's language) but opened the English page on GitHub. All three fixed to link their German counterparts directly. (3) Four known ceilings documented in place with one-line `ponytail:` comments (not fixed): slug() heading-id collisions, enOnly as an unguarded opt-out, the hand-duplicated marker logic between the renderer and the independent oracle, and the unclosed-quote prefix match in checkContentLanguage's body.includes check. (4) docs/de/architektur.md §9: reflowed a ragged paragraph wrap.",
   "checks": [
     {
       "name": "format:check (pnpm format:check)",
@@ -37,7 +47,7 @@
     {
       "name": "build (pnpm build)",
       "status": "pass",
-      "details": "vite build succeeded, then scripts/build-docs.mjs's completeness check, content-language check, and artifact-wide link/anchor check all passed against the real docs tree (8 docs x 2 languages plus the /docs/ redirect)."
+      "details": "vite build succeeded, then scripts/build-docs.mjs's completeness check, content-language check, and artifact-wide link/anchor check all passed against the real docs tree (8 registry entries, 15 rendered doc pages since SECURITY.md is enOnly, plus the /docs/ redirect)."
     },
     {
       "name": "build:server (pnpm build:server)",
@@ -47,12 +57,12 @@
     {
       "name": "e2e (pnpm e2e)",
       "status": "pass",
-      "details": "3 Playwright tests passed across 2 projects (static PWA offline-reload session test, server-mode team sharing across browsers, core Schuldrad journey). ~5.2s."
+      "details": "3 Playwright tests passed across 2 projects (static PWA offline-reload session test, server-mode team sharing across browsers, core Schuldrad journey). ~5s."
     },
     {
       "name": "build-docs.mjs mutation testing (scratch copy under /private/tmp, not the repo)",
       "status": "pass",
-      "details": "Full repo copied to a scratch dir; baseline `pnpm build` confirmed green, then each of 9 mutations was applied one at a time, rebuilt, and reverted via git checkout: (a) renderer language-fallback forced to 'en' — failed as expected. (b) #en/#de fragment marker disabled in the renderer — failed. (c) directory-marker regex broken (anchored to string start instead of any path segment) — failed. (d) a dead .md link added to a doc — failed via the artifact-wide existence check. (e) a dead non-.md link added — failed via the same check. (f) navHref's slug interpolation broken (`${slug}X.html`) — failed, every nav tab on every page. (g) the enOnly language-switch fallback reverted, re-emitting a href to a page never written (docs/de/security.html) — failed, reproducing the exact defect the check exists to catch. (h) README.de.md's #en marker on its own English-counterpart link inverted to #de — failed via the pairing check, which does not merely trust the href's own marker. (i) a dead in-page anchor added — failed via the heading-id check. All 9/9 failed the build. Then 3 previously-rejected-but-legitimate cases were tried and all passed: a deep link into another doc's section (`deployment.md#environment`), a markdown link inside a fenced code block, and a bare directory link (`../de/`)."
+      "details": "Full repo rsync'd to a scratch dir (node_modules copied with symlinks dereferenced), baseline docs build confirmed green, then each mutation was applied, rebuilt directly with `node scripts/build-docs.mjs`, and reverted (git checkout, or restoring the pre-fix file from the real repo where the mutation targeted a line this pass had just changed). 9 previously-established mutations re-run: (a) renderer language-fallback forced to 'en' — failed. (b) #en/#de fragment marker disabled — failed. (c) directory-marker regex anchored to string start instead of any path segment — failed. (d) dead .md link added — failed via the artifact existence check. (e) dead non-.md link added — failed via the same check. (f) navHref's slug interpolation broken — failed, every nav tab on every page. (g) enOnly language-switch fallback reverted — failed, re-emitting a href to docs/de/security.html which was never written. (h) README.de.md's own #en marker inverted to #de — failed via the generalized pairing check. (i) dead in-page anchor added — failed via the heading-id check. Plus 2 new mutations for this pass's changes: (j) a cross-doc dead anchor (deployment.md#no-such-section-at-all) — failed via the new cross-document fragment check; a valid deep link (deployment.md#environment-variables) was also tried and passed, confirming no false positive. (k) one of the three fixed wrong-language links (docs/de/events.md's architektur.md link) reverted to the old ../../ARCHITECTURE.md — failed via the generalized content-language check. 11/11 mutations failed the build as expected."
     },
     {
       "name": "docker: sqlite profile smoke test",

@@ -67,7 +67,7 @@ Konvention im Domänencode. Daraus folgen die Regeln:
    `SpinRevealed`; er ist ein neues, darübergelegtes Event, das ändert, wie
    Projektionen den Spin *zählen* (ausgeschlossen aus Treffer-/
    Erwartungswert-Statistik — siehe
-   [ARCHITECTURE.md](../../ARCHITECTURE.md) § 3), nicht was geschehen ist.
+   [architektur.md](architektur.md) § 3), nicht was geschehen ist.
 
 ## § 3 Die Upcast-Nahtstelle
 

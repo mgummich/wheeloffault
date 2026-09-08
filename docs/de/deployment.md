@@ -25,7 +25,7 @@ wird durch `.github/workflows/pages.yml` bei jedem Push auf `main`
 deployed. Es gibt kein Backend: `src/web/sessionApi.ts` führt dieselbe
 Command/Decide/Replay-Domänenlogik wie der Server aus, gegen `localStorage`
 statt SQLite. Die genaue Persistenz-Semantik steht in
-[README.md](../../README.md) (überlebt Reload/Tab-schließen/Neustart, wird
+[README.de.md](../../README.de.md) (überlebt Reload/Tab-schließen/Neustart, wird
 nur über die Website-Daten-Einstellungen des Browsers gelöscht), und was
 dieser Modus schützt und was nicht, steht in
 [SECURITY.md](../../SECURITY.md).

@@ -303,10 +303,9 @@ ihre lokalen SSE-Clients aus.
 
 React 19 + Vite. Kein Router-Paket: der Hash (`#/team/:id`, standardmäßig
 die Spin-Seite) ist die Route. Kein State-Management-Paket: `TeamView` vom
-Server + ein paar
-`useState`. Animationen (`src/web/wheel/`) erhalten das persistierte
-Ergebnis als Prop und dürfen keinen Domänenzustand besitzen. Sie sind
-überspringbar und respektieren `prefers-reduced-motion`.
+Server + ein paar `useState`. Animationen (`src/web/wheel/`) erhalten das
+persistierte Ergebnis als Prop und dürfen keinen Domänenzustand besitzen.
+Sie sind überspringbar und respektieren `prefers-reduced-motion`.
 
 Wegweiser durch `src/web`:
 

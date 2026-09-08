@@ -32,6 +32,9 @@ const docs = [
     title: { en: 'Schuldrad · Security', de: 'Schuldrad · Security' },
     src: { en: 'SECURITY.md' },
     enOnly: true,
+    // ponytail: known ceiling — enOnly is an unguarded opt-out; nothing here
+    // tells a deliberate English-only doc apart from a translation that
+    // simply drifted out of the registry.
   },
   {
     slug: 'fairness',
@@ -132,6 +135,9 @@ async function checkCompleteness() {
   }
 }
 
+// ponytail: known ceiling — two headings that slug() to the same id collide
+// silently (last one wins in the id set, anchors bind to the first heading
+// in the DOM); not deduped, upgrade to a counter suffix if it ever bites.
 const slug = (text) =>
   text
     .toLowerCase()
@@ -186,6 +192,8 @@ function markedFor(lang) {
               ? 'en'
               : null;
           const fileMarker = /\.de\.md$/.test(hrefBase) ? 'de' : null;
+          // ponytail: this marker logic is hand-duplicated in expectedTarget()
+          // below (deliberately — see that function's comment) — keep both in sync.
           const wantLang = fragMarker || dirMarker || fileMarker || lang;
           const targetLang = target.src[wantLang] ? wantLang : 'en';
           const path =
@@ -339,6 +347,8 @@ function collectLinks(md) {
 // Independent of markedFor()'s link() renderer — deliberately not shared
 // with it. This is the test oracle: if it called the same code as
 // production, a bug in that code would pass its own check.
+// ponytail: the marker logic below duplicates markedFor()'s link() by hand —
+// deliberate, so the check stays independent of the resolver it's checking.
 function expectedTarget(hrefPath, frag, pageLang) {
   const hrefBase = hrefPath.split('/').pop();
   const target = docs.find(
@@ -372,7 +382,6 @@ async function checkContentLanguage() {
       if (!doc.src[lang]) continue;
       const md = await readFile(join(root, doc.src[lang]), 'utf8');
       const body = renderedBodies.get(`${lang}/${doc.slug}`) ?? '';
-      const otherBase = doc.src[otherLang]?.split('/').pop();
 
       for (const href of collectLinks(md)) {
         const hashIdx = href.indexOf('#');
@@ -387,15 +396,32 @@ async function checkContentLanguage() {
           (info.target.slug === 'index'
             ? `${info.lang}/`
             : `${info.lang}/${info.target.slug}.html`);
+        // ponytail: no closing quote — deliberate prefix match, since the
+        // real rendered href may carry a kept cross-doc fragment (keepFrag)
+        // after expectedHref that this check doesn't otherwise compute.
         if (!body.includes(`href="${expectedHref}`)) {
           problems.push(
             `${doc.src[lang]}: link "${href}" should render as ${expectedHref}, but the rendered page doesn't.`,
           );
         }
 
-        if (hrefPath.split('/').pop() === otherBase && info.marker !== otherLang) {
+        // Not just a doc's OWN counterpart: any raw-markdown link whose
+        // basename is the OTHER language's file for its target, while that
+        // target also has a same-language file for THIS page, opens the
+        // wrong-language page on GitHub (the site's fallback masks it, but
+        // GitHub renders the literal href) — unless a marker says so on
+        // purpose.
+        const hrefBase = hrefPath.split('/').pop();
+        const pageLangBase = info.target.src[lang]?.split('/').pop();
+        const otherLangBase = info.target.src[otherLang]?.split('/').pop();
+        if (
+          pageLangBase &&
+          hrefBase !== pageLangBase &&
+          hrefBase === otherLangBase &&
+          info.marker !== otherLang
+        ) {
           problems.push(
-            `${doc.src[lang]}: link "${href}" to its own ${otherLang} counterpart needs an explicit ${otherLang} marker, found ${info.marker ?? 'none'}.`,
+            `${doc.src[lang]}: link "${href}" points at the ${otherLang} file ${hrefBase}, but this is a ${lang} page and '${info.target.slug}' has a ${lang} counterpart (${pageLangBase}); link to it directly or add an explicit ${otherLang} marker.`,
           );
         }
       }
@@ -428,9 +454,20 @@ async function checkArtifactLinks() {
   const written = new Set(await listFiles(join(root, 'dist', 'web')));
   const docFiles = (await listFiles(outDir)).filter((f) => f.endsWith('.html'));
 
+  // Heading ids per doc file, gathered up front so a cross-doc fragment link
+  // can be checked against its TARGET file's ids regardless of visit order.
+  const idsByFile = new Map();
   for (const file of docFiles) {
     const html = await readFile(file, 'utf8');
-    const ids = new Set(Array.from(html.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g), (m) => m[1]));
+    idsByFile.set(
+      file,
+      new Set(Array.from(html.matchAll(/<h[1-6][^>]*\sid="([^"]+)"/g), (m) => m[1])),
+    );
+  }
+
+  for (const file of docFiles) {
+    const ids = idsByFile.get(file);
+    const html = await readFile(file, 'utf8');
     for (const [, href] of html.matchAll(/<a\s[^>]*\bhref="([^"]*)"/g)) {
       if (/^(https?:)?\/\//.test(href) || href.startsWith('mailto:')) continue;
       if (href.startsWith('#')) {
@@ -441,10 +478,15 @@ async function checkArtifactLinks() {
       }
       const hashIdx = href.indexOf('#');
       const hrefPath = hashIdx === -1 ? href : href.slice(0, hashIdx);
+      const frag = hashIdx === -1 ? null : href.slice(hashIdx + 1);
       let resolved = join(dirname(file), hrefPath);
       if (hrefPath.endsWith('/')) resolved = join(resolved, 'index.html');
       if (!written.has(resolved)) {
         problems.push(`${file}: href "${href}" resolves to a file that was never written.`);
+      } else if (frag && idsByFile.has(resolved) && !idsByFile.get(resolved).has(frag)) {
+        problems.push(
+          `${file}: href "${href}" points at a heading id "${frag}" that doesn't exist in ${resolved}.`,
+        );
       }
     }
   }

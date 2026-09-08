@@ -81,7 +81,7 @@ dieser Reihenfolge fragen:
    Implementierung.)
 3. Sind das eher ein paar Zeilen Code als eine Abhängigkeit? Ein Router,
    ein State-Manager und eine Animationsbibliothek wurden alle bewusst
-   nicht hinzugefügt (siehe [ARCHITECTURE.md](../../ARCHITECTURE.md) § 9)
+   nicht hinzugefügt (siehe [architektur.md](architektur.md) § 9)
    — der Hash ist die Route, `TeamView` plus `useState` ist der Zustand,
    und die Rad-Animationen sind handgeschriebene Komponenten.
 
