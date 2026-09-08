@@ -35,8 +35,11 @@ A single npm package, three source folders:
 `spinView`) both for the HTTP response shapes and for session mode — no
 exception needed anymore, the file lives in the domain.
 
-The domain knows nothing about HTTP, SQLite, or React. The fairness
-verifier in the browser is literally the same function as on the server.
+The domain knows nothing about HTTP, SQLite, or React. The browser's
+fairness verifier (`verifySpin()`) and the server's reveal path both run on
+the same shared commit/digest/selection primitives in `src/domain/fairness`
+— the server re-derives rather than calling `verifySpin()`, but there is no
+separate, possibly-diverging client implementation.
 
 ## 2. Domain model
 
@@ -163,7 +166,8 @@ reveal reproduces commitment
 browser verifier reproduces server
 ```
 
-Every participant starts at weight 1000 (`FACTOR_ONE` in weights.ts). Then
+Every participant starts at weight 1000 (`FACTOR_ONE` in
+`src/domain/fairness/modifiers.ts`). Then
 the enabled modifiers (`src/domain/fairness/modifiers.ts`), all
 `weights + context → weights`, apply in this fixed order:
 
@@ -266,11 +270,13 @@ CREATE TABLE events (
   at          TEXT    NOT NULL,
   UNIQUE (stream_id, version)
 );
+CREATE INDEX events_type ON events (type);
 ```
 
-Migrations: numbered entries in `src/server/migrations.ts`, each applied in
-a transaction, logged in `schema_migrations`. Applied migrations are never
-edited.
+Migrations: numbered entries in `src/server/migrations.ts`, each carrying a
+`sql` (SQLite) and a `pgSql` (Postgres) field written out separately rather
+than derived from each other, applied in a transaction, logged in
+`schema_migrations`. Applied migrations are never edited.
 
 Optionally, the same event store contract can run on Postgres:
 
@@ -302,8 +308,10 @@ it to their local SSE clients.
 
 ## 9. Frontend
 
-React 19 + Vite. No router package: the hash (`#/team/:id`, defaulting to
-the spin page) is the route. No state management package: `TeamView` from
+React 19 + Vite. No router package: the hash (`#/team/:id/:page/:arg`,
+`src/web/route.ts`) is the route, resolving seven pages — home, and, per
+team, spin (the default), teilnehmer, statistik, fairness, bericht/:memberId,
+and ziehung/:spinId. No state management package: `TeamView` from
 the server plus a handful of `useState`. Animations (`src/web/wheel/`) receive the persisted
 result as a prop and must not own domain state. They are skippable and
 respect `prefers-reduced-motion`.
@@ -319,7 +327,7 @@ draw.ts          performDraw(): commit → reveal including 409 resumption
 useTeam.ts       load team, SSE refresh
 route.ts         hash router; views/ are the pages; wheel/ the visualizations
 AnimPanel.tsx    animation settings (localStorage via animSettings.ts)
-share.ts         team card (canvas PNG) + ShareDialog.tsx (native <dialog>)
+share.ts         per-spin result card (canvas PNG) + ShareDialog.tsx (native <dialog>)
 ```
 
 PWA: `manifest.webmanifest` + a hand-written service worker (app-shell
@@ -334,7 +342,10 @@ server state (see the table in section 1).
 One container (`Dockerfile`, multi-stage): Vite build → static files; the
 server runs as unmodified TypeScript source directly under Node ≥ 26
 (native type-stripping, no bundler). Volume for `/data`.
-`PORT` and `DATA_DIR` via environment variable. No reverse proxy required.
+`PORT`, `HOST`, `DATA_DIR`, and `WEB_DIR` via environment variable
+(`src/server/main.ts`) — `HOST` is load-bearing: the Dockerfile sets it to
+`0.0.0.0` since the server otherwise binds only `127.0.0.1`. No reverse
+proxy required.
 
 ## 11. Verification loop
 

@@ -40,7 +40,11 @@ Ein einziges npm-Paket, drei Quellordner:
 — keine Ausnahme mehr nötig, die Datei liegt in der Domäne.
 
 Die Domäne kennt weder HTTP noch SQLite noch React. Der Fairness-Verifier im
-Browser ist buchstäblich dieselbe Funktion wie auf dem Server.
+Browser (`verifySpin()`) und der Reveal-Pfad des Servers laufen beide über
+dieselben gemeinsamen Commit-/Digest-/Auswahl-Primitiven in
+`src/domain/fairness` — der Server leitet selbst neu ab, statt
+`verifySpin()` aufzurufen, aber es gibt keine separate, potenziell
+abweichende Client-Implementierung.
 
 ## 2. Domänenmodell
 
@@ -166,7 +170,8 @@ Reveal reproduziert Commitment
 Browser-Verifier reproduziert Server
 ```
 
-Jeder Teilnehmer startet mit Gewicht 1000 (`FACTOR_ONE` in weights.ts). Dann
+Jeder Teilnehmer startet mit Gewicht 1000 (`FACTOR_ONE` in
+`src/domain/fairness/modifiers.ts`). Dann
 wenden die aktivierten Modifikatoren (`src/domain/fairness/modifiers.ts`,
 alle `weights + context → weights`) in dieser festen Reihenfolge an:
 
@@ -272,11 +277,14 @@ CREATE TABLE events (
   at          TEXT    NOT NULL,
   UNIQUE (stream_id, version)
 );
+CREATE INDEX events_type ON events (type);
 ```
 
-Migrationen: nummerierte Einträge in `src/server/migrations.ts`, je in einer
-Transaktion angewendet, in `schema_migrations` protokolliert. Angewendete
-Migrationen werden nie editiert.
+Migrationen: nummerierte Einträge in `src/server/migrations.ts`, jeder mit
+einem `sql`-Feld (SQLite) und einem separat ausgeschriebenen `pgSql`-Feld
+(Postgres) statt einer Ableitung voneinander, je in einer Transaktion
+angewendet, in `schema_migrations` protokolliert. Angewendete Migrationen
+werden nie editiert.
 
 Optional kann der gleiche Event-Store-Vertrag mit Postgres betrieben werden:
 
@@ -308,8 +316,10 @@ ihre lokalen SSE-Clients aus.
 
 ## 9. Frontend
 
-React 19 + Vite. Kein Router-Paket: der Hash (`#/team/:id`, standardmäßig
-die Spin-Seite) ist die Route. Kein State-Management-Paket: `TeamView` vom
+React 19 + Vite. Kein Router-Paket: der Hash (`#/team/:id/:page/:arg`,
+`src/web/route.ts`) ist die Route und löst sieben Seiten auf — Home sowie,
+je Team, Spin (Standard), Teilnehmer, Statistik, Fairness,
+Bericht/:memberId und Ziehung/:spinId. Kein State-Management-Paket: `TeamView` vom
 Server + ein paar `useState`. Animationen (`src/web/wheel/`) erhalten das
 persistierte Ergebnis als Prop und dürfen keinen Domänenzustand besitzen.
 Sie sind überspringbar und respektieren `prefers-reduced-motion`.
@@ -339,8 +349,10 @@ und die puren View-Funktionen – das ist der HTTP-Vertrag, kein Serverstaat
 
 Ein Container (`Dockerfile`, Multi-Stage): Vite-Build → statische Dateien;
 der Server läuft als unveränderte TypeScript-Quelle direkt unter Node ≥ 26
-(natives Type-Stripping, kein Bundler). Volume für `/data`. `PORT` und
-`DATA_DIR` per Umgebungsvariable. Kein Reverse Proxy nötig.
+(natives Type-Stripping, kein Bundler). Volume für `/data`. `PORT`, `HOST`,
+`DATA_DIR` und `WEB_DIR` per Umgebungsvariable (`src/server/main.ts`) —
+`HOST` ist tragend: Das Dockerfile setzt es auf `0.0.0.0`, da der Server
+sonst nur auf `127.0.0.1` bindet. Kein Reverse Proxy nötig.
 
 ## 11. Verifikationsschleife
 

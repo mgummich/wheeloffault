@@ -211,7 +211,7 @@ node scripts/verify-draw.mjs --file draw.json
 
 The script prints a Prüfprotokoll (verification record) with one ✓/✗ line
 per check — commitment, digest, selection — and exits `0` only if all three
-pass, `1` if any check fails, and `2` for a usage error (a missing `--file`,
-a missing required field, non-array or empty `participants`, or a
-non-integer `nonce`) before any check runs — so it composes with CI or a
-shell `&&`.
+pass, `1` if any check fails, and `2` for a usage error (an unknown flag, a
+missing `--file`, a missing required field, non-array or empty
+`participants`, or a non-integer `nonce`) before any check runs — so it
+composes with CI or a shell `&&`.

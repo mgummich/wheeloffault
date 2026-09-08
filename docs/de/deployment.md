@@ -41,12 +41,14 @@ docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 
 Das `Dockerfile` ist ein zweistufiger Build: eine `node:26-alpine`-Build-
 Stufe führt `pnpm build:server` aus und kürzt auf Produktionsabhängigkeiten;
-die Laufzeitstufe entfernt `npm`/`npx`/`corepack` vollständig (der
-Container braucht nur `node`), läuft als nicht-root-Benutzer `node` und
-liefert den Server als unveränderte TypeScript-Quelle unter Nodes nativem
-Type-Stripping aus — kein Bundler, kein Kompilierschritt zur Laufzeit.
-`HEALTHCHECK` pollt `/api/health`. Daten liegen standardmäßig im
-`/data`-Volume als `schuldrad.db` (SQLite).
+die Laufzeitstufe entfernt `npm`/`npx`/`corepack` vollständig (die
+Anwendung selbst braucht nur `node`), läuft als nicht-root-Benutzer `node`
+und liefert den Server als unveränderte TypeScript-Quelle unter Nodes
+nativem Type-Stripping aus — kein Bundler, kein Kompilierschritt zur
+Laufzeit. `HEALTHCHECK` pollt `/api/health` mit BusyBox `wget` (der einzige
+verbliebene HTTP-Client im Image, nachdem `npm`/`npx`/`corepack` entfernt
+sind). Daten liegen standardmäßig im `/data`-Volume als `schuldrad.db`
+(SQLite).
 
 ### Ohne Docker
 
@@ -62,10 +64,12 @@ eingecheckte `src/web/.env.server`), was den Client vom
 
 ### Compose-Profile
 
-`docker-compose.yml` definiert zwei Profile:
+`docker-compose.yml` definiert zwei Profile. Jeder Dienst deklariert ein
+Profil, ein nacktes `docker compose up` startet also nichts — eines muss
+explizit gewählt werden:
 
 * **`sqlite`** — ein einzelner `schuldrad`-Dienst, SQLite in einem
-  benannten Volume. Das ist der Standardpfad ohne Infrastruktur:
+  benannten Volume. Das ist der empfohlene Pfad ohne Infrastruktur:
 
   ```bash
   docker compose --profile sqlite up --build
@@ -82,7 +86,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
   Dies existiert, weil das erklärte Prinzip des Projekts lautet, dass *das
   System* over-engineered sein darf, auch wenn der Code es nicht darf — es
   ist keine Empfehlung für das Scrum-Rad eines Fünf-Personen-Teams. SQLite
-  bleibt aus gutem Grund der Standard.
+  bleibt aus gutem Grund der empfohlene Pfad.
 
 ### Umgebungsvariablen
 
@@ -177,10 +181,11 @@ Bedrohungsmodell.
 
 ## § 3b CSRF- und DNS-Rebinding-Härtung
 
-Unabhängig von § 3a muss jede `/api/*`-Anfrage bei zustandsändernden
-Methoden `application/json` sein, und ein vorhandener `Origin`-Header muss
-mit `Host` übereinstimmen. Beides ist immer aktiv und braucht keine
-Konfiguration.
+Unabhängig von § 3a muss jede zustandsändernde `/api/*`-Anfrage
+(`POST`/`PUT`/`DELETE`/`PATCH`) `application/json` sein, und ein
+vorhandener `Origin`-Header muss mit `Host` übereinstimmen; ein `GET`
+unterliegt keiner der beiden Prüfungen. Beides ist immer aktiv und braucht
+keine Konfiguration.
 
 DNS-Rebinding — eine von einem Angreifer kontrollierte Domain, die auf die
 Adresse des Servers auflöst, sodass ein Browser eine Angreiferseite als
@@ -221,10 +226,11 @@ zusätzliche Absicherung bei nginx) im selben Location-Block ergänzen:
 proxy_buffering off;
 ```
 
-**SSE-Verbindungen sind pro Team auf 100 begrenzt.** Ein Team mit mehr
-gleichzeitigen `/api/teams/:id/events`-Verbindungen erhält beim nächsten
-Verbindungsversuch `503`; dies ist ein fester, nicht konfigurierbarer
-Grenzwert (`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
+**SSE-Verbindungen sind pro Team auf 100 begrenzt.** Die Prüfung ist `>=`:
+Hat ein Team bereits 100 gleichzeitige `/api/teams/:id/events`-Verbindungen
+offen, erhält der 101. Verbindungsversuch `503`; dies ist ein fester, nicht
+konfigurierbarer Grenzwert (`MAX_SSE_CLIENTS_PER_TEAM` in
+`src/server/http.ts`).
 
 ## § 4 Bind-Adresse, Reverse Proxy und TLS
 

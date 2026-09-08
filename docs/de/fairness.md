@@ -232,6 +232,7 @@ node scripts/verify-draw.mjs --file draw.json
 Das Skript gibt ein Prüfprotokoll mit je einer ✓/✗-Zeile pro Prüfung aus —
 Commitment, Digest, Auswahl — und liefert Exit-Code `0` nur, wenn alle drei
 bestehen, `1` wenn eine Prüfung fehlschlägt und `2` bei einem Aufruffehler
-(fehlendes `--file`, fehlendes Pflichtfeld, `participants` nicht als Array
-oder leer, oder ein nicht-ganzzahliger `nonce`), bevor überhaupt eine
-Prüfung läuft — lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.
+(eine unbekannte Flag, fehlendes `--file`, fehlendes Pflichtfeld,
+`participants` nicht als Array oder leer, oder ein nicht-ganzzahliger
+`nonce`), bevor überhaupt eine Prüfung läuft — lässt sich also in CI oder
+eine Shell-`&&`-Kette einbinden.

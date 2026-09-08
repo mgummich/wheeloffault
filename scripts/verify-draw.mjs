@@ -26,6 +26,7 @@ function parseArgs(argv) {
     const arg = argv[i];
     if (!arg.startsWith('--')) usageAndExit(`unexpected argument "${arg}"`);
     const key = arg.slice(2);
+    if (key !== 'file') usageAndExit(`unknown flag --${key}`);
     const value = argv[i + 1];
     if (value === undefined) usageAndExit(`missing value for --${key}`);
     out[key] = value;

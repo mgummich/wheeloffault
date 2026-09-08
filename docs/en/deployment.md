@@ -37,11 +37,13 @@ docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 
 The `Dockerfile` is a two-stage build: a `node:26-alpine` build stage runs
 `pnpm build:server` and prunes to production dependencies; the runtime
-stage strips `npm`/`npx`/`corepack` entirely (the container only ever
-needs `node`), runs as the non-root `node` user, and serves the server as
-unmodified TypeScript source under Node's native type-stripping — no
-bundler, no compile step at runtime. `HEALTHCHECK` polls `/api/health`.
-Data lives in the `/data` volume as `schuldrad.db` (SQLite) by default.
+stage strips `npm`/`npx`/`corepack` entirely (the application itself only
+ever needs `node`), runs as the non-root `node` user, and serves the
+server as unmodified TypeScript source under Node's native type-stripping
+— no bundler, no compile step at runtime. `HEALTHCHECK` polls
+`/api/health` with BusyBox `wget` (the only HTTP client left in the image
+once `npm`/`npx`/`corepack` are removed). Data lives in the `/data` volume
+as `schuldrad.db` (SQLite) by default.
 
 ### Without Docker
 
@@ -57,10 +59,11 @@ checked-in `src/web/.env.server`), which switches the client from the
 
 ### Compose profiles
 
-`docker-compose.yml` defines two profiles:
+`docker-compose.yml` defines two profiles. Every service declares a
+profile, so a bare `docker compose up` starts nothing — you must pick one:
 
 * **`sqlite`** — a single `schuldrad` service, SQLite in a named volume.
-  This is the default, no-infrastructure path:
+  This is the recommended, no-infrastructure path:
 
   ```bash
   docker compose --profile sqlite up --build
@@ -77,7 +80,7 @@ checked-in `src/web/.env.server`), which switches the client from the
   This exists because the project's stated principle is that *the system*
   is allowed to be over-engineered even though the code must not be — it is
   not a recommendation for a five-person team's Scrum wheel. SQLite remains
-  the default for a reason.
+  the recommended path for a reason.
 
 ### Environment variables
 
@@ -149,8 +152,9 @@ otherwise a client can inject their own value and dodge the limit.
 Sessions slide their expiry on use (12h) but always expire after 7 days of
 elapsed time regardless of activity.
 
-**Single-instance only.** Sessions and the login-failure counts used for
-rate limiting are that in-memory `Map`, per process — nothing shares this
+**Single-instance only.** Sessions and the login-attempt counts used for
+rate limiting (every attempt, not just failures) are that in-memory `Map`,
+per process — nothing shares this
 state across replicas, including `REDIS_URL` (that only fans out domain
 events over SSE across instances; see § 3's env var table — it does not
 touch auth). Run `SCHULDRAD_PASSWORD` behind more than one replica without
@@ -167,9 +171,10 @@ auth (no per-user accounts, roles, or audit trail) — see
 
 ## § 3b CSRF and DNS-rebinding hardening
 
-Independently of § 3a's password, every `/api/*` request must be
-`application/json` on state-changing methods, and a present `Origin`
-header must match `Host`. These are always on and need no configuration.
+Independently of § 3a's password, every state-changing `/api/*` request
+(`POST`/`PUT`/`DELETE`/`PATCH`) must be `application/json`, and a present
+`Origin` header must match `Host`; a `GET` is subject to neither check.
+These are always on and need no configuration.
 
 DNS rebinding — an attacker-controlled domain that resolves to your
 server's address, so a browser treats an attacker page as same-origin with
@@ -207,10 +212,10 @@ location block:
 proxy_buffering off;
 ```
 
-**SSE connections are capped at 100 per team.** A team beyond that many
-concurrent `/api/teams/:id/events` connections gets `503` on the next
-connection attempt; this is a fixed, non-configurable limit
-(`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
+**SSE connections are capped at 100 per team.** The check is `>=`, so once
+a team already has 100 concurrent `/api/teams/:id/events` connections open,
+the 101st connection attempt gets `503`; this is a fixed, non-configurable
+limit (`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
 
 ## § 4 Bind address, reverse proxy, and TLS
 

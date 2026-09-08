@@ -17,10 +17,10 @@ Deutsch → [contributing.md](../de/contributing.md)
   removes `npm`/`npx`/`corepack` afterward. `.npmrc` sets
   `auto-install-peers=true`. `pnpm-workspace.yaml` carries the rest of the
   pnpm configuration — `allowBuilds: esbuild: true` (permits esbuild's
-  postinstall script to run) and a `minimumReleaseAgeExclude` list of 14
+  postinstall script to run) and a `minimumReleaseAgeExclude` list of
   packages exempted from pnpm's minimum-release-age gate — and is
   load-bearing enough that the Dockerfile copies it into the build image
-  alongside `package.json` and the lockfile (`Dockerfile:5`).
+  alongside `package.json` and the lockfile.
 * **Biome** for formatting and linting (`biome.json`) — one tool instead of
   ESLint + Prettier. `pnpm format` writes, `pnpm format:check` and
   `pnpm lint` only check (used in CI).

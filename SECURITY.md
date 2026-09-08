@@ -60,8 +60,9 @@ anti-DoS machinery beyond that — a single IP behind a shared proxy that
 you choose not to unmask can still lock the login for everyone behind it;
 that trade-off is deliberate given the deployment target (§ 1).
 
-**Password mode is single-instance only.** Sessions and the login-failure
-map live in an in-memory `Map`, per process — there is no shared store,
+**Password mode is single-instance only.** Sessions and the login-attempt
+map (every attempt, not just failures — see § 1a above) live in an
+in-memory `Map`, per process — there is no shared store,
 Redis included (`REDIS_URL` only fans out *domain* events over SSE, it does
 not touch auth state; see [docs/en/deployment.md](docs/en/deployment.md)
 § 3a). Behind more than one replica without sticky sessions: a session
@@ -129,6 +130,14 @@ fully-open default mode:
   legitimately reached by; setting it is what actually closes the hole, and
   is worth doing wherever the reachable hostnames are known ahead of time.
   See [docs/en/deployment.md](docs/en/deployment.md) § 3b.
+* **`SameSite=Strict` session cookie.** Set on `schuldrad_session` in
+  `src/server/auth.ts`, independent of § 1a being enabled — the browser
+  never attaches the cookie to a cross-site request in the first place, so
+  a forged request from another origin arrives with no session at all,
+  regardless of the checks above. It also carries `Secure` when
+  `SCHULDRAD_SECURE_COOKIES=1` is set, or when the request is confirmed to
+  have arrived over TLS via `SCHULDRAD_TRUST_PROXY=1` — see
+  [docs/en/deployment.md](docs/en/deployment.md) § 3a.
 
 If you run a reverse proxy in front of Schuldrad, it **must** forward the
 client's original `Host` header unchanged (`proxy_set_header Host $host;`
@@ -189,9 +198,12 @@ database the operator's browser does not control.
   [docs/en/fairness.md](docs/en/fairness.md) § 6) — this is per-spin
   tamper-evidence, not a hash chain across the whole event history, so it
   only catches tampering with the fields a commitment actually binds.
-* **Input validation.** All HTTP input is validated server-side
-  (`src/server/validate.ts`) independent of anything the browser sends —
-  a malicious or buggy client cannot inject a malformed event.
+* **Input validation.** All HTTP input is validated server-side —
+  `src/server/validate.ts` for most routes, and `assertPolicy`
+  (`src/domain/fairness/policy.ts`) for the fairness-policy body, which the
+  browser checks with the same function — independent of anything the
+  browser sends, a malicious or buggy client cannot inject a malformed
+  event.
 
 **Not protected**, beyond what §§ 1–3 already say:
 

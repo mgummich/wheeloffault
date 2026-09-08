@@ -50,9 +50,10 @@ Ziehung auswirken.
 Definiert in `src/web/styles.css` unter `:root`. `--ease-mechanical`
 (`cubic-bezier(.2,.8,.2,1)`) ist das einzige Token: scharfer Antritt,
 gedämpftes Einrasten, der Standard für alles, was "ankommt". Seine drei
-Verwendungen sind der Rand-/Transform-Übergang von `StampStage`
-(`stages.tsx:325`), dessen Aufprall-Animation (`stages.tsx:370`) und das
-zugehörige Keyframe in `styles.css:1080`.
+Verwendungen sind der Rand-/Transform-Übergang von `StampStage`,
+dessen Aufprall-Animation (die `sr-stamp`-Animation in
+`src/web/wheel/stages.tsx`) und die zugehörige `.reveal-stamp`-Regel in
+`src/web/styles.css`.
 
 Keines davon ist eine Feder-/Bounce-Kurve. Ein Bahnrelais schwingt nicht
 nach, bevor es einrastet — es klackt in Position und bleibt dort. Wo
@@ -162,7 +163,7 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 | Visualisierung | Was sie in diesen Begriffen tut |
 |---|---|
 | **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein "Kick" des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenze — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
-| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind von links nach rechts leicht zeitversetzt, sodass die Zeile wie eine Kaskade unabhängiger Mechanismen wirkt, nicht wie ein neu gezeichneter String. |
+| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 der 16 Zellen der Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass die Zeile wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
 | **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
 | **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |
 | **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bezierkurve, die sich als Bremsen liest; der Name löst sich erst nach dem vollständigen Halt auf. |

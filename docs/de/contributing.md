@@ -21,9 +21,9 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   `auto-install-peers=true`. Die übrige pnpm-Konfiguration steht in
   `pnpm-workspace.yaml` — `allowBuilds: esbuild: true` (erlaubt esbuilds
   Postinstall-Skript zu laufen) und eine `minimumReleaseAgeExclude`-Liste
-  mit 14 von pnpms Mindest-Release-Alter-Prüfung ausgenommenen Paketen —
+  von pnpms Mindest-Release-Alter-Prüfung ausgenommenen Paketen —
   und ist so tragend, dass das Dockerfile sie neben `package.json` und dem
-  Lockfile ins Build-Image kopiert (`Dockerfile:5`).
+  Lockfile ins Build-Image kopiert.
 * **Biome** für Formatierung und Linting (`biome.json`) — ein Werkzeug
   statt ESLint + Prettier. `pnpm format` schreibt, `pnpm format:check` und
   `pnpm lint` prüfen nur (so in CI verwendet).

@@ -45,9 +45,9 @@ change how long a draw feels.
 Defined in `src/web/styles.css` under `:root`. `--ease-mechanical`
 (`cubic-bezier(.2,.8,.2,1)`) is the only token: sharp attack, damped settle,
 the default feel for anything that "arrives". Its three uses are
-`StampStage`'s border/transform transition (`stages.tsx:325`), its impact
-animation (`stages.tsx:370`), and the matching keyframe in
-`styles.css:1080`.
+`StampStage`'s border/transform transition, its impact animation
+(the `sr-stamp` animation in `src/web/wheel/stages.tsx`), and the matching
+`.reveal-stamp` rule in `src/web/styles.css`.
 
 None of these are spring/bounce curves. A railway relay does not oscillate
 before it commits — it clacks into position and stays. Overshoot, where
@@ -150,7 +150,7 @@ skip the announcement, it just skips the show beforehand.
 | Visualization | What it does, in these terms |
 |---|---|
 | **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
-| **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered a few ms apart left-to-right so the row reads as a cascade of independent mechanisms, not one repainted string. |
+| **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of the row's 16 cells, then the same 0–84ms cascade repeats for the second 8 — so the row reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
 | **Signal** (`SignalStage`) | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red. |
 | **Ticket stamp** (`StampStage`) | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`. |
 | **Train arrival** (`TrainStage`) | Approaches on a front-loaded-then-flattening cubic-bezier that reads as braking; the name only resolves after the train has fully stopped. |

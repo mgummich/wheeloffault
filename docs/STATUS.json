@@ -10,57 +10,42 @@
     {
       "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Checked 94 files. No issues."
+      "details": "Checked 95 files in 21ms. No fixes applied."
     },
     {
       "name": "lint (pnpm lint)",
       "status": "pass",
-      "details": "Checked 96 files. 0 errors, 5 warnings (4 noImportantStyles in styles.css's prefers-reduced-motion block, 1 noDescendingSpecificity pair), all pre-existing. Exit 0."
+      "details": "Found 5 warnings."
     },
     {
       "name": "typecheck (pnpm typecheck)",
       "status": "pass",
-      "details": "tsc -p tsconfig.json --noEmit: no output, exit 0."
+      "details": "(no output)"
     },
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "16 test files, 95 tests passed, 0 failed."
+      "details": "Duration  475ms (transform 42%, tests 41%, import 15%, worker 2%)"
     },
     {
       "name": "test:integration (pnpm test:integration)",
       "status": "pass",
-      "details": "5 test files, 47 tests passed, 0 failed."
+      "details": "Duration  1.46s (tests 81%, transform 14%, import 5%, worker 1%)"
     },
     {
       "name": "build (pnpm build)",
       "status": "pass",
-      "details": "vite build succeeded; scripts/build-docs.mjs completeness/content-language/link checks passed."
+      "details": "docs: → dist/web/docs/index.html (redirect to en/)"
     },
     {
       "name": "build:server (pnpm build:server)",
       "status": "pass",
-      "details": "vite build --mode server succeeded."
+      "details": "✓ built in 97ms"
     },
     {
       "name": "e2e (pnpm e2e)",
       "status": "pass",
-      "details": "3 Playwright tests passed across 2 projects. ~5s."
-    },
-    {
-      "name": "docker: sqlite profile smoke test",
-      "status": "previously-verified",
-      "details": "Not re-run this pass; no server/container code changed."
-    },
-    {
-      "name": "docker: overengineered profile (Postgres + Redis) build + smoke test",
-      "status": "previously-verified",
-      "details": "Not re-run this pass; migration mechanism was simplified (regex transpiler replaced by literal sql/pgSql fields) but not re-verified against a live Postgres in this session."
-    },
-    {
-      "name": "docker: auth-enabled container smoke test (SCHULDRAD_PASSWORD set)",
-      "status": "previously-verified",
-      "details": "Not re-run this pass; auth.ts rate-limit clearAttempt removal covered by src/server/auth.test.ts, which passed."
+      "details": "3 passed (5.1s)"
     }
   ]
 }
