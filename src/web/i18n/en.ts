@@ -308,7 +308,7 @@ export const en = {
   'wheel.boardReady': 'Display ready.',
   'wheel.responsibility': 'RESPONSIBILITY',
   'wheel.signalStop': 'Stop · guilty',
-  'wheel.signalSwitch': 'Switching',
+  'wheel.signalSwitch': 'Points',
   'wheel.signalClear': 'Clear to proceed',
   'wheel.ticketLabel': 'Ticket · valid for 1 draw',
   'wheel.trainUnknown': 'Next arrival: unknown class',

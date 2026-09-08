@@ -57,14 +57,7 @@ export function visLabel(vis: Vis): string {
   return t(`anim.vis.${vis}`);
 }
 
-function visShort(vis: Vis): string {
-  return t(`anim.visShort.${vis}`);
-}
-
-function wheelShort(style: WheelStyle): string {
-  return t(`anim.wheelShort.${style}`);
-}
-
 export function animSummary(s: AnimSettings): string {
-  return visShort(s.vis) + (s.vis === 'wheel' ? ` · ${wheelShort(s.wheelStyle)}` : '');
+  const vis = t(`anim.visShort.${s.vis}`);
+  return s.vis === 'wheel' ? `${vis} · ${t(`anim.wheelShort.${s.wheelStyle}`)}` : vis;
 }

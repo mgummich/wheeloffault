@@ -31,7 +31,7 @@ a fairness incident, not a motion bug.
 | Tier | Token | Range | Used for |
 |---|---|---|---|
 | Indicator | `--dur-indicator` | 150–180ms | flap/tick snaps, per-character reveals |
-| Mechanical latency | `--dur-latency` | 80–120ms | control acknowledgement (signal light switching, hover/press feedback) |
+| Mechanical latency | `--dur-latency` | 120ms | control acknowledgement (signal light switching, hover/press feedback) |
 | Mechanical settle | `--dur-settle` | 240–400ms | stamp impact, wheel segment highlight, panel pop-in |
 | Theatrical reveal | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6.5s | the full draw performance, commit to announcement |
 
@@ -75,7 +75,7 @@ canonical "mechanical" vocabulary this document describes in prose:
 
 A real relay interlocking doesn't switch a signal the instant a lever is
 pulled — there's a beat while the mechanism catches up. `--dur-latency`
-(100–120ms) is that beat: `SignalStage`'s arm-light background transition
+(120ms) is that beat: `SignalStage`'s arm-light background transition
 uses it so the light doesn't teleport between states.
 
 ## § 4 Anticipation

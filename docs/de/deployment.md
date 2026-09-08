@@ -89,7 +89,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | Variable | Standard | Bedeutung |
 |---|---|---|
 | `PORT` | `3000` | HTTP-Listen-Port |
-| `DATA_DIR` | `/data` (Container) | Verzeichnis für `schuldrad.db` |
+| `DATA_DIR` | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db` |
 | `HOST` | `127.0.0.1` | Bind-Adresse — siehe § 4 |
 | `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |

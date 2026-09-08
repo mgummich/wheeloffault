@@ -27,7 +27,7 @@ function applyDocumentTheme() {
 }
 applyDocumentTheme();
 
-export function getTheme(): Theme {
+function getTheme(): Theme {
   return theme;
 }
 

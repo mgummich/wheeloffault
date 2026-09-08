@@ -13,9 +13,10 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   `.ts`-Quellcode direkt unter Nodes nativem Type-Stripping aus. Es gibt
   keinen Build-Schritt zur Laufzeit und keinen Bundler in Produktion; eine
   niedrigere Node-Version kann den Server schlicht nicht ausführen.
-* **pnpm 11** wie in `packageManager` in `package.json` deklariert.
-  Corepack aktiviert es in CI (`.github/workflows/pages.yml`); das
-  Dockerfile installiert es explizit (`npm install -g pnpm@11.24.0`), weil
+* **pnpm 11** wie in `packageManager` in `package.json` deklariert. CI
+  installiert es über `pnpm/action-setup@v4` (`.github/workflows/pages.yml`,
+  `.github/workflows/ci.yml`), nicht über Corepack; das Dockerfile
+  installiert es explizit (`npm install -g pnpm@11.24.0`), weil
   das Laufzeit-Image `npm`/`npx`/`corepack` danach entfernt. `.npmrc` setzt
   `auto-install-peers=true`; weitere pnpm-Konfiguration gibt es nicht.
 * **Biome** für Formatierung und Linting (`biome.json`) — ein Werkzeug

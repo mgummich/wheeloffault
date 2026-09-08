@@ -1,57 +1,57 @@
-# Schuldrad — Architektur
+# Schuldrad — Architecture
 
-Schuldrad ist ein selbst gehostetes, installierbares PWA-Werkzeug für das
-Scrum-Ritual „Wer ist diesmal schuldig?“. Es ersetzt wheelofnames.com durch ein
-absichtlich über-professionelles Verantwortungsrad mit nachvollziehbarer
-Fairness, vollständiger Historie und Schuldberichten.
+Schuldrad is a self-hosted, installable PWA tool for the Scrum ritual of
+"who is at fault this time?". It replaces wheelofnames.com with a
+deliberately over-professional wheel of responsibility, with auditable
+fairness, full history, and guilt reports.
 
-Leitsatz: **Das System darf over-engineered sein, der Code nicht.**
+Guiding principle: **The system may be over-engineered, the code may not.**
 
-## 1. Überblick
+## 1. Overview
 
 ```
-Browser (PWA, React)                       Server (Node 26, kein Framework)
+Browser (PWA, React)                       Server (Node 26, no framework)
 ┌──────────────────────────┐   HTTP/JSON   ┌────────────────────────────────┐
-│ Ansichten                │ ────────────▶ │ Command-Handler                 │
-│ Rad-Animation            │               │   lädt Stream → Domänenfunktion│
-│ Schuldbericht/Statistik  │ ◀──────────── │   → Events → Event-Store       │
-│ Verifier (Web Crypto)    │   SSE         │ Projektionen (pure Funktionen) │
-└──────────────────────────┘               │ SQLite (node:sqlite, 1 Datei)  │
+│ Views                     │ ────────────▶ │ Command handlers                │
+│ Wheel animation            │               │   loads stream → domain function│
+│ Guilt report/statistics   │ ◀──────────── │   → events → event store       │
+│ Verifier (Web Crypto)     │   SSE         │ Projections (pure functions)   │
+└──────────────────────────┘               │ SQLite (node:sqlite, 1 file)   │
               ▲                            └────────────────────────────────┘
-              └── gleiches Domänenmodul (src/domain) auf beiden Seiten
+              └── same domain module (src/domain) on both sides
 ```
 
-Ein einziges npm-Paket, drei Quellordner:
+A single npm package, three source folders:
 
-| Ordner        | Läuft in        | Darf importieren aus | Inhalt |
-|---------------|-----------------|----------------------|--------|
-| `src/domain`  | Browser + Node  | nur `src/domain`     | Events, Zustandsaufbau, Fairness, Projektionen, öffentliche HTTP-Ansichten (`views.ts`). Pure Funktionen, keine I/O. |
-| `src/server`  | Node            | `src/domain`         | HTTP-Server, Event-Store (SQLite), Command-Handler, SSE. |
-| `src/web`     | Browser         | `src/domain`         | React-Oberfläche, Animation, Service Worker, Verifier-UI. |
+| Folder        | Runs in         | May import from | Contents |
+|---------------|------------------|------------------|----------|
+| `src/domain`  | Browser + Node   | only `src/domain` | Events, state building, fairness, projections, public HTTP views (`views.ts`). Pure functions, no I/O. |
+| `src/server`  | Node             | `src/domain`     | HTTP server, event store (SQLite), command handlers, SSE. |
+| `src/web`     | Browser          | `src/domain`     | React UI, animation, service worker, verifier UI. |
 
-`src/web` nutzt `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
-`spinView`) sowohl für die HTTP-Antwortformen als auch für den Session-Modus
-— keine Ausnahme mehr nötig, die Datei liegt in der Domäne.
+`src/web` uses `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
+`spinView`) both for the HTTP response shapes and for session mode — no
+exception needed anymore, the file lives in the domain.
 
-Die Domäne kennt weder HTTP noch SQLite noch React. Der Fairness-Verifier im
-Browser ist buchstäblich dieselbe Funktion wie auf dem Server.
+The domain knows nothing about HTTP, SQLite, or React. The fairness
+verifier in the browser is literally the same function as on the server.
 
-## 2. Domänenmodell
+## 2. Domain model
 
 ```
-Team          Container für alles. Ein Event-Stream pro Team.
-Member        Person im Team. Wird nie gelöscht, nur deaktiviert.
-Pool          Benannte Teilmenge der Members (z. B. „Backend“, „Daily“). Umbenennbar,
-              löschbar; die Ziehungshistorie eines gelöschten Pools bleibt erhalten.
-Spin          Eine Ziehung: Commit (Server bindet Seed + Gewichte) → Reveal (Ergebnis).
-FairnessPolicy Aktive Gewichtsmodifikatoren samt Parametern. Sichtbar im UI.
-WeightModifier Pure Funktion  (weights, context) → weights.
-Appeal        Einspruch gegen eine Schuld; Ergebnis „stattgegeben“ oder „abgelehnt“.
-Immunity      Einmaliger Schutz: Gewicht 0 bei der nächsten Ziehung, wird dabei verbraucht.
-              Kann vor dem Verbrauch widerrufen werden.
+Team          Container for everything. One event stream per team.
+Member        Person on a team. Never deleted, only deactivated.
+Pool          Named subset of members (e.g. "Backend", "Daily"). Renamable,
+              deletable; a deleted pool's draw history is retained.
+Spin          A draw: commit (server binds seed + weights) → reveal (result).
+FairnessPolicy Active weight modifiers plus their parameters. Visible in the UI.
+WeightModifier Pure function  (weights, context) → weights.
+Appeal        Objection to a guilt verdict; outcome "upheld" or "rejected".
+Immunity      One-time protection: weight 0 on the next draw, consumed by it.
+              Can be revoked before it's consumed.
 ```
 
-### Events (persistierter Vertrag, `src/domain/events.ts`)
+### Events (persisted contract, `src/domain/events.ts`)
 
 ```
 TeamCreated              { teamId, name }
@@ -73,164 +73,177 @@ ImmunityConsumed         { memberId, spinId }
 ImmunityRevoked          { memberId }
 ```
 
-Jedes Event hat zusätzlich `type`, `at` (ISO-Zeit) und – in der Datenbank –
-`streamId`, `version` (1-basiert, lückenlos pro Stream) und `position`
-(global). Events sind unveränderlich. Ein Event-Typ wird nie umgedeutet;
-neue Bedeutung = neuer Typ. Felder dürfen optional hinzukommen, nie
-entfernt oder umbenannt werden (`upcast` in `events.ts` ist die einzige
-erlaubte Stelle für Altdaten-Kompatibilität, aktuell leer).
+Every event additionally carries `type`, `at` (ISO time) and — in the
+database — `streamId`, `version` (1-based, gap-free per stream) and
+`position` (global). Events are immutable. An event type is never
+reinterpreted; new meaning = new type. Fields may be added optionally,
+never removed or renamed (`upcast` in `events.ts` is the only place legacy
+data compatibility is allowed to live, currently empty).
 
-## 3. Befehlsfluss
+## 3. Command flow
 
 ```
 Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  append(streamId, expectedVersion, events)
                      ▲                                          │
               state = replay(events)                            ▼
-                                                         Projektionen aus replay()
+                                                         Projections from replay()
 ```
 
-* `replay(events): TeamState` in `src/domain/team.ts` faltet den Stream zu
-  einem Zustand. Kein Snapshotting: ein Team hat einige tausend Events, das
-  ist in SQLite in Millisekunden gelesen.
-* Entscheidungsfunktionen (`addMember`, `commitSpin`, `revealSpin`, …) sind
-  pure Funktionen `(state, input) → Event[]` und werfen `DomainError` bei
-  ungültigen Übergängen.
-* Der Server macht pro Command: Stream laden → entscheiden → mit
-  `expectedVersion = state.version` anhängen. Konflikt (jemand war schneller)
-  → Stream neu laden, Command erneut entscheiden, maximal 3 Versuche.
+* `replay(events): TeamState` in `src/domain/team.ts` folds the stream into
+  a state. No snapshotting: a team has a few thousand events, which SQLite
+  reads in milliseconds.
+* Decision functions (`addMember`, `commitSpin`, `revealSpin`, …) are pure
+  functions `(state, input) → Event[]` and throw `DomainError` on invalid
+  transitions.
+* Per command, the server: loads the stream → decides → appends with
+  `expectedVersion = state.version`. On conflict (someone was faster) →
+  reload the stream, decide the command again, up to 3 attempts.
 
-### Nebenläufigkeit & Idempotenz
+### Concurrency & idempotency
 
-* `events(stream_id, version)` ist `UNIQUE`. Zwei konkurrierende Writer können
-  nie beide Version n+1 schreiben.
-* Spin-IDs kommen vom Client (UUID). `commitSpin` mit einer bereits
-  existierenden Spin-ID ist ein No-Op, das den bestehenden Spin zurückgibt.
-  Ein Retry erzeugt also nie zwei offizielle Ziehungen.
-* Pro Team ist höchstens ein Spin „committed, aber nicht revealed“. Ein
-  weiterer Commit wird mit `409` und der offenen Spin-ID abgelehnt; der
-  Client setzt den offenen Spin fort.
-* `revealSpin` mit identischem `clientSeed` ist idempotent; abweichender
-  `clientSeed` nach erfolgtem Reveal → `409`.
-* Absturz zwischen Commit und Reveal: Der Commit ist persistiert, das Team
-  sieht nach Reload „Ziehung läuft“ und kann sie abschließen. Kein
-  Gewinner ohne persistiertes `SpinRevealed`. Ein zweiter Browser, der den
-  offenen Spin mit eigenem `clientSeed` abschließen will, bekommt `409` und
-  übernimmt das bereits persistierte Ergebnis.
-* Ein aufgehobener Spin (Einspruch stattgegeben) zählt statistisch als nicht
-  geschehen: weder Treffer noch Erwartungswert.
+* `events(stream_id, version)` is `UNIQUE`. Two concurrent writers can
+  never both write version n+1.
+* Spin IDs come from the client (UUID). `commitSpin` with an already
+  existing spin ID is a no-op that returns the existing spin. A retry
+  therefore never creates two official draws.
+* At most one spin per team is "committed but not revealed". A further
+  commit is rejected with `409` and the open spin's ID; the client resumes
+  the open spin.
+* `revealSpin` with an identical `clientSeed` is idempotent; a differing
+  `clientSeed` after a successful reveal → `409`.
+* Crash between commit and reveal: the commit is persisted, the team sees
+  "draw in progress" after reload and can finish it. No winner without a
+  persisted `SpinRevealed`. A second browser that wants to finish the open
+  spin with its own `clientSeed` gets `409` and takes over the already
+  persisted result.
+* An overturned spin (appeal upheld) counts statistically as if it never
+  happened: neither a hit nor an expected value.
 
-## 4. Fairness-Protokoll (Commit/Reveal)
+## 4. Fairness protocol (commit/reveal)
 
 ```
-1. eligibleMembers(state, poolId)                 aktive Mitglieder ∩ Pool
-2. calculateWeights(participants, policy, state)   Modifikatoren in fester Reihenfolge
-3. Server: serverSeed = 32 Zufallsbytes (crypto.getRandomValues)
+1. eligibleMembers(state, poolId)                 active members ∩ pool
+2. calculateWeights(participants, policy, state)   modifiers in fixed order
+3. Server: serverSeed = 32 random bytes (crypto.getRandomValues)
    commitment = SHA-256( canonicalJson({ serverSeed, nonce, participants }) )
-   → SpinCommitted { commitment, nonce, participants (mit Gewichten), serverSeed }
-   Der serverSeed liegt im Event (sonst überlebt ein offener Spin keinen Neustart),
-   wird aber vor dem Reveal nie über HTTP ausgeliefert (`domain/views.ts`). Wer die
-   Datenbank lesen kann, kann das Ergebnis vorhersagen – die Datenbank ist Vertrauensbasis.
-4. Client liefert clientSeed (beliebiger String, Standard: 16 Zufallsbytes hex)
+   → SpinCommitted { commitment, nonce, participants (with weights), serverSeed }
+   The serverSeed lives in the event (otherwise an open spin wouldn't survive
+   a restart), but is never served over HTTP before the reveal (`domain/views.ts`).
+   Whoever can read the database can predict the result — the database is the
+   trust boundary.
+4. Client supplies clientSeed (arbitrary string, default: 16 random bytes, hex)
 5. digest = HMAC-SHA-256(key = serverSeed, msg = `${commitment}:${clientSeed}:${nonce}`)
    r = uint64(digest[0..8]) mod Σweights
-   selected = erster Teilnehmer, dessen kumulatives Gewicht > r
+   selected = first participant whose cumulative weight > r
    → SpinRevealed { serverSeed, clientSeed, digest, selectedMemberId }
-6. Animation fährt zum persistierten Ergebnis.
+6. The animation drives to the persisted result.
 ```
 
-Gewichte sind ganze Zahlen (Basis 1000 = „1,000×“), damit die Ziehung
-plattformunabhängig exakt ist. Teilnehmer sind nach `memberId` sortiert
-(stabile Reihenfolge, Teil des Commitments).
+Weights are integers (base 1000 = "1.000×"), so the draw is exact across
+platforms. Participants are sorted by `memberId` (stable order, part of the
+commitment).
 
-Invarianten (durch deterministische und Property-Tests abgesichert):
-
-```
-gleiche Eingaben        = gleiches Ergebnis
-inaktives Mitglied      = kann nicht gezogen werden
-Gewicht 0               = kann nicht gezogen werden
-Gewichte endlich, ≥ 0
-alle Gewichte 0         = Fehler, kein Spin
-Teilnehmerreihenfolge   stabil
-Modifikatorreihenfolge  deterministisch (feste Liste in modifiers.ts)
-Commitment bindet Seed + Gewichte
-Reveal reproduziert Commitment
-Browser-Verifier reproduziert Server
-```
-
-Modifikatoren (`src/domain/fairness/modifiers.ts`), alle `weights + context → weights`:
+Invariants (backed by deterministic and property tests):
 
 ```
-uniform     Ausgangsgewicht 1000 für alle
-pity        +X % pro Ziehung ohne Treffer seit der letzten Schuld
-cooldown    Gewicht 0 für N Ziehungen nach einer Schuld (würde er alle ausschließen,
-            wird er für diese Ziehung übersprungen und mit Faktor 1,000 protokolliert)
-exhaustion  −X % pro Schuld in den letzten N Ziehungen
-newcomer    ×Faktor für Mitglieder mit weniger als N Teilnahmen
-manual      expliziter Faktor pro Mitglied
-immunity    Gewicht 0, wenn eine Immunität vorliegt (wird durch den Spin verbraucht)
+same inputs             = same result
+inactive member         = cannot be drawn
+weight 0                = cannot be drawn
+weights finite, ≥ 0
+all weights 0           = error, no spin
+participant order       stable
+modifier order          deterministic (fixed list in modifiers.ts)
+commitment binds seed + weights
+reveal reproduces commitment
+browser verifier reproduces server
 ```
 
-Gamification ändert nie Gewichte. Jede Gewichtsänderung ist über die aktive
-`FairnessPolicy` sichtbar und im `SpinCommitted`-Event pro Teilnehmer
-dokumentiert.
-
-## 5. Projektionen (Read Models)
-
-Alle Read Models sind pure Funktionen über `TeamState` in `src/domain/projections/`:
+Modifiers (`src/domain/fairness/modifiers.ts`), all `weights + context → weights`:
 
 ```
-memberReport(state, memberId)   Schuldbericht: Treffer, Schuldquote, Erwartungswert, Schuldindex,
-                                Zeit seit letzter Schuld, Streaks, Fairness-Abweichung, Achievements,
-                                Schuldpunkte, Entschädigungsminuten
-teamStatistics(state)           Hall of Shame, Rangliste, Verteilung, Fairness-Übersicht
-spinHistory(state)              chronologische Liste inkl. Einsprüche
+uniform     starting weight 1000 for everyone
+pity        +X % per draw without a hit since the member's last guilt
+cooldown    weight 0 for N draws after a guilt (if this would exclude
+            everyone, it is skipped for this draw and logged with factor 1.000)
+exhaustion  −X % per guilt within the last N draws
+newcomer    ×factor for members with fewer than N participations
+manual      explicit factor per member
+immunity    weight 0 if an immunity applies (consumed by the spin)
 ```
 
-Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
-„Projektion neu aufbauen“ heißt: Seite neu laden.
+Gamification never changes weights. Every weight change is visible via the
+active `FairnessPolicy` and documented per participant in the
+`SpinCommitted` event.
 
-## 6. HTTP-Vertrag
+## 5. Projections (read models)
+
+All read models are pure functions over `TeamState` in `src/domain/projections/`:
+
+```
+memberReport(state, memberId)   Guilt report: hits, guilt rate, expected value, guilt index,
+                                time since last guilt, streaks, fairness deviation, achievements,
+                                guilt points, compensation minutes
+teamStatistics(state)           Hall of shame, ranking, distribution, fairness overview
+spinHistory(state)              chronological list including appeals
+```
+
+None of this is stored. The event history is the sole source of truth;
+"rebuild a projection" means: reload the page.
+
+## 6. HTTP contract
 
 ```
 GET  /api/teams                              [{ teamId, name, memberCount, spinCount }]
 POST /api/teams                 { name }     → 201 TeamView
 GET  /api/teams/:id                          TeamView (state + statistics)
-POST /api/teams/:id/members     { name }  |  { names: [...] }   Liste einfügen
+POST /api/teams/:id/members     { name }  |  { names: [...] }   insert a list
 POST /api/teams/:id/members/:mid/deactivate
 POST /api/teams/:id/members/:mid/reactivate
 POST   /api/teams/:id/members/:mid/immunity   { reason }
-DELETE /api/teams/:id/members/:mid/immunity   widerruft die älteste Immunität
+DELETE /api/teams/:id/members/:mid/immunity   revokes the oldest immunity
 PUT    /api/teams/:id/policy      FairnessPolicy
 POST   /api/teams/:id/pools       { name, memberIds }
 PUT    /api/teams/:id/pools/:pid  { memberIds }
 POST   /api/teams/:id/pools/:pid/rename  { name }
 DELETE /api/teams/:id/pools/:pid
-POST /api/teams/:id/spins       { spinId, poolId? }        → SpinCommitted-Daten   (409 bei offenem Spin)
-POST /api/teams/:id/spins/:sid/reveal { clientSeed }       → SpinRevealed-Daten
+POST /api/teams/:id/spins       { spinId, poolId? }        → SpinCommitted data   (409 on open spin)
+POST /api/teams/:id/spins/:sid/reveal { clientSeed }       → SpinRevealed data
 POST /api/teams/:id/spins/:sid/appeal { reason }
 POST /api/teams/:id/spins/:sid/appeal/uphold
 POST /api/teams/:id/spins/:sid/appeal/reject
-GET  /api/teams/:id/members/:mid/report      Schuldbericht
-GET  /api/teams/:id/events                   SSE: ein `event: appended` pro neuem Event
+GET  /api/teams/:id/members/:mid/report      Guilt report
+GET  /api/teams/:id/events                   SSE: one `event: appended` per new event
 GET  /api/health
+POST /api/auth/login             { password } → sets session cookie (only when auth is enabled)
+POST /api/auth/logout            clears the session cookie
+GET  /api/auth/status                        { enabled, authenticated }
 ```
 
-Fehler: `{ error: string }` mit 400 (ungültige Eingabe), 404, 409 (Konflikt).
-Alle Eingaben werden explizit validiert (`src/server/validate.ts`; die
-FairnessPolicy in `src/domain/fairness/policy.ts`, weil der Browser dieselbe Prüfung nutzt).
+Errors: `{ error: string, code: string }` with 400 (invalid input), 404,
+409 (conflict). `code` is a stable, machine-readable identifier that the
+client localizes (`src/web/apiError.ts`, `src/web/i18n/`); the human
+`error` message is English and only a fallback for unknown codes. All
+input is explicitly validated (`src/server/validate.ts`; the
+FairnessPolicy in `src/domain/fairness/policy.ts`, because the browser
+uses the same check).
 
-Es gibt keine Authentifizierung. Schuldrad ist für ein vertrauenswürdiges
-Netz (Team-LAN, VPN) gedacht; wer es öffentlich betreibt, setzt einen
-Reverse Proxy mit Auth davor.
+There is no authentication by default: Schuldrad is meant for a trusted
+network (team LAN, VPN); anyone running it publicly puts a reverse proxy
+with auth in front of it. Server mode can optionally require a single
+shared deployment password (`SCHULDRAD_PASSWORD`/`SCHULDRAD_PASSWORD_FILE`)
+gating every `/api/*` route except `/api/health` and `/api/auth/*` behind a
+server-side session cookie (`src/server/auth.ts`). This is a door lock, not
+multi-user auth — see [SECURITY.md](SECURITY.md) for the full threat
+model, what it protects against, and what it does not.
 
-Der Client hält keinen eigenen Domänenzustand. Jede Mutation liefert den
-frischen `TeamView` zurück, den der Client direkt übernimmt; zusätzlich lädt
-er bei jeder SSE-Nachricht `GET /api/teams/:id` neu (das Echo des eigenen
-Appends ist ein harmloser Doppel-Fetch).
+The client holds no domain state of its own. Every mutation returns the
+fresh `TeamView`, which the client adopts directly; it also reloads
+`GET /api/teams/:id` on every SSE message (the echo of its own append is a
+harmless double fetch).
 
-## 7. Persistenz
+## 7. Persistence
 
-SQLite über `node:sqlite` ist der Standard: eine Datei, eine Tabelle, die zählt:
+SQLite via `node:sqlite` is the default: one file, one table that counts:
 
 ```sql
 CREATE TABLE events (
@@ -244,77 +257,77 @@ CREATE TABLE events (
 );
 ```
 
-Migrationen: nummerierte Einträge in `src/server/migrations.ts`, je in einer
-Transaktion angewendet, in `schema_migrations` protokolliert. Angewendete
-Migrationen werden nie editiert.
+Migrations: numbered entries in `src/server/migrations.ts`, each applied in
+a transaction, logged in `schema_migrations`. Applied migrations are never
+edited.
 
-Optional kann der gleiche Event-Store-Vertrag mit Postgres betrieben werden:
+Optionally, the same event store contract can run on Postgres:
 
 ```bash
 EVENT_STORE=postgres DATABASE_URL=postgres://... pnpm start
 ```
 
-Die Domäne und Projektionen bleiben unverändert. Postgres speichert dieselben
-Events in derselben logischen Tabelle; `payload` ist dort `JSONB`, `position`
-ist `BIGSERIAL`. Nebenläufigkeit bleibt optimistisch über die lückenlose
-Stream-Version und `UNIQUE (stream_id, version)`. SQLite bleibt bewusst der
-Pfad ohne Infrastruktur.
+The domain and projections are unchanged. Postgres stores the same events
+in the same logical table; `payload` is `JSONB` there, `position` is
+`BIGSERIAL`. Concurrency remains optimistic via the gap-free stream
+version and `UNIQUE (stream_id, version)`. SQLite deliberately stays the
+no-infrastructure path.
 
 ## 8. Realtime
 
-Server-Sent Events. Der Server hält pro Team eine Menge offener Antworten
-und schreibt nach jedem erfolgreichen Append `event: appended`. Der Client
-lädt daraufhin den Team-Zustand neu. Kein WebSocket.
+Server-Sent Events. The server holds a set of open responses per team and
+writes `event: appended` after every successful append. The client then
+reloads the team state. No WebSocket.
 
-Optional kann Redis als reines Broadcast-Fanout aktiviert werden:
+Optionally, Redis can be enabled as a pure broadcast fanout:
 
 ```bash
 REDIS_URL=redis://localhost:6379 pnpm start
 ```
 
-Redis ist kein Cache und keine zweite Wahrheit. Ein Server publiziert nach
-persistierten Appends die Event-Metadaten, andere Instanzen liefern sie an
-ihre lokalen SSE-Clients aus.
+Redis is not a cache and not a second source of truth. One server
+publishes event metadata after persisted appends; other instances deliver
+it to their local SSE clients.
 
 ## 9. Frontend
 
-React 19 + Vite. Kein Router-Paket: der Hash (`#/team/:id/spin`) ist die
-Route. Kein State-Management-Paket: `TeamView` vom Server + ein paar
-`useState`. Animationen (`src/web/wheel/`) erhalten das persistierte
-Ergebnis als Prop und dürfen keinen Domänenzustand besitzen. Sie sind
-überspringbar und respektieren `prefers-reduced-motion`.
+React 19 + Vite. No router package: the hash (`#/team/:id/spin`) is the
+route. No state management package: `TeamView` from the server plus a
+handful of `useState`. Animations (`src/web/wheel/`) receive the persisted
+result as a prop and must not own domain state. They are skippable and
+respect `prefers-reduced-motion`.
 
-Wegweiser durch `src/web`:
+Guide through `src/web`:
 
 ```
-api.ts           Fassade: wählt per VITE_API_MODE zwischen zwei Backends
-serverApi.ts     HTTP-Client; exportiert den gemeinsamen Vertrag `type Api`
-sessionApi.ts    In-Browser-Event-Store (sessionStorage) mit derselben Api
-apiError.ts      ApiError beider Backends + errorMessage() (deutsche Fehlertexte)
-draw.ts          performDraw(): Commit → Reveal inkl. 409-Wiederaufnahme
-useTeam.ts       Team laden, SSE-Refresh
-route.ts         Hash-Router; views/ die Seiten; wheel/ die Visualisierungen
-AnimPanel.tsx    Animationseinstellungen (localStorage via animSettings.ts)
-share.ts         Teams-Karte (Canvas-PNG) + ShareDialog.tsx (natives <dialog>)
+api.ts           Facade: picks between two backends via VITE_API_MODE
+serverApi.ts     HTTP client; exports the shared contract `type Api`
+sessionApi.ts    In-browser event store (localStorage) with the same Api
+apiError.ts      ApiError for both backends + errorMessage() (localized via code, § 6)
+draw.ts          performDraw(): commit → reveal including 409 resumption
+useTeam.ts       load team, SSE refresh
+route.ts         hash router; views/ are the pages; wheel/ the visualizations
+AnimPanel.tsx    animation settings (localStorage via animSettings.ts)
+share.ts         team card (canvas PNG) + ShareDialog.tsx (native <dialog>)
 ```
 
-PWA: `manifest.webmanifest` + handgeschriebener Service Worker
-(App-Shell-Cache; `/api` wird nie angefasst, Historie kommt immer vom Server).
+PWA: `manifest.webmanifest` + a hand-written service worker (app-shell
+cache; `/api` is never touched, history always comes from the server).
 
-`src/web` importiert aus `src/domain/views.ts` Typen (`TeamView`, `SpinView`)
-und die puren View-Funktionen – das ist der HTTP-Vertrag, kein Serverstaat
-(siehe Tabelle in Abschnitt 1).
+`src/web` imports types (`TeamView`, `SpinView`) and the pure view
+functions from `src/domain/views.ts` — that is the HTTP contract, not
+server state (see the table in section 1).
 
 ## 10. Deployment
 
-Ein Container (`Dockerfile`, Multi-Stage): Vite-Build → statische Dateien;
-der Server läuft als unveränderte TypeScript-Quelle direkt unter Node ≥ 26
-(natives Type-Stripping, kein Bundler). Volume für `data/schuldrad.db`. `PORT` und
-`DATA_DIR` per Umgebungsvariable. Kein Reverse Proxy nötig.
+One container (`Dockerfile`, multi-stage): Vite build → static files; the
+server runs as unmodified TypeScript source directly under Node ≥ 26
+(native type-stripping, no bundler). Volume for `data/schuldrad.db`.
+`PORT` and `DATA_DIR` via environment variable. No reverse proxy required.
 
-## 11. Verifikationsschleife
+## 11. Verification loop
 
 `pnpm verify` = format → lint → typecheck → unit/property → integration →
-build. E2E (`pnpm e2e`) mit Playwright gegen den gebauten Server. CI
-(`.github/workflows/ci.yml`) führt zusätzlich Container-Build, `pnpm audit`,
-Trivy-Scan und SBOM aus.
+build. E2E (`pnpm e2e`) with Playwright against the built server. CI
+(`.github/workflows/ci.yml`) additionally runs container build, `pnpm
+audit`, a Trivy scan, and SBOM generation.

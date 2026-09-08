@@ -1,4 +1,4 @@
-import { type AnimSettings, visLabel } from './animSettings.ts';
+import { type AnimSettings, type Vis, visLabel } from './animSettings.ts';
 import { useI18n } from './i18n/index.ts';
 
 type Props = {
@@ -6,15 +6,19 @@ type Props = {
   updateSettings: (patch: Partial<AnimSettings>) => void;
 };
 
-const visOptions: AnimSettings['vis'][] = [
-  'wheel',
-  'train',
-  'board',
-  'signal',
-  'stamp',
-  'timetable',
-  'line',
-];
+// A Record<Vis, true> fails to compile if a Vis variant is missing (or a
+// stale one lingers) — the dropdown's option list can't silently drift
+// from the Vis union.
+const visOptionSet = {
+  wheel: true,
+  train: true,
+  board: true,
+  signal: true,
+  stamp: true,
+  timetable: true,
+  line: true,
+} satisfies Record<Vis, true>;
+const visOptions = Object.keys(visOptionSet) as Vis[];
 
 /** The expandable settings panel below the "Animation" toggle on the spin page. */
 export function AnimPanel({ settings, updateSettings }: Props) {

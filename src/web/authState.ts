@@ -19,7 +19,7 @@ function emit() {
   for (const l of listeners) l();
 }
 
-export function getAuthState(): AuthState {
+function getAuthState(): AuthState {
   return state;
 }
 

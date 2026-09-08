@@ -1,6 +1,6 @@
 // Renders README.md/README.de.md and docs/en, docs/de as styled HTML into
 // dist/web/docs/, so GitHub Pages serves the documentation next to the app.
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Marked } from 'marked';
@@ -9,8 +9,8 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'dist', 'web', 'docs');
 
 // Single source of truth for which docs exist, in which language, and how
-// they're labeled. This registry IS the completeness check: a doc only
-// exists if it has both an `en` and a `de` entry below.
+// they're labeled. This registry IS the completeness check: a doc needs
+// both an `en` and a `de` entry below, unless marked `enOnly`.
 const docs = [
   {
     slug: 'index',
@@ -22,7 +22,16 @@ const docs = [
     slug: 'architecture',
     nav: { en: 'Architecture', de: 'Architektur' },
     title: { en: 'Schuldrad · Architecture', de: 'Schuldrad · Architektur' },
-    src: { en: 'docs/en/architecture.md', de: 'docs/de/architektur.md' },
+    src: { en: 'ARCHITECTURE.md', de: 'docs/de/architektur.md' },
+  },
+  {
+    // English-only: SECURITY.md has no maintained translation (see its own
+    // header). Exempted from the en/de pairing check below via `enOnly`.
+    slug: 'security',
+    nav: { en: 'Security', de: 'Sicherheit' },
+    title: { en: 'Schuldrad · Security', de: 'Schuldrad · Security' },
+    src: { en: 'SECURITY.md' },
+    enOnly: true,
   },
   {
     slug: 'fairness',
@@ -60,13 +69,21 @@ const LANGS = ['en', 'de'];
 
 // Fail loudly if docs/en and docs/de (or README.md/README.de.md) drift out
 // of pairing — either a stray file the registry doesn't know about, or a
-// registry entry missing its counterpart on disk.
+// registry entry missing its counterpart on disk. Entries marked `enOnly`
+// (currently just SECURITY.md, which has no maintained translation) are
+// exempt from needing a `de` counterpart, explicitly, rather than needing
+// a fake/duplicate `de` entry to satisfy the check.
 async function checkCompleteness() {
-  const { readdir } = await import('node:fs/promises');
   const problems = [];
 
   for (const doc of docs) {
     for (const lang of LANGS) {
+      if (!doc.src[lang]) {
+        if (!doc.enOnly) {
+          problems.push(`docs registry entry '${doc.slug}' is missing a '${lang}' src.`);
+        }
+        continue;
+      }
       const path = join(root, doc.src[lang]);
       try {
         await readFile(path);
@@ -90,7 +107,9 @@ async function checkCompleteness() {
       continue;
     }
     const known = new Set(
-      docs.filter((d) => d.slug !== 'index').map((d) => d.src[lang].split('/').pop()),
+      docs
+        .filter((d) => d.slug !== 'index' && d.src[lang])
+        .map((d) => d.src[lang].split('/').pop()),
     );
     for (const entry of entries) {
       if (entry.endsWith('.md') && !known.has(entry)) {
@@ -117,10 +136,12 @@ const slug = (text) =>
     .trim()
     .replace(/\s+/g, '-');
 
-// Cross-links inside the Markdown source (README.md, docs/en/*.md, ...) become
-// links between the rendered pages of the SAME language.
+// Cross-links inside the Markdown source (README.md, docs/en/*.md, ...) are
+// rewritten to point at the rendered page of whichever language the link's
+// target file actually is — a link to an en source lands on the en page
+// even from a de source page (and vice versa), so "Deutsch → architektur.md"
+// and "English → ARCHITECTURE.md" cross over instead of self-linking.
 function markedFor(lang) {
-  const otherLang = lang === 'en' ? 'de' : 'en';
   return new Marked({
     gfm: true,
     renderer: {
@@ -130,17 +151,19 @@ function markedFor(lang) {
       },
       link({ href, tokens }) {
         const text = this.parser.parseInline(tokens);
-        // Links to the other language's README (e.g. "Deutsch → README.de.md")
-        // point out of the docs tree entirely; leave external/absolute links alone.
         if (/^(https?:)?\/\//.test(href) || href.startsWith('#')) {
           return `<a href="${href}">${text}</a>`;
         }
+        const hrefBase = href.split('/').pop();
         const target = docs.find(
-          (d) =>
-            href.endsWith(d.src.en.split('/').pop()) || href.endsWith(d.src.de.split('/').pop()),
+          (d) => d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
         );
-        if (target)
-          return `<a href="../${target.slug === 'index' ? lang + '/' : `${lang}/${target.slug}.html`}">${text}</a>`;
+        if (target) {
+          const targetLang = target.src.en.split('/').pop() === hrefBase ? 'en' : 'de';
+          const path =
+            target.slug === 'index' ? `${targetLang}/` : `${targetLang}/${target.slug}.html`;
+          return `<a href="../${path}">${text}</a>`;
+        }
         return `<a href="${href}">${text}</a>`;
       },
     },
@@ -187,7 +210,13 @@ blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 4px solid var(--
 const shell = (doc, lang, body) => {
   const isIndex = doc.slug === 'index';
   const langHref = (l) => (isIndex ? `../${l}/` : `../${l}/${doc.slug}.html`);
-  const navHref = (d) => (d.slug === 'index' ? './' : `${d.slug}.html`);
+  // enOnly docs (SECURITY.md) have no page in the current language — their
+  // nav tab always points at the English page, from either language shell.
+  const navHref = (d) => {
+    const dLang = d.src[lang] ? lang : 'en';
+    if (d.slug === 'index') return dLang === lang ? './' : `../${dLang}/`;
+    return dLang === lang ? `${d.slug}.html` : `../${dLang}/${d.slug}.html`;
+  };
   return `<!doctype html>
 <html lang="${lang}">
 <head>
@@ -208,7 +237,12 @@ const shell = (doc, lang, body) => {
       .join('\n    ')}
   </nav>
   <div class="lang-switch">
-    ${LANGS.map((l) => `<a href="${langHref(l)}"${l === lang ? ' class="active" aria-current="true"' : ''}>${l.toUpperCase()}</a>`).join('\n    ')}
+    ${LANGS.filter((l) => l === lang || doc.src[l])
+      .map(
+        (l) =>
+          `<a href="${langHref(l)}"${l === lang ? ' class="active" aria-current="true"' : ''}>${l.toUpperCase()}</a>`,
+      )
+      .join('\n    ')}
   </div>
 </header>
 <main>
@@ -232,6 +266,7 @@ await mkdir(join(outDir, 'de'), { recursive: true });
 for (const lang of LANGS) {
   const marked = markedFor(lang);
   for (const doc of docs) {
+    if (!doc.src[lang]) continue; // enOnly doc with no page in this language
     const md = await readFile(join(root, doc.src[lang]), 'utf8');
     const body = marked.parse(md);
     const outName = doc.slug === 'index' ? 'index.html' : `${doc.slug}.html`;

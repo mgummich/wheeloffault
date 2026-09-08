@@ -10,8 +10,9 @@ Deutsch → [contributing.md](../de/contributing.md)
   directly under Node's native type-stripping. There is no build step at
   runtime and no bundler in production; a lower Node version simply cannot
   run the server.
-* **pnpm 11** as declared in `packageManager` in `package.json`. Corepack
-  enables it in CI (`.github/workflows/pages.yml`); the Dockerfile installs
+* **pnpm 11** as declared in `packageManager` in `package.json`. CI installs
+  it via `pnpm/action-setup@v4` (`.github/workflows/pages.yml`,
+  `.github/workflows/ci.yml`), not Corepack; the Dockerfile installs
   it explicitly (`npm install -g pnpm@11.24.0`) because the runtime image
   removes `npm`/`npx`/`corepack` afterward. `.npmrc` sets
   `auto-install-peers=true`; there is no other pnpm configuration to know

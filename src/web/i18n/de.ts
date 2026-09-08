@@ -26,7 +26,7 @@ export const de: Record<MessageKey, string> = {
   'common.status': 'Status',
   'common.active': 'Aktiv',
   'common.inactive': 'Abgemeldet',
-  'common.on': 'Aktiv',
+  'common.on': 'Ein',
   'common.off': 'Aus',
   'common.save': 'Speichern',
   'common.cancel': 'Abbrechen',

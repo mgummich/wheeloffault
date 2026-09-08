@@ -84,7 +84,7 @@ checked-in `src/web/.env.server`), which switches the client from the
 | Variable | Default | Meaning |
 |---|---|---|
 | `PORT` | `3000` | HTTP listen port |
-| `DATA_DIR` | `/data` (container) | directory for `schuldrad.db` |
+| `DATA_DIR` | `data` (relative to cwd); `/data` in the container image | directory for `schuldrad.db` |
 | `HOST` | `127.0.0.1` | bind address — see § 4 |
 | `EVENT_STORE` | `sqlite` | `sqlite` or `postgres` |
 | `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |

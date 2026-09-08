@@ -219,15 +219,29 @@ POST /api/teams/:id/spins/:sid/appeal/reject
 GET  /api/teams/:id/members/:mid/report      Schuldbericht
 GET  /api/teams/:id/events                   SSE: ein `event: appended` pro neuem Event
 GET  /api/health
+POST /api/auth/login             { password } → setzt Session-Cookie (nur wenn Auth aktiv ist)
+POST /api/auth/logout            löscht das Session-Cookie
+GET  /api/auth/status                        { enabled, authenticated }
 ```
 
-Fehler: `{ error: string }` mit 400 (ungültige Eingabe), 404, 409 (Konflikt).
-Alle Eingaben werden explizit validiert (`src/server/validate.ts`; die
-FairnessPolicy in `src/domain/fairness/policy.ts`, weil der Browser dieselbe Prüfung nutzt).
+Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 404,
+409 (Konflikt). `code` ist ein stabiler, maschinenlesbarer Bezeichner, den
+der Client lokalisiert (`src/web/apiError.ts`, `src/web/i18n/`); die
+menschenlesbare `error`-Meldung ist Englisch und nur ein Fallback für
+unbekannte Codes. Alle Eingaben werden explizit validiert
+(`src/server/validate.ts`; die FairnessPolicy in
+`src/domain/fairness/policy.ts`, weil der Browser dieselbe Prüfung nutzt).
 
-Es gibt keine Authentifizierung. Schuldrad ist für ein vertrauenswürdiges
-Netz (Team-LAN, VPN) gedacht; wer es öffentlich betreibt, setzt einen
-Reverse Proxy mit Auth davor.
+Es gibt standardmäßig keine Authentifizierung: Schuldrad ist für ein
+vertrauenswürdiges Netz (Team-LAN, VPN) gedacht; wer es öffentlich
+betreibt, setzt einen Reverse Proxy mit Auth davor. Der Server-Modus kann
+optional ein einzelnes gemeinsames Deployment-Passwort verlangen
+(`SCHULDRAD_PASSWORD`/`SCHULDRAD_PASSWORD_FILE`), das jede `/api/*`-Route
+außer `/api/health` und `/api/auth/*` hinter einem serverseitigen
+Session-Cookie absichert (`src/server/auth.ts`). Das ist ein Türschloss,
+keine Mehrbenutzer-Authentifizierung — das vollständige Bedrohungsmodell,
+was geschützt wird und was nicht, steht in [SECURITY.md](../../SECURITY.md)
+(Englisch).
 
 Der Client hält keinen eigenen Domänenzustand. Jede Mutation liefert den
 frischen `TeamView` zurück, den der Client direkt übernimmt; zusätzlich lädt
@@ -296,7 +310,7 @@ Wegweiser durch `src/web`:
 api.ts           Fassade: wählt per VITE_API_MODE zwischen zwei Backends
 serverApi.ts     HTTP-Client; exportiert den gemeinsamen Vertrag `type Api`
 sessionApi.ts    In-Browser-Event-Store (localStorage) mit derselben Api
-apiError.ts      ApiError beider Backends + errorMessage() (deutsche Fehlertexte)
+apiError.ts      ApiError beider Backends + errorMessage() (via Code lokalisiert, § 6)
 draw.ts          performDraw(): Commit → Reveal inkl. 409-Wiederaufnahme
 useTeam.ts       Team laden, SSE-Refresh
 route.ts         Hash-Router; views/ die Seiten; wheel/ die Visualisierungen

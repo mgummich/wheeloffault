@@ -2,29 +2,51 @@ import { getLang, t } from './i18n/index.ts';
 
 const localeFor = (lang: string) => (lang === 'de' ? 'de-DE' : 'en-US');
 
-export const num = (n: number, locale = localeFor(getLang())) =>
-  new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(n);
-
-export const num2 = (n: number, locale = localeFor(getLang())) =>
-  new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
-
-export const percent = (ratio: number, locale = localeFor(getLang())) =>
-  `${num(ratio * 100, locale)} %`;
-
-export const factor = (thousandths: number, locale = localeFor(getLang())) =>
-  `${num2(thousandths / 1000, locale)}×`;
-
-export function dateTime(iso: string, locale = localeFor(getLang())): string {
-  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
-    new Date(iso),
-  );
+// Caches one Intl formatter instance per active locale (there are only two:
+// en-US/de-DE) instead of constructing one per call — call sites like the
+// per-participant percent() run every animation tick.
+function cached<T>(make: (locale: string) => T): (locale: string) => T {
+  const cache = new Map<string, T>();
+  return (locale: string) => {
+    let v = cache.get(locale);
+    if (!v) {
+      v = make(locale);
+      cache.set(locale, v);
+    }
+    return v;
+  };
 }
 
-export function relativeTime(iso: string, now = Date.now(), locale = localeFor(getLang())): string {
+const numberFormat = cached(
+  (locale) => new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }),
+);
+const number2Format = cached(
+  (locale) => new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
+);
+const dateTimeFormat = cached(
+  (locale) => new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }),
+);
+const relativeTimeFormat = cached(
+  (locale) => new Intl.RelativeTimeFormat(locale, { numeric: 'auto' }),
+);
+
+export const num = (n: number) => numberFormat(localeFor(getLang())).format(n);
+
+export const num2 = (n: number) => number2Format(localeFor(getLang())).format(n);
+
+export const percent = (ratio: number) => `${num(ratio * 100)} %`;
+
+export const factor = (thousandths: number) => `${num2(thousandths / 1000)}×`;
+
+export function dateTime(iso: string): string {
+  return dateTimeFormat(localeFor(getLang())).format(new Date(iso));
+}
+
+export function relativeTime(iso: string, now = Date.now()): string {
   const seconds = Math.round((now - new Date(iso).getTime()) / 1000);
   const abs = Math.abs(seconds);
   if (abs < 60) return t('format.justNow');
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+  const rtf = relativeTimeFormat(localeFor(getLang()));
   if (abs < 3600) return rtf.format(-Math.round(seconds / 60), 'minute');
   if (abs < 86400) return rtf.format(-Math.round(seconds / 3600), 'hour');
   if (abs < 86400 * 30) return rtf.format(-Math.round(seconds / 86400), 'day');

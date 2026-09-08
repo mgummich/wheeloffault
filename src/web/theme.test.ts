@@ -22,6 +22,12 @@ function extractTokens(selectorRe: RegExp): Record<string, string> {
 const light = extractTokens(/^:root\s*\{([^}]*)\}/m);
 // :root[data-theme="dark"] { ... } — dark theme overrides.
 const dark = extractTokens(/:root\[data-theme="dark"\]\s*\{([^}]*)\}/);
+// The @media (prefers-color-scheme: dark) block duplicates the same tokens
+// for system-preference dark mode (no data-theme attribute set) — it must
+// be kept in sync with the block above by hand, so assert they agree.
+const darkSystem = extractTokens(
+  /:root:not\(\[data-theme="light"\]\):not\(\[data-theme="dark"\]\)\s*\{([^}]*)\}/,
+);
 
 /** Looks up a token, failing loudly (not with `undefined`) if it's missing. */
 function tok(tokens: Record<string, string>, name: string): string {
@@ -139,5 +145,9 @@ describe('theme contrast (WCAG 2.2 AA)', () => {
 
   it('light and dark disagree on bg (themes are actually different)', () => {
     expect(tok(light, 'bg')).not.toBe(tok(dark, 'bg'));
+  });
+
+  it('prefers-color-scheme dark block matches [data-theme="dark"] token-for-token', () => {
+    expect(darkSystem).toEqual(dark);
   });
 });

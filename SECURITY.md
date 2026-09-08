@@ -152,9 +152,11 @@ database the operator's browser does not control.
   [docs/en/fairness.md](docs/en/fairness.md).
 * **Event immutability.** The event store is append-only; nothing updates
   or deletes a row (see [docs/en/events.md](docs/en/events.md) § 2). A
-  compromised server that overwrote history would have to lie
-  consistently across every replay and every cached client, which the
-  commit/reveal hash chain makes detectable.
+  compromised server that rewrote a stored `SpinCommitted`/`SpinRevealed`
+  pair would break that spin's own commit/reveal check (see
+  [docs/en/fairness.md](docs/en/fairness.md) § 6) — this is per-spin
+  tamper-evidence, not a hash chain across the whole event history, so it
+  only catches tampering with the fields a commitment actually binds.
 * **Input validation.** All HTTP input is validated server-side
   (`src/server/validate.ts`) independent of anything the browser sends —
   a malicious or buggy client cannot inject a malformed event.

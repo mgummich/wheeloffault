@@ -20,7 +20,6 @@ deliberately over-professional wheel of responsibility.
   `prefers-reduced-motion`.
 
 Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) ·
-[docs/en/architecture.md](docs/en/architecture.md) ·
 [fairness protocol](docs/en/fairness.md) ·
 [event contract](docs/en/events.md) ·
 [deployment](docs/en/deployment.md) ·

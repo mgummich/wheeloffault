@@ -35,7 +35,7 @@ Bewegungsfehler.
 | Stufe | Token | Bereich | Verwendung |
 |---|---|---|---|
 | Indikator | `--dur-indicator` | 150–180ms | Klapp-/Tick-Schnappen, Zeichen-für-Zeichen-Ansagen |
-| Mechanische Latenz | `--dur-latency` | 80–120ms | Steuerungsquittung (Signalumschaltung, Hover-/Press-Feedback) |
+| Mechanische Latenz | `--dur-latency` | 120ms | Steuerungsquittung (Signalumschaltung, Hover-/Press-Feedback) |
 | Mechanisches Einrasten | `--dur-settle` | 240–400ms | Stempelaufprall, Radsegment-Hervorhebung, Panel-Einblendung |
 | Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5s | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage |
 
@@ -83,7 +83,7 @@ Ihre Kurven sind das kanonische "mechanische" Vokabular dieser Verordnung:
 
 Ein echtes Relais-Stellwerk schaltet ein Signal nicht in dem Moment um, in
 dem der Hebel gezogen wird — es gibt einen Takt, bis der Mechanismus
-nachzieht. `--dur-latency` (100–120ms) ist dieser Takt: Der
+nachzieht. `--dur-latency` (120ms) ist dieser Takt: Der
 Arm-/Licht-Hintergrundübergang in `SignalStage` nutzt ihn, damit das Licht
 nicht zwischen Zuständen teleportiert.
 
