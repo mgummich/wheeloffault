@@ -113,7 +113,7 @@ pass:
 a `serverSeed` after seeing the `clientSeed` to steer the outcome — the
 commitment was fixed first. It also proves the published result is the one
 actually computed from the published seeds, not a substituted one; and
-because events are immutable (see [events.md](events.md) § 3), a stored
+because events are immutable (see [events.md](events.md) § 2), a stored
 commit or reveal cannot be silently edited after the fact — changing a
 `serverSeed`, `nonce`, or participant weight breaks *that spin's own*
 commitment check. This is per-record tamper-evidence, not a hash chain

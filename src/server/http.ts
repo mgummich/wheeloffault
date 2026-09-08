@@ -367,7 +367,10 @@ export function createHttpServer(
       return;
     }
     if ((sseClients.get(teamId)?.size ?? 0) >= MAX_SSE_CLIENTS_PER_TEAM) {
-      json(res, 503, { error: 'Zu viele gleichzeitige Verbindungen für dieses Team' });
+      json(res, 503, {
+        error: 'Too many concurrent connections for this team',
+        code: 'too_many_connections',
+      });
       return;
     }
     res.writeHead(200, {

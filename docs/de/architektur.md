@@ -224,11 +224,13 @@ POST /api/auth/logout            löscht das Session-Cookie
 GET  /api/auth/status                        { enabled, authenticated }
 ```
 
-Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 404,
-409 (Konflikt). `code` ist ein stabiler, maschinenlesbarer Bezeichner, den
-der Client lokalisiert (`src/web/apiError.ts`, `src/web/i18n/`); die
-menschenlesbare `error`-Meldung ist Englisch und nur ein Fallback für
-unbekannte Codes. Alle Eingaben werden explizit validiert
+Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 401/403
+(Auth), 404, 409 (Konflikt), 415 (nicht unterstützter Content-Type), 429
+(Rate-Limit), 500/503 (interner Fehler / Überlastung). `code` ist ein
+stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
+(`src/web/apiError.ts`, `src/web/i18n/`); die menschenlesbare `error`-Meldung
+ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
+explizit validiert
 (`src/server/validate.ts`; die FairnessPolicy in
 `src/domain/fairness/policy.ts`, weil der Browser dieselbe Prüfung nutzt).
 

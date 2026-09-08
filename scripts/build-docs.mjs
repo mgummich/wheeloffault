@@ -141,6 +141,11 @@ const slug = (text) =>
 // target file actually is — a link to an en source lands on the en page
 // even from a de source page (and vice versa), so "Deutsch → architektur.md"
 // and "English → ARCHITECTURE.md" cross over instead of self-linking.
+// Links are recorded here as they're rendered (path relative to outDir) so
+// checkLinks() can verify every one after the build actually resolved
+// somewhere real, and to the right language.
+const renderedLinks = [];
+
 function markedFor(lang) {
   return new Marked({
     gfm: true,
@@ -159,9 +164,19 @@ function markedFor(lang) {
           (d) => d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
         );
         if (target) {
-          const targetLang = target.src.en.split('/').pop() === hrefBase ? 'en' : 'de';
+          // The href's own language marker wins: a directory segment
+          // (../de/, docs/de/, ../en/, docs/en/) or a filename marker
+          // (README.de.md). A bare basename shared by both languages
+          // (deployment.md, fairness.md, ...) carries no marker, so it
+          // falls back to the CURRENT page's language — keeping in-page
+          // links in-language instead of defaulting to `en`.
+          const dirMarker = /(^|\/)de\//.test(href) ? 'de' : /(^|\/)en\//.test(href) ? 'en' : null;
+          const fileMarker = /\.de\.md$/.test(hrefBase) ? 'de' : null;
+          const wantLang = dirMarker || fileMarker || lang;
+          const targetLang = target.src[wantLang] ? wantLang : 'en';
           const path =
             target.slug === 'index' ? `${targetLang}/` : `${targetLang}/${target.slug}.html`;
+          renderedLinks.push({ href, resolvedLang: targetLang, path });
           return `<a href="../${path}">${text}</a>`;
         }
         return `<a href="${href}">${text}</a>`;
@@ -282,3 +297,36 @@ await writeFile(
   `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=en/"><title>Schuldrad · Dokumentation</title><a href="en/">Weiter zur Dokumentation / continue to the docs</a>`,
 );
 console.log('docs: → dist/web/docs/index.html (redirect to en/)');
+
+// Guard against the class of bug where a link resolves to a URL that was
+// never written, or resolves to the wrong language (e.g. a `de/` href
+// landing on an `en/` page). Every link recorded by markedFor() above must
+// point at a file this build actually produced, in the language its href
+// named.
+async function checkLinks() {
+  const problems = [];
+  for (const { href, resolvedLang, path } of renderedLinks) {
+    const filePath = path.endsWith('/') ? join(outDir, path, 'index.html') : join(outDir, path);
+    try {
+      await readFile(filePath);
+    } catch {
+      problems.push(`link "${href}" resolved to dist/web/docs/${path}, which does not exist.`);
+      continue;
+    }
+    const dirMarker = /(^|\/)de\//.test(href) ? 'de' : /(^|\/)en\//.test(href) ? 'en' : null;
+    const fileMarker = /\.de\.md$/.test(href.split('/').pop()) ? 'de' : null;
+    const wantLang = dirMarker || fileMarker;
+    if (wantLang && wantLang !== resolvedLang) {
+      problems.push(
+        `link "${href}" names language '${wantLang}' but resolved to '${resolvedLang}' (dist/web/docs/${path}).`,
+      );
+    }
+  }
+  if (problems.length > 0) {
+    console.error('docs: link check failed:');
+    for (const p of problems) console.error(`  - ${p}`);
+    process.exit(1);
+  }
+}
+
+await checkLinks();

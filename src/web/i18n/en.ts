@@ -440,6 +440,15 @@ export const en = {
   'error.invalid_id': 'This id is invalid.',
   'error.team_not_found': 'This team was not found.',
   'error.team_version_conflict': 'The team changed in the meantime. Please retry.',
+  'error.too_many_connections': 'Too many concurrent connections for this team.',
+  'error.origin_mismatch': 'Cross-origin request rejected.',
+  'error.host_not_allowed': 'Host not allowed.',
+  'error.unsupported_media_type': 'Unsupported request content type.',
+  'error.invalid_body': 'Invalid request body.',
+  'error.unknown_route': 'Unknown route.',
+  'error.internal_error': 'Internal error.',
+  'error.invalid_url': 'Invalid request URL.',
+  'error.body_not_object': 'Request body must be a JSON object.',
 
   // ---------- format ----------
   'format.justNow': 'just now',

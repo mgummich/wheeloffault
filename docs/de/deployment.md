@@ -91,6 +91,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | `PORT` | `3000` | HTTP-Listen-Port |
 | `DATA_DIR` | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db` |
 | `HOST` | `127.0.0.1` | Bind-Adresse — siehe § 4 |
+| `WEB_DIR` | `dist/web` | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
 | `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
@@ -176,7 +177,7 @@ Bedrohungsmodell.
 
 ## § 3b CSRF- und DNS-Rebinding-Härtung
 
-Unabhängig von § 3a muss jede `/api/*`-Anfrage bei zustandsänderenden
+Unabhängig von § 3a muss jede `/api/*`-Anfrage bei zustandsändernden
 Methoden `application/json` sein, und ein vorhandener `Origin`-Header muss
 mit `Host` übereinstimmen. Beides ist immer aktiv und braucht keine
 Konfiguration.

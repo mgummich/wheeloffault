@@ -219,10 +219,12 @@ POST /api/auth/logout            clears the session cookie
 GET  /api/auth/status                        { enabled, authenticated }
 ```
 
-Errors: `{ error: string, code: string }` with 400 (invalid input), 404,
-409 (conflict). `code` is a stable, machine-readable identifier that the
-client localizes (`src/web/apiError.ts`, `src/web/i18n/`); the human
-`error` message is English and only a fallback for unknown codes. All
+Errors: `{ error: string, code: string }` with 400 (invalid input), 401/403
+(auth), 404, 409 (conflict), 415 (unsupported content type), 429 (rate
+limited), 500/503 (internal error / overload). `code` is a stable,
+machine-readable identifier that the client localizes (`src/web/apiError.ts`,
+`src/web/i18n/`); the human `error` message is English and only a fallback
+for unknown codes. All
 input is explicitly validated (`src/server/validate.ts`; the
 FairnessPolicy in `src/domain/fairness/policy.ts`, because the browser
 uses the same check).

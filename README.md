@@ -71,10 +71,12 @@ docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 ```
 
 Then open http://localhost:3000. In server mode everything lives in
-`/data/schuldrad.db`. Schuldrad deliberately ships without authentication.
-For access from the network, only run it behind a VPN or a reverse proxy
-that provides auth — see [SECURITY.md](SECURITY.md) for the full threat
-model.
+`/data/schuldrad.db`. There's no authentication by default; server mode
+optionally gates every `/api/*` route behind a single shared deployment
+password via `SCHULDRAD_PASSWORD` (see
+[docs/en/deployment.md](docs/en/deployment.md) § 3a). For access from the
+network, run it behind a VPN or a reverse proxy that provides auth — see
+[SECURITY.md](SECURITY.md) for the full threat model.
 
 Without Docker, the frontend must be built explicitly for the server:
 

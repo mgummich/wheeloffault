@@ -125,7 +125,7 @@ prüfen. Drei Prüfungen, alle müssen bestehen:
 steuern — das Commitment stand zuerst fest. Es beweist außerdem, dass das
 veröffentlichte Ergebnis tatsächlich aus den veröffentlichten Seeds
 berechnet wurde und nicht nachträglich ausgetauscht wurde; und weil Events
-unveränderlich sind (siehe [events.md](events.md) § 3), kann ein
+unveränderlich sind (siehe [events.md](events.md) § 2), kann ein
 gespeicherter Commit oder Reveal im Nachhinein nicht unbemerkt editiert
 werden — eine Änderung an `serverSeed`, `nonce` oder einem Teilnehmer-
 Gewicht bricht die Commitment-Prüfung *dieses einen Spins*. Das ist

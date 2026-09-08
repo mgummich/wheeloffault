@@ -86,6 +86,7 @@ checked-in `src/web/.env.server`), which switches the client from the
 | `PORT` | `3000` | HTTP listen port |
 | `DATA_DIR` | `data` (relative to cwd); `/data` in the container image | directory for `schuldrad.db` |
 | `HOST` | `127.0.0.1` | bind address — see § 4 |
+| `WEB_DIR` | `dist/web` | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only) |
 | `EVENT_STORE` | `sqlite` | `sqlite` or `postgres` |
 | `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; enables cross-instance SSE fanout |

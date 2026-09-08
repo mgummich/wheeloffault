@@ -361,6 +361,28 @@ describe('API', () => {
     expect(text).toContain('"type":"MemberJoined"');
     await reader.cancel();
   });
+
+  it('503s the SSE stream past the per-team connection cap with the {error, code} shape', async () => {
+    // Mirrors MAX_SSE_CLIENTS_PER_TEAM in http.ts.
+    const MAX_SSE_CLIENTS_PER_TEAM = 100;
+    const team = await teamWith(['Anna']);
+    const conns = await Promise.all(
+      Array.from({ length: MAX_SSE_CLIENTS_PER_TEAM }, () =>
+        fetch(`${base}/api/teams/${team.teamId}/events`),
+      ),
+    );
+    try {
+      const res = await fetch(`${base}/api/teams/${team.teamId}/events`);
+      expect(res.status).toBe(503);
+      const body = await res.json();
+      expect(body).toEqual({
+        error: 'Too many concurrent connections for this team',
+        code: 'too_many_connections',
+      });
+    } finally {
+      await Promise.all(conns.map((c) => c.body?.cancel()));
+    }
+  });
 });
 
 describe('CSRF / DNS-rebinding defenses', () => {

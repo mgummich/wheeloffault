@@ -442,6 +442,15 @@ export const de: Record<MessageKey, string> = {
   'error.invalid_id': 'Diese ID ist ungültig.',
   'error.team_not_found': 'Dieses Team wurde nicht gefunden.',
   'error.team_version_conflict': 'Das Team wurde inzwischen geändert. Bitte erneut versuchen.',
+  'error.too_many_connections': 'Zu viele gleichzeitige Verbindungen für dieses Team.',
+  'error.origin_mismatch': 'Cross-Origin-Anfrage abgelehnt.',
+  'error.host_not_allowed': 'Host nicht erlaubt.',
+  'error.unsupported_media_type': 'Nicht unterstützter Content-Type der Anfrage.',
+  'error.invalid_body': 'Ungültiger Anfrage-Body.',
+  'error.unknown_route': 'Unbekannte Route.',
+  'error.internal_error': 'Interner Fehler.',
+  'error.invalid_url': 'Ungültige Anfrage-URL.',
+  'error.body_not_object': 'Der Anfrage-Body muss ein JSON-Objekt sein.',
 
   // ---------- format ----------
   'format.justNow': 'gerade eben',
