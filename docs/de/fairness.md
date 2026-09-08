@@ -104,10 +104,14 @@ konnte.
 
 `verifySpin()` in `src/domain/fairness/draw.ts` berechnet Commitment,
 Digest und Auswahl aus einem veröffentlichten Beweis neu und vergleicht sie
-mit den persistierten Werten. Dies ist exakt dieselbe Funktion, die vom
-Server und vom Web-Crypto-basierten Verifier im Browser genutzt wird — es
-gibt keine separate, möglicherweise abweichende Client-Implementierung zu
-prüfen. Drei Prüfungen, alle müssen bestehen:
+mit den persistierten Werten. Es ist der Verifier des Browsers (aufgerufen
+aus `SpinDetailPage.tsx` und in Tests genutzt) und teilt sich dieselben
+zugrundeliegenden Primitiven, die auch der Reveal-Pfad des Servers nutzt
+(`fairness/spin.ts`, über `commands.ts`) — der Server selbst leitet neu her,
+statt `verifySpin()` aufzurufen, aber es gibt trotzdem keine separate,
+möglicherweise abweichende Client-Implementierung: beide Seiten laufen über
+dieselbe Commitment-/Digest-/Auswahl-Logik. Drei Prüfungen, alle müssen
+bestehen:
 
 * `commitmentMatches` — der veröffentlichte `serverSeed`, `nonce` und
   `participants` hashen zum veröffentlichten `commitment`.
@@ -159,13 +163,19 @@ niedriger Reste, wenn die Gewichtssumme 2⁶⁴ nicht glatt teilt: Ergebnisse
 knapp oberhalb des letzten vollen Vielfachen der Gewichtssumme sind
 unerreichbar, sodass die Teilnehmer mit den am niedrigsten liegenden
 Intervallen auf der kumulativen Gewichtslinie geringfügig häufiger gezogen
-werden. Bei realistischen Gewichtsgrößen (Gewichte in der Größenordnung von
-`1000` pro Teilnehmer, Teams von einstelliger bis niedriger zweistelliger
-Mitgliederzahl, Summen also selten über wenigen hunderttausend gegenüber
-einem 2⁶⁴-Modulus) ist diese Verzerrung kleiner als ein Teil in 10¹⁴ —
-vernachlässigbar gegenüber der Rundungsungenauigkeit jeder von Hand
-berechneten Statistik und um Größenordnungen kleiner als die absichtliche
-Verzerrung, die § 2s Modifikatoren bewusst einführen. Sie wird hier
+werden. Die Schranke ist genau `Gewichtssumme ÷ 2⁶⁴` — bei realistischen
+Gewichtsgrößen (Gewichte in der Größenordnung von `1000` pro Teilnehmer,
+Teams von einstelliger bis niedriger zweistelliger Mitgliederzahl, Summen
+also selten über wenigen hunderttausend) liegt das in der Größenordnung
+eines Teils in 10¹³–10¹⁴ — vernachlässigbar gegenüber der
+Rundungsungenauigkeit jeder von Hand berechneten Statistik und um
+Größenordnungen kleiner als die absichtliche Verzerrung, die § 2s
+Modifikatoren bewusst einführen. Das ist eine Formel, keine feste
+Obergrenze: Modifikatoren können einzelne Gewichte weit über `1000` treiben
+(z. B. `newcomer.factor` bis `10000`, oder `pity`, das sich über viele
+verpasste Ziehungen aufsummiert), sodass ein Team, das Gewichte absichtlich
+an die Grenzen treibt, `Summe ÷ 2⁶⁴` für seine eigenen Summen berechnen
+sollte, statt anzunehmen, obige Schranke gelte weiterhin. Sie wird hier
 offengelegt, nicht verschwiegen, weil „vernachlässigbar“ eine überprüfbare
 Aussage sein soll, keine bloße Behauptung.
 
@@ -223,5 +233,8 @@ Die Werte können statt `--file` auch einzeln als Flags übergeben werden:
 `--server-seed`, `--client-seed`, `--nonce`, `--participants '<json>'`,
 `--commitment`, `--digest`, `--selected-member-id`. Das Skript gibt ein
 Prüfprotokoll mit je einer ✓/✗-Zeile pro Prüfung aus — Commitment, Digest,
-Auswahl — und liefert Exit-Code `0` nur, wenn alle drei bestehen, sonst `1`;
-lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.
+Auswahl — und liefert Exit-Code `0` nur, wenn alle drei bestehen, `1` wenn
+eine Prüfung fehlschlägt und `2` bei einem Aufruffehler (fehlendes oder
+unbekanntes Flag, fehlendes Pflichtfeld, `participants` nicht als Array oder
+leer, oder ein nicht-ganzzahliger `nonce`), bevor überhaupt eine Prüfung
+läuft — lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.

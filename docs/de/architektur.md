@@ -166,10 +166,11 @@ Reveal reproduziert Commitment
 Browser-Verifier reproduziert Server
 ```
 
-Modifikatoren (`src/domain/fairness/modifiers.ts`), alle `weights + context → weights`:
+Jeder Teilnehmer startet mit Gewicht 1000 (`FACTOR_ONE` in weights.ts). Dann
+wenden die aktivierten Modifikatoren (`src/domain/fairness/modifiers.ts`,
+alle `weights + context → weights`) in dieser festen Reihenfolge an:
 
 ```
-uniform     Ausgangsgewicht 1000 für alle
 pity        +X % pro Ziehung ohne Treffer seit der letzten Schuld
 cooldown    Gewicht 0 für N Ziehungen nach einer Schuld (würde er alle ausschließen,
             wird er für diese Ziehung übersprungen und mit Faktor 1,000 protokolliert)
@@ -192,7 +193,7 @@ memberReport(state, memberId)   Schuldbericht: Treffer, Schuldquote, Erwartungsw
                                 Zeit seit letzter Schuld, Streaks, Fairness-Abweichung, Achievements,
                                 Schuldpunkte, Entschädigungsminuten
 teamStatistics(state)           Hall of Shame, Rangliste, Verteilung, Fairness-Übersicht
-spinHistory(state)              chronologische Liste inkl. Einsprüche
+spinHistory(state)              Liste neuste zuerst inkl. Einsprüche
 ```
 
 Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
@@ -249,10 +250,13 @@ keine Mehrbenutzer-Authentifizierung — das vollständige Bedrohungsmodell,
 was geschützt wird und was nicht, steht in [SECURITY.md](../../SECURITY.md)
 (Englisch).
 
-Der Client hält keinen eigenen Domänenzustand. Jede Mutation liefert den
-frischen `TeamView` zurück, den der Client direkt übernimmt; zusätzlich lädt
-er bei jeder SSE-Nachricht `GET /api/teams/:id` neu (das Echo des eigenen
-Appends ist ein harmloser Doppel-Fetch).
+Der Client hält keinen eigenen Domänenzustand. Die meisten Mutationen
+liefern den frischen `TeamView` zurück, den der Client direkt übernimmt; die
+beiden Spin-Routen (`POST /api/teams/:id/spins` und `.../reveal`, siehe
+Routentabelle oben) liefern stattdessen nur den schmaleren `SpinView`. In
+jedem Fall lädt der Client zusätzlich bei jeder SSE-Nachricht
+`GET /api/teams/:id` neu (das Echo des eigenen Appends ist ein harmloser
+Doppel-Fetch).
 
 ## 7. Persistenz
 

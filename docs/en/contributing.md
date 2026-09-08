@@ -15,8 +15,12 @@ Deutsch → [contributing.md](../de/contributing.md)
   `.github/workflows/ci.yml`), not Corepack; the Dockerfile installs
   it explicitly (`npm install -g pnpm@11.24.0`) because the runtime image
   removes `npm`/`npx`/`corepack` afterward. `.npmrc` sets
-  `auto-install-peers=true`; there is no other pnpm configuration to know
-  about.
+  `auto-install-peers=true`. `pnpm-workspace.yaml` carries the rest of the
+  pnpm configuration — `allowBuilds: esbuild: true` (permits esbuild's
+  postinstall script to run) and a `minimumReleaseAgeExclude` list of 14
+  packages exempted from pnpm's minimum-release-age gate — and is
+  load-bearing enough that the Dockerfile copies it into the build image
+  alongside `package.json` and the lockfile (`Dockerfile:5`).
 * **Biome** for formatting and linting (`biome.json`) — one tool instead of
   ESLint + Prettier. `pnpm format` writes, `pnpm format:check` and
   `pnpm lint` only check (used in CI).

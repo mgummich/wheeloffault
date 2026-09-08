@@ -94,10 +94,13 @@ server could not have chosen its seed to fit a desired outcome.
 
 `verifySpin()` in `src/domain/fairness/draw.ts` recomputes commitment,
 digest, and selection from a published proof and compares them against the
-persisted values. This is exactly the same function used by the server and
-by the browser's Web Crypto-based verifier — there is no separate,
-possibly-diverging client implementation to audit. Three checks, all must
-pass:
+persisted values. It is the browser's verifier (called from
+`SpinDetailPage.tsx` and exercised in tests) and it shares the same
+underlying primitives the server's reveal path uses (`fairness/spin.ts`,
+via `commands.ts`) — the server itself re-derives rather than calling
+`verifySpin()`, but there is still no separate, possibly-diverging client
+implementation: both sides run the same commit/digest/selection logic.
+Three checks, all must pass:
 
 * `commitmentMatches` — the published `serverSeed`, `nonce`, and
   `participants` hash to the published `commitment`.
@@ -142,14 +145,19 @@ total weight introduces a small bias toward low remainders when the total
 weight does not evenly divide 2⁶⁴: outcomes just above the last full
 multiple of the total weight are unreachable, so the participants whose
 intervals sit lowest on the cumulative-weight line are fractionally more
-likely to be picked. At realistic weight magnitudes (weights on the order of
-`1000` per participant, teams of single-digit-to-dozens of members, so
-totals rarely exceeding a few hundred thousand against a 2⁶⁴ modulus) this
-bias is smaller than one part in 10¹⁴ — negligible relative to floating
-imprecision in any statistic a human would compute by hand, and far smaller
-than the deliberate bias introduced on purpose by § 2's modifiers. It is
-disclosed here, not hidden, because "negligible" is a claim that should be
-checkable, not asserted.
+likely to be picked. The bound is exactly `total weight ÷ 2⁶⁴` — at
+realistic weight magnitudes (weights on the order of `1000` per
+participant, teams of single-digit-to-dozens of members, so totals rarely
+exceeding a few hundred thousand) that is on the order of one part in
+10¹³–10¹⁴, negligible relative to floating imprecision in any statistic a
+human would compute by hand, and far smaller than the deliberate bias
+introduced on purpose by § 2's modifiers. This is a formula, not a fixed
+ceiling: modifiers can inflate individual weights well past `1000` (e.g.
+`newcomer.factor` up to `10000`, or `pity` compounding over many missed
+draws), so a team that deliberately pushes weights to extremes should
+compute `total ÷ 2⁶⁴` for its own totals rather than assume the bound above
+still holds. It is disclosed here, not hidden, because "negligible" is a
+claim that should be checkable, not asserted.
 
 ## § 7 Invariants
 
@@ -206,4 +214,6 @@ Values can also be passed individually as flags instead of `--file`:
 `--commitment`, `--digest`, `--selected-member-id`. The script prints a
 Prüfprotokoll (verification record) with one ✓/✗ line per check —
 commitment, digest, selection — and exits `0` only if all three pass, `1`
-otherwise, so it composes with CI or a shell `&&`.
+if any check fails, and `2` for a usage error (a missing or unknown flag, a
+missing required field, non-array or empty `participants`, or a non-integer
+`nonce`) before any check runs — so it composes with CI or a shell `&&`.

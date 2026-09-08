@@ -163,10 +163,11 @@ reveal reproduces commitment
 browser verifier reproduces server
 ```
 
-Modifiers (`src/domain/fairness/modifiers.ts`), all `weights + context → weights`:
+Every participant starts at weight 1000 (`FACTOR_ONE` in weights.ts). Then
+the enabled modifiers (`src/domain/fairness/modifiers.ts`), all
+`weights + context → weights`, apply in this fixed order:
 
 ```
-uniform     starting weight 1000 for everyone
 pity        +X % per draw without a hit since the member's last guilt
 cooldown    weight 0 for N draws after a guilt (if this would exclude
             everyone, it is skipped for this draw and logged with factor 1.000)
@@ -189,7 +190,7 @@ memberReport(state, memberId)   Guilt report: hits, guilt rate, expected value, 
                                 time since last guilt, streaks, fairness deviation, achievements,
                                 guilt points, compensation minutes
 teamStatistics(state)           Hall of shame, ranking, distribution, fairness overview
-spinHistory(state)              chronological list including appeals
+spinHistory(state)              newest-first list including appeals
 ```
 
 None of this is stored. The event history is the sole source of truth;
@@ -244,10 +245,12 @@ server-side session cookie (`src/server/auth.ts`). This is a door lock, not
 multi-user auth — see [SECURITY.md](SECURITY.md) for the full threat
 model, what it protects against, and what it does not.
 
-The client holds no domain state of its own. Every mutation returns the
-fresh `TeamView`, which the client adopts directly; it also reloads
-`GET /api/teams/:id` on every SSE message (the echo of its own append is a
-harmless double fetch).
+The client holds no domain state of its own. Most mutations return the
+fresh `TeamView`, which the client adopts directly; the two spin routes
+(`POST /api/teams/:id/spins` and `.../reveal`, see the route table above)
+return only the narrower `SpinView` instead. Either way the client also
+reloads `GET /api/teams/:id` on every SSE message (the echo of its own
+append is a harmless double fetch).
 
 ## 7. Persistence
 

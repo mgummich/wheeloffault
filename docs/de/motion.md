@@ -34,9 +34,9 @@ Bewegungsfehler.
 
 | Stufe | Token | Bereich | Verwendung |
 |---|---|---|---|
-| Indikator | `--dur-indicator` | 160ms | Klapp-/Tick-Schnappen, Zeichen-für-Zeichen-Ansagen |
-| Mechanische Latenz | `--dur-latency` | 120ms | Steuerungsquittung (Signalumschaltung, Hover-/Press-Feedback) |
-| Mechanisches Einrasten | `--dur-settle` | 400ms | Stempelaufprall, Radsegment-Hervorhebung, Panel-Einblendung |
+| Indikator | `--dur-indicator` | 160ms | Klapp-Schnappen (`sr-flap`, `BoardStage` und `TrainStage`) |
+| Mechanische Latenz | `--dur-latency` | 120ms | Steuerungsquittung (Arm-/Licht-Übergänge in `SignalStage`, Rand/Transform in `StampStage`) |
+| Mechanisches Einrasten | `--dur-settle` | 400ms | Stempelaufprall (`sr-stamp`/`sr-stampin`) |
 | Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5s | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage |
 
 Die theatralische Enthüllung ist eine einzige Konstante, die sich alle
@@ -47,16 +47,24 @@ Ziehung auswirken.
 
 ## § 2a Easing-Tokens
 
-Definiert in `src/web/styles.css` unter `:root`:
+Definiert in `src/web/styles.css` unter `:root`. In der Praxis wird derzeit
+nur `--ease-mechanical` tatsächlich in CSS verwendet, und zwar nur für den
+Stempel: seine drei Verwendungen sind der Rand-/Transform-Übergang von
+`StampStage` (`stages.tsx:325`), dessen Aufprall-Animation
+(`stages.tsx:370`) und das zugehörige Keyframe in `styles.css:1080`.
+`--ease-damped` und `--ease-sharp` sind deklariert, werden aber aktuell
+sonst nirgends im Repo referenziert — kein Panel, Dialog, Drop-in oder
+Verzierung nutzt sie. Ihre beabsichtigte Semantik, für den Fall, dass sie
+künftig einmal genutzt werden:
 
 - `--ease-mechanical` (`cubic-bezier(.2,.8,.2,1)`) — scharfer Antritt,
-  gedämpftes Einrasten. Der Standard für alles, was "ankommt": Panels,
-  Stempel, Verzierungen.
+  gedämpftes Einrasten. Gedacht als Standard für alles, was "ankommt":
+  Panels, Stempel, Verzierungen.
 - `--ease-damped` (`cubic-bezier(.3,.7,.3,1)`) — langsamerer Antritt,
-  schwebendes Einrasten. Für schwerere Objekte, die landen (Dialoge,
-  Drop-ins).
+  schwebendes Einrasten. Gedacht für schwerere Objekte, die landen
+  (Dialoge, Drop-ins).
 - `--ease-sharp` (`cubic-bezier(.4,0,.2,1)`) — entschieden, ohne
-  Nachschwingen. Für Schnapp-Bewegungen und Quittungen.
+  Nachschwingen. Gedacht für Schnapp-Bewegungen und Quittungen.
 
 Keines davon ist eine Feder-/Bounce-Kurve. Ein Bahnrelais schwingt nicht
 nach, bevor es einrastet — es klackt in Position und bleibt dort. Wo
@@ -76,8 +84,11 @@ Ihre Kurven sind das kanonische "mechanische" Vokabular dieser Verordnung:
   vorwärts.
 - `stopp` — exponentieller Abfall, liest sich als harte mechanische
   Bremsung.
-- `lang` — die Standardkurve über die doppelte Distanz (kein anderes
-  Gefühl, nur längere effektive Strecke).
+- `lang` — eine weniger gedämpfte Ease-out-Kurve (Exponent 2,2 statt 3,2
+  bei `standard`) über die doppelte Distanz (3600° statt 1800°): sowohl
+  Kurve als auch Strecke unterscheiden sich von `standard`, was ein
+  spürbar loseres, stärker auslaufendes Gefühl ergibt, nicht nur eine
+  längere Version derselben Kurve.
 
 ## § 3 Mechanische Latenz
 

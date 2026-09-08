@@ -30,9 +30,9 @@ a fairness incident, not a motion bug.
 
 | Tier | Token | Range | Used for |
 |---|---|---|---|
-| Indicator | `--dur-indicator` | 160ms | flap/tick snaps, per-character reveals |
-| Mechanical latency | `--dur-latency` | 120ms | control acknowledgement (signal light switching, hover/press feedback) |
-| Mechanical settle | `--dur-settle` | 400ms | stamp impact, wheel segment highlight, panel pop-in |
+| Indicator | `--dur-indicator` | 160ms | flap snaps (`sr-flap`, `BoardStage` and `TrainStage`) |
+| Mechanical latency | `--dur-latency` | 120ms | control acknowledgement (`SignalStage`'s arm/light transitions, `StampStage`'s border/transform) |
+| Mechanical settle | `--dur-settle` | 400ms | stamp impact (`sr-stamp`/`sr-stampin`) |
 | Theatrical reveal | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6.5s | the full draw performance, commit to announcement |
 
 The theatrical reveal is one constant shared by every non-wheel
@@ -42,15 +42,23 @@ change how long a draw feels.
 
 ## § 2a Easing tokens
 
-Defined in `src/web/styles.css` under `:root`:
+Defined in `src/web/styles.css` under `:root`. In practice only
+`--ease-mechanical` is actually used in CSS today, and only for the stamp:
+its three uses are `StampStage`'s border/transform transition
+(`stages.tsx:325`), its impact animation (`stages.tsx:370`), and the
+matching keyframe in `styles.css:1080`. `--ease-damped` and `--ease-sharp`
+are declared but currently referenced nowhere else in the repo — no panel,
+dialog, drop-in, or flourish uses either of them. Their intended semantics,
+for whenever something does reach for them:
 
 - `--ease-mechanical` (`cubic-bezier(.2,.8,.2,1)`) — sharp attack, damped
-  settle. The default feel for anything that "arrives": panels, stamps,
-  flourishes.
+  settle. Intended as the default feel for anything that "arrives": panels,
+  stamps, flourishes.
 - `--ease-damped` (`cubic-bezier(.3,.7,.3,1)`) — slower attack, floaty
-  settle. Used where a heavier object is landing (dialogs, drop-ins).
+  settle. Intended for where a heavier object is landing (dialogs,
+  drop-ins).
 - `--ease-sharp` (`cubic-bezier(.4,0,.2,1)`) — decisive, no lingering.
-  Snaps and acknowledgements.
+  Intended for snaps and acknowledgements.
 
 None of these are spring/bounce curves. A railway relay does not oscillate
 before it commits — it clacks into position and stays. Overshoot, where
@@ -68,8 +76,10 @@ canonical "mechanical" vocabulary this document describes in prose:
   in § 5.
 - `windup` — dips backward first (anticipation, § 4), then eases forward.
 - `stopp` — exponential decay, reads as a hard mechanical brake.
-- `lang` — the standard curve over twice the distance (used with a longer
-  effective travel, not a different feel).
+- `lang` — a less-damped ease-out (exponent 2.2, vs. `standard`'s 3.2) over
+  twice the distance (3600° vs. 1800°): both the curve and the travel
+  differ from `standard`, giving it a genuinely looser, more coasting feel
+  rather than just a longer version of the same curve.
 
 ## § 3 Mechanical latency
 

@@ -124,12 +124,18 @@ Postgres uses the same logical `events` table and the same migration list —
 `payload` is `JSONB` there instead of SQLite's `TEXT`, and `position` is
 `BIGSERIAL` instead of `INTEGER PRIMARY KEY AUTOINCREMENT`, but the
 migration mechanism (numbered, transactional, recorded in
-`schema_migrations`, append-only) is identical. Write SQL that is valid in
-both dialects where practical (e.g. `ADD COLUMN ... TEXT` works in both);
-where the dialects genuinely diverge, branch inside the migration's `sql`
-generation on which store is active rather than maintaining two migration
-lists. See `EVENT_STORE=postgres` in [deployment.md](deployment.md) for how
-the dialect is selected at runtime.
+`schema_migrations`, append-only) is identical. There is no per-migration
+branching: `toPostgresMigration()` in `src/server/postgresEventStore.ts`
+centrally rewrites each migration's SQL with a small table of regexes (e.g.
+`INTEGER PRIMARY KEY AUTOINCREMENT` → `BIGSERIAL PRIMARY KEY`) before it
+runs. A rule that doesn't match a given migration is simply skipped — most
+migrations, like a plain `ADD COLUMN ... TEXT`, are valid in both dialects
+and need no rewriting at all. What it will not do is let a SQLite-only
+construct through unnoticed: after porting, if a known SQLite-ism (e.g. a
+residual `AUTOINCREMENT`) is still present, it throws rather than run
+invalid SQL against Postgres. If a future migration needs a genuinely new
+rewrite, add a rule to that table. See `EVENT_STORE=postgres` in
+[deployment.md](deployment.md) for how the dialect is selected at runtime.
 
 ## § 5 Why not just snapshot?
 

@@ -135,13 +135,22 @@ Postgres nutzt dieselbe logische `events`-Tabelle und dieselbe
 Migrationsliste — `payload` ist dort `JSONB` statt SQLites `TEXT`, und
 `position` ist `BIGSERIAL` statt `INTEGER PRIMARY KEY AUTOINCREMENT`, aber
 der Migrationsmechanismus (nummeriert, transaktional, in
-`schema_migrations` protokolliert, nur anhängbar) ist identisch. Wo
-praktikabel, SQL schreiben, das in beiden Dialekten gültig ist (z. B.
-funktioniert `ADD COLUMN ... TEXT` in beiden); wo sich die Dialekte
-tatsächlich unterscheiden, innerhalb der `sql`-Erzeugung der Migration nach
-aktivem Store verzweigen, statt zwei Migrationslisten zu pflegen. Siehe
-`EVENT_STORE=postgres` in [deployment.md](deployment.md) dazu, wie der
-Dialekt zur Laufzeit gewählt wird.
+`schema_migrations` protokolliert, nur anhängbar) ist identisch. Es gibt
+keine Verzweigung pro Migration: `toPostgresMigration()` in
+`src/server/postgresEventStore.ts` schreibt das SQL jeder Migration zentral
+anhand einer kleinen Tabelle von Regexes um (z. B.
+`INTEGER PRIMARY KEY AUTOINCREMENT` → `BIGSERIAL PRIMARY KEY`), bevor es
+läuft. Eine Regel, die auf eine gegebene Migration nicht zutrifft, wird
+einfach übersprungen — die meisten Migrationen, etwa ein einfaches
+`ADD COLUMN ... TEXT`, sind in beiden Dialekten gültig und brauchen gar
+keine Umschreibung. Was nicht passiert: ein rein SQLite-spezifisches
+Konstrukt unbemerkt durchzulassen — steht nach dem Umschreiben noch ein
+bekanntes SQLite-Idiom (z. B. ein verbliebenes `AUTOINCREMENT`) im SQL,
+wird geworfen, statt ungültiges SQL gegen Postgres auszuführen. Braucht
+eine künftige Migration eine wirklich neue Umschreibung, wird dieser
+Tabelle eine Regel hinzugefügt. Siehe `EVENT_STORE=postgres` in
+[deployment.md](deployment.md) dazu, wie der Dialekt zur Laufzeit gewählt
+wird.
 
 ## § 5 Warum kein Snapshotting?
 
