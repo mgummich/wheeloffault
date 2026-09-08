@@ -1,5 +1,5 @@
 import { randomHex } from '../domain/fairness/draw.ts';
-import type { SpinView } from '../server/views.ts';
+import type { SpinView } from '../domain/views.ts';
 import { ApiError } from './apiError.ts';
 import type { Api } from './serverApi.ts';
 

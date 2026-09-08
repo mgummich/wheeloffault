@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { FairnessPolicy } from '../../domain/fairness/policy.ts';
-import type { TeamView } from '../../server/views.ts';
+import type { TeamView } from '../../domain/views.ts';
 import { fairnessSummary } from './FairnessPage.tsx';
 
 const policy: FairnessPolicy = {
@@ -40,8 +40,8 @@ const team: TeamView = {
 describe('fairnessSummary', () => {
   it('summarizes active controls and current immunity impact', () => {
     expect(fairnessSummary(policy, team)).toContain('Pity +25 %');
-    expect(fairnessSummary(policy, team)).toContain('Erschöpfung -30 %');
-    expect(fairnessSummary(policy, team)).toContain('1 manuelle Anpassung');
-    expect(fairnessSummary(policy, team)).toContain('1 Immunität');
+    expect(fairnessSummary(policy, team)).toContain('Exhaustion -30 %');
+    expect(fairnessSummary(policy, team)).toContain('1 manual adjustment');
+    expect(fairnessSummary(policy, team)).toContain('1 immunity');
   });
 });

@@ -18,6 +18,9 @@ type RedisClient = {
 
 type BroadcastSink = (teamId: string, events: StoredEvent[]) => void;
 
+/** Only what SSE clients need; never leaks a pre-reveal SpinCommitted.serverSeed over Redis. */
+type PublicEvent = { type: StoredEvent['type']; version: number };
+
 export function createBroadcastHub(deliver: BroadcastSink): BroadcastHub {
   return {
     async broadcast(teamId, events) {
@@ -46,19 +49,21 @@ export async function createRedisBroadcastHub(
   await Promise.all([publisher.connect(), subscriber.connect()]);
 
   await subscriber.subscribe(CHANNEL, async (message) => {
-    const envelope = JSON.parse(message) as {
-      origin: string;
-      teamId: string;
-      events: StoredEvent[];
-    };
+    let envelope: { origin: string; teamId: string; events: PublicEvent[] };
+    try {
+      envelope = JSON.parse(message);
+    } catch {
+      return;
+    }
     if (envelope.origin === origin) return;
-    deliver(envelope.teamId, envelope.events);
+    deliver(envelope.teamId, envelope.events as StoredEvent[]);
   });
 
   return {
     async broadcast(teamId, events) {
       deliver(teamId, events);
-      await publisher.publish(CHANNEL, JSON.stringify({ origin, teamId, events }));
+      const publicEvents: PublicEvent[] = events.map((e) => ({ type: e.type, version: e.version }));
+      await publisher.publish(CHANNEL, JSON.stringify({ origin, teamId, events: publicEvents }));
     },
     async close() {
       await Promise.all([publisher.quit(), subscriber.quit()]);

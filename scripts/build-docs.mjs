@@ -1,5 +1,5 @@
-// Renders README.md and ARCHITECTURE.md as styled HTML into dist/web/docs/,
-// so GitHub Pages serves the documentation next to the app.
+// Renders README.md/README.de.md and docs/en, docs/de as styled HTML into
+// dist/web/docs/, so GitHub Pages serves the documentation next to the app.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -8,15 +8,100 @@ import { Marked } from 'marked';
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const outDir = join(root, 'dist', 'web', 'docs');
 
-const pages = [
-  { src: 'README.md', out: 'index.html', title: 'Schuldrad · Dokumentation', nav: 'Start' },
+// Single source of truth for which docs exist, in which language, and how
+// they're labeled. This registry IS the completeness check: a doc only
+// exists if it has both an `en` and a `de` entry below.
+const docs = [
   {
-    src: 'ARCHITECTURE.md',
-    out: 'architektur.html',
-    title: 'Schuldrad · Architektur',
-    nav: 'Architektur',
+    slug: 'index',
+    nav: { en: 'Guide', de: 'Anleitung' },
+    title: { en: 'Schuldrad · Documentation', de: 'Schuldrad · Dokumentation' },
+    src: { en: 'README.md', de: 'README.de.md' },
+  },
+  {
+    slug: 'architecture',
+    nav: { en: 'Architecture', de: 'Architektur' },
+    title: { en: 'Schuldrad · Architecture', de: 'Schuldrad · Architektur' },
+    src: { en: 'docs/en/architecture.md', de: 'docs/de/architektur.md' },
+  },
+  {
+    slug: 'fairness',
+    nav: { en: 'Fairness', de: 'Fairness' },
+    title: { en: 'Schuldrad · Fairness', de: 'Schuldrad · Fairness' },
+    src: { en: 'docs/en/fairness.md', de: 'docs/de/fairness.md' },
+  },
+  {
+    slug: 'events',
+    nav: { en: 'Events', de: 'Events' },
+    title: { en: 'Schuldrad · Events', de: 'Schuldrad · Events' },
+    src: { en: 'docs/en/events.md', de: 'docs/de/events.md' },
+  },
+  {
+    slug: 'deployment',
+    nav: { en: 'Deployment', de: 'Betrieb' },
+    title: { en: 'Schuldrad · Deployment', de: 'Schuldrad · Betrieb' },
+    src: { en: 'docs/en/deployment.md', de: 'docs/de/deployment.md' },
+  },
+  {
+    slug: 'contributing',
+    nav: { en: 'Contributing', de: 'Mitwirken' },
+    title: { en: 'Schuldrad · Contributing', de: 'Schuldrad · Mitwirken' },
+    src: { en: 'docs/en/contributing.md', de: 'docs/de/contributing.md' },
   },
 ];
+
+const LANGS = ['en', 'de'];
+
+// Fail loudly if docs/en and docs/de (or README.md/README.de.md) drift out
+// of pairing — either a stray file the registry doesn't know about, or a
+// registry entry missing its counterpart on disk.
+async function checkCompleteness() {
+  const { readdir } = await import('node:fs/promises');
+  const problems = [];
+
+  for (const doc of docs) {
+    for (const lang of LANGS) {
+      const path = join(root, doc.src[lang]);
+      try {
+        await readFile(path);
+      } catch {
+        problems.push(
+          `docs registry entry '${doc.slug}' names ${doc.src[lang]}, but it doesn't exist.`,
+        );
+      }
+    }
+  }
+
+  for (const [dir, lang] of [
+    ['docs/en', 'en'],
+    ['docs/de', 'de'],
+  ]) {
+    let entries;
+    try {
+      entries = await readdir(join(root, dir));
+    } catch {
+      problems.push(`${dir} does not exist.`);
+      continue;
+    }
+    const known = new Set(
+      docs.filter((d) => d.slug !== 'index').map((d) => d.src[lang].split('/').pop()),
+    );
+    for (const entry of entries) {
+      if (entry.endsWith('.md') && !known.has(entry)) {
+        problems.push(`${dir}/${entry} exists but has no counterpart entry in the docs registry.`);
+      }
+    }
+  }
+
+  if (problems.length > 0) {
+    console.error('docs: language pairing is broken:');
+    for (const p of problems) console.error(`  - ${p}`);
+    console.error(
+      "Every docs/en/*.md needs a docs/de/*.md counterpart (and vice versa), and README.md needs README.de.md. Fix the docs or scripts/build-docs.mjs's registry.",
+    );
+    process.exit(1);
+  }
+}
 
 const slug = (text) =>
   text
@@ -26,22 +111,35 @@ const slug = (text) =>
     .trim()
     .replace(/\s+/g, '-');
 
-const marked = new Marked({
-  gfm: true,
-  renderer: {
-    heading({ tokens, depth }) {
-      const text = this.parser.parseInline(tokens);
-      return `<h${depth} id="${slug(text)}">${text}</h${depth}>\n`;
+// Cross-links inside the Markdown source (README.md, docs/en/*.md, ...) become
+// links between the rendered pages of the SAME language.
+function markedFor(lang) {
+  const otherLang = lang === 'en' ? 'de' : 'en';
+  return new Marked({
+    gfm: true,
+    renderer: {
+      heading({ tokens, depth }) {
+        const text = this.parser.parseInline(tokens);
+        return `<h${depth} id="${slug(text)}">${text}</h${depth}>\n`;
+      },
+      link({ href, tokens }) {
+        const text = this.parser.parseInline(tokens);
+        // Links to the other language's README (e.g. "Deutsch → README.de.md")
+        // point out of the docs tree entirely; leave external/absolute links alone.
+        if (/^(https?:)?\/\//.test(href) || href.startsWith('#')) {
+          return `<a href="${href}">${text}</a>`;
+        }
+        const target = docs.find(
+          (d) =>
+            href.endsWith(d.src.en.split('/').pop()) || href.endsWith(d.src.de.split('/').pop()),
+        );
+        if (target)
+          return `<a href="../${target.slug === 'index' ? lang + '/' : `${lang}/${target.slug}.html`}">${text}</a>`;
+        return `<a href="${href}">${text}</a>`;
+      },
     },
-    // Cross-links between the two Markdown files become links between the pages.
-    link({ href, tokens }) {
-      const text = this.parser.parseInline(tokens);
-      const target =
-        href === 'ARCHITECTURE.md' ? 'architektur.html' : href === 'README.md' ? './' : href;
-      return `<a href="${target}">${text}</a>`;
-    },
-  },
-});
+  });
+}
 
 const css = `
 :root {
@@ -55,9 +153,12 @@ body { margin: 0; font-family: var(--font); color: var(--ink); background: #fff;
 .topbar { display: flex; align-items: center; gap: 2rem; border-bottom: 1px solid var(--rule); padding: 0 1rem; min-height: 56px; flex-wrap: wrap; }
 .wordmark { font-weight: 800; font-size: 1.25rem; text-decoration: none; color: var(--ink); letter-spacing: -0.02em; }
 .wordmark::before { content: ""; display: inline-block; width: 10px; height: 22px; background: var(--red); margin-right: 0.6rem; vertical-align: -4px; }
-.tabs { display: flex; gap: 1.5rem; height: 56px; }
+.tabs { display: flex; gap: 1.5rem; height: 56px; flex: 1; }
 .tabs a { display: flex; align-items: center; text-decoration: none; color: var(--ink-soft); border-bottom: 3px solid transparent; font-weight: 600; }
 .tabs a.active { color: var(--ink); border-bottom-color: var(--red); }
+.lang-switch { display: flex; gap: 0.5rem; align-items: center; font-family: var(--mono); font-size: 0.8rem; }
+.lang-switch a { text-decoration: none; color: var(--ink-soft); padding: 0.2rem 0.5rem; border: 1px solid var(--rule); border-radius: 2px; }
+.lang-switch a.active { color: var(--ink); border-color: var(--ink); font-weight: 700; }
 main { max-width: 860px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
 h1 { font-size: 2.2rem; font-weight: 700; letter-spacing: -0.01em; line-height: 1.1; margin: 1rem 0 0.5rem; }
 h2 { font-size: 1.35rem; font-weight: 700; margin: 2.5rem 0 0.5rem; padding-bottom: 0.4rem; border-bottom: 2px solid var(--ink); }
@@ -77,25 +178,35 @@ blockquote { margin: 1rem 0; padding: 0.5rem 1rem; border-left: 4px solid var(--
 @media (max-width: 720px) { h1 { font-size: 1.7rem; } .tabs { gap: 1rem; } }
 `;
 
-const shell = (page, body) => `<!doctype html>
-<html lang="de">
+const shell = (doc, lang, body) => {
+  const isIndex = doc.slug === 'index';
+  const langHref = (l) => (isIndex ? `../${l}/` : `../${l}/${doc.slug}.html`);
+  const navHref = (d) => (d.slug === 'index' ? './' : `${d.slug}.html`);
+  return `<!doctype html>
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>${page.title}</title>
+<title>${doc.title[lang]}</title>
 <style>${css}</style>
 </head>
 <body>
 <header class="topbar">
-  <a class="wordmark" href="../">Schuldrad</a>
+  <a class="wordmark" href="../../">Schuldrad</a>
   <nav class="tabs" aria-label="Dokumentation">
-    <a href="./"${page.out === 'index.html' ? ' class="active" aria-current="page"' : ''}>Doku</a>
-    <a href="architektur.html"${page.out === 'architektur.html' ? ' class="active" aria-current="page"' : ''}>Architektur</a>
-    <a href="../">Zur App</a>
+    ${docs
+      .map(
+        (d) =>
+          `<a href="${navHref(d)}"${d.slug === doc.slug ? ' class="active" aria-current="page"' : ''}>${d.nav[lang]}</a>`,
+      )
+      .join('\n    ')}
   </nav>
+  <div class="lang-switch">
+    ${LANGS.map((l) => `<a href="${langHref(l)}"${l === lang ? ' class="active" aria-current="true"' : ''}>${l.toUpperCase()}</a>`).join('\n    ')}
+  </div>
 </header>
 <main>
-${page.out === 'index.html' ? '<a class="app-link" href="../">Schuldrad öffnen →</a>' : ''}
+${isIndex ? '<a class="app-link" href="../../">Schuldrad öffnen / open →</a>' : ''}
 ${body}
 </main>
 <footer class="footer">
@@ -105,11 +216,28 @@ ${body}
 </body>
 </html>
 `;
+};
 
-await mkdir(outDir, { recursive: true });
-for (const page of pages) {
-  const md = await readFile(join(root, page.src), 'utf8');
-  const body = marked.parse(md);
-  await writeFile(join(outDir, page.out), shell(page, body));
-  console.log(`docs: ${page.src} → dist/web/docs/${page.out}`);
+await checkCompleteness();
+
+await mkdir(join(outDir, 'en'), { recursive: true });
+await mkdir(join(outDir, 'de'), { recursive: true });
+
+for (const lang of LANGS) {
+  const marked = markedFor(lang);
+  for (const doc of docs) {
+    const md = await readFile(join(root, doc.src[lang]), 'utf8');
+    const body = marked.parse(md);
+    const outName = doc.slug === 'index' ? 'index.html' : `${doc.slug}.html`;
+    await writeFile(join(outDir, lang, outName), shell(doc, lang, body));
+    console.log(`docs: ${doc.src[lang]} → dist/web/docs/${lang}/${outName}`);
+  }
 }
+
+// dist/web/docs/index.html (the long-standing /docs/ URL) redirects to the
+// English index, keeping the existing external link intact.
+await writeFile(
+  join(outDir, 'index.html'),
+  `<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=en/"><title>Schuldrad · Dokumentation</title><a href="en/">Weiter zur Dokumentation / continue to the docs</a>`,
+);
+console.log('docs: → dist/web/docs/index.html (redirect to en/)');

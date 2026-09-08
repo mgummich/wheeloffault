@@ -1,8 +1,8 @@
-import type { AppliedModifier, WeightedParticipant } from '../domain/events.ts';
-import type { FairnessPolicy } from '../domain/fairness/policy.ts';
-import { type TeamStatistics, teamStatistics } from '../domain/projections/statistics.ts';
-import type { Immunity, Member, Pool, Spin, TeamState } from '../domain/team.ts';
-import { pendingSpin } from '../domain/team.ts';
+import type { AppliedModifier, WeightedParticipant } from './events.ts';
+import type { FairnessPolicy } from './fairness/policy.ts';
+import { type TeamStatistics, teamStatistics } from './projections/statistics.ts';
+import type { Immunity, Member, Pool, Spin, TeamState } from './team.ts';
+import { pendingSpin } from './team.ts';
 
 /**
  * Public HTTP shapes. The only transformation is redaction: a pending spin's

@@ -1,20 +1,30 @@
-const de = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 1 });
-const de2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+import { getLang, t } from './i18n/index.ts';
 
-export const num = (n: number) => de.format(n);
-export const num2 = (n: number) => de2.format(n);
-export const percent = (ratio: number) => `${de.format(ratio * 100)} %`;
-export const factor = (thousandths: number) => `${de2.format(thousandths / 1000)}×`;
+const localeFor = (lang: string) => (lang === 'de' ? 'de-DE' : 'en-US');
 
-export function dateTime(iso: string): string {
-  return new Date(iso).toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' });
+export const num = (n: number, locale = localeFor(getLang())) =>
+  new Intl.NumberFormat(locale, { maximumFractionDigits: 1 }).format(n);
+
+export const num2 = (n: number, locale = localeFor(getLang())) =>
+  new Intl.NumberFormat(locale, { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+export const percent = (ratio: number, locale = localeFor(getLang())) =>
+  `${num(ratio * 100, locale)} %`;
+
+export const factor = (thousandths: number, locale = localeFor(getLang())) =>
+  `${num2(thousandths / 1000, locale)}×`;
+
+export function dateTime(iso: string, locale = localeFor(getLang())): string {
+  return new Intl.DateTimeFormat(locale, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(iso),
+  );
 }
 
-export function relativeTime(iso: string, now = Date.now()): string {
+export function relativeTime(iso: string, now = Date.now(), locale = localeFor(getLang())): string {
   const seconds = Math.round((now - new Date(iso).getTime()) / 1000);
-  const rtf = new Intl.RelativeTimeFormat('de', { numeric: 'auto' });
   const abs = Math.abs(seconds);
-  if (abs < 60) return 'gerade eben';
+  if (abs < 60) return t('format.justNow');
+  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
   if (abs < 3600) return rtf.format(-Math.round(seconds / 60), 'minute');
   if (abs < 86400) return rtf.format(-Math.round(seconds / 3600), 'hour');
   if (abs < 86400 * 30) return rtf.format(-Math.round(seconds / 86400), 'day');

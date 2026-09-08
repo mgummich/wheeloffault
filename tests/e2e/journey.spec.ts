@@ -12,7 +12,7 @@ test('server teams and live changes are shared between browsers', async ({
     const url = `/#/team/${team.teamId}/teilnehmer`;
     await page.goto(url);
     await other.goto(new URL(url, page.url()).href);
-    await expect(other.getByRole('heading', { name: 'Aktiv (0)' })).toBeVisible();
+    await expect(other.getByRole('heading', { name: 'Active (0)' })).toBeVisible();
     await page.getByTestId('add-member-input').fill('Shared member');
     await page.getByTestId('add-member-button').click();
     await expect(other.getByTestId('member-row')).toContainText('Shared member');
@@ -79,5 +79,5 @@ test('Schuldrad journey', async ({ page }) => {
   // Verifier reproduces the server's draw in the browser.
   await page.getByTestId('history-row').first().getByRole('link').first().click();
   await page.getByTestId('verify-button').click();
-  await expect(page.getByTestId('verify-result')).toContainText('Ziehung gültig');
+  await expect(page.getByTestId('verify-result')).toContainText('Draw valid');
 });

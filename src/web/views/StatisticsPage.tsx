@@ -1,8 +1,10 @@
-import type { TeamView } from '../../server/views.ts';
+import type { TeamView } from '../../domain/views.ts';
 import { dateTime, num, num2, relativeTime, spinLabel } from '../format.ts';
+import { useI18n } from '../i18n/index.ts';
 import { href } from '../route.ts';
 
 export function StatisticsPage({ team }: { team: TeamView }) {
+  const { t } = useI18n();
   const stats = team.statistics;
   const maxSelections = Math.max(
     1,
@@ -11,28 +13,28 @@ export function StatisticsPage({ team }: { team: TeamView }) {
 
   return (
     <>
-      <h1>Teamstatistik</h1>
+      <h1>{t('statistics.title')}</h1>
       <div className="figures">
-        <Figure label="Ziehungen" value={stats.totalSpins} />
-        <Figure label="Gültig" value={stats.officialSpins} />
-        <Figure label="Aufgehoben" value={stats.overturnedSpins} />
-        <Figure label="Offene Einsprüche" value={stats.openAppeals} />
-        <Figure label="Max. Abweichung" value={num(stats.maxFairnessDeviation)} />
+        <Figure label={t('statistics.figSpins')} value={stats.totalSpins} />
+        <Figure label={t('statistics.figValid')} value={stats.officialSpins} />
+        <Figure label={t('statistics.figOverturned')} value={stats.overturnedSpins} />
+        <Figure label={t('statistics.figOpenAppeals')} value={stats.openAppeals} />
+        <Figure label={t('statistics.figMaxDeviation')} value={num(stats.maxFairnessDeviation)} />
       </div>
 
       <section>
-        <h2>Schuldrangliste</h2>
+        <h2>{t('statistics.rankingHeading')}</h2>
         <table className="board">
           <thead>
             <tr>
-              <th className="num">#</th>
-              <th>Name</th>
-              <th className="num">Punkte</th>
-              <th className="num">Schuld</th>
-              <th className="num">Erwartet</th>
-              <th className="num">Index</th>
-              <th className="num">Serie</th>
-              <th>Zuletzt</th>
+              <th className="num">{t('statistics.rank')}</th>
+              <th>{t('common.name')}</th>
+              <th className="num">{t('statistics.points')}</th>
+              <th className="num">{t('statistics.guilt')}</th>
+              <th className="num">{t('statistics.expected')}</th>
+              <th className="num">{t('statistics.index')}</th>
+              <th className="num">{t('statistics.streak')}</th>
+              <th>{t('statistics.last')}</th>
             </tr>
           </thead>
           <tbody>
@@ -46,8 +48,8 @@ export function StatisticsPage({ team }: { team: TeamView }) {
                       {' '}
                       ·{' '}
                       {r.achievements.length === 1
-                        ? '1 Auszeichnung'
-                        : `${r.achievements.length} Auszeichnungen`}
+                        ? t('statistics.achievement.one')
+                        : t('statistics.achievement.many', { n: r.achievements.length })}
                     </span>
                   )}
                 </td>
@@ -58,14 +60,14 @@ export function StatisticsPage({ team }: { team: TeamView }) {
                   {r.schuldindex === null ? (
                     <>
                       <span aria-hidden="true">–</span>
-                      <span className="visually-hidden">kein Index</span>
+                      <span className="visually-hidden">{t('statistics.noIndex')}</span>
                     </>
                   ) : (
                     num2(r.schuldindex)
                   )}
                 </td>
                 <td className="num">{r.currentStreak}</td>
-                <td>{r.lastSelectedAt ? relativeTime(r.lastSelectedAt) : 'nie'}</td>
+                <td>{r.lastSelectedAt ? relativeTime(r.lastSelectedAt) : t('common.never')}</td>
               </tr>
             ))}
           </tbody>
@@ -73,7 +75,7 @@ export function StatisticsPage({ team }: { team: TeamView }) {
       </section>
 
       <section>
-        <h2>Ist gegen Soll</h2>
+        <h2>{t('statistics.actualVsExpectedHeading')}</h2>
         <div className="bars">
           {stats.hallOfShame.map((r) => (
             <div key={r.memberId} className="bar-row">
@@ -94,22 +96,19 @@ export function StatisticsPage({ team }: { team: TeamView }) {
             </div>
           ))}
         </div>
-        <p className="small muted">
-          Rot: tatsächliche Schuldsprüche. Grau: statistische Erwartung aus den festgeschriebenen
-          Gewichten.
-        </p>
+        <p className="small muted">{t('statistics.barLegend')}</p>
       </section>
 
       <section>
-        <h2>Zugverlauf</h2>
+        <h2>{t('statistics.historyHeading')}</h2>
         <table className="board">
           <thead>
             <tr>
-              <th>Zug</th>
-              <th>Abfahrt</th>
-              <th>Schuldig</th>
-              <th className="num">Teilnehmer</th>
-              <th>Status</th>
+              <th>{t('common.train')}</th>
+              <th>{t('statistics.departure')}</th>
+              <th>{t('statistics.guiltyHeader')}</th>
+              <th className="num">{t('common.participants')}</th>
+              <th>{t('common.status')}</th>
             </tr>
           </thead>
           <tbody>
@@ -119,17 +118,17 @@ export function StatisticsPage({ team }: { team: TeamView }) {
                   <a href={href.ziehung(team.teamId, h.spinId)}>{spinLabel(h.nonce)}</a>
                 </td>
                 <td>{dateTime(h.revealedAt ?? h.committedAt)}</td>
-                <td>{h.selectedName ?? <span className="muted">offen</span>}</td>
+                <td>{h.selectedName ?? <span className="muted">{t('common.chipOpen')}</span>}</td>
                 <td className="num">{h.participantCount}</td>
                 <td>
                   {h.overturned ? (
-                    <span className="chip">aufgehoben</span>
+                    <span className="chip">{t('common.chipOverturned')}</span>
                   ) : h.appeal?.outcome === 'open' ? (
-                    <span className="chip red">Einspruch</span>
+                    <span className="chip red">{t('statistics.chipAppeal')}</span>
                   ) : h.revealedAt ? (
-                    <span className="chip ok">gültig</span>
+                    <span className="chip ok">{t('statistics.chipValid')}</span>
                   ) : (
-                    <span className="chip">läuft</span>
+                    <span className="chip">{t('statistics.chipRunning')}</span>
                   )}
                 </td>
               </tr>
@@ -137,7 +136,7 @@ export function StatisticsPage({ team }: { team: TeamView }) {
             {stats.history.length === 0 && (
               <tr>
                 <td colSpan={5} className="muted">
-                  Noch keine Ziehungen.
+                  {t('statistics.noHistory')}
                 </td>
               </tr>
             )}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { TeamView } from '../../server/views.ts';
+import type { TeamView } from '../../domain/views.ts';
 import { poolOptionLabel, spinEligibility } from './SpinPage.tsx';
 
 const team: TeamView = {
@@ -38,20 +38,20 @@ describe('poolOptionLabel', () => {
   it('shows active eligible members instead of total pool membership', () => {
     const pool = team.pools[0];
     if (!pool) throw new Error('missing pool');
-    expect(poolOptionLabel(team, pool)).toBe('Backend (1 aktiv)');
+    expect(poolOptionLabel(team, pool)).toBe('Backend (1 active)');
   });
 });
 
 describe('spinEligibility', () => {
   it('describes all-active draws', () => {
-    expect(spinEligibility(team, '').message).toBe('1 aktiver Teilnehmer im Lostopf.');
+    expect(spinEligibility(team, '').message).toBe('1 active participant in the pool.');
   });
 
   it('describes selected pools and inactive members', () => {
     expect(spinEligibility(team, 'p1')).toEqual({
       eligibleCount: 1,
       disabled: false,
-      message: 'Backend: 1 aktiver Teilnehmer im Lostopf, 1 abgemeldet.',
+      message: 'Backend: 1 active participant in the pool, 1 signed off.',
     });
   });
 });

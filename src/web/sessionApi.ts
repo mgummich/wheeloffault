@@ -15,7 +15,7 @@ import {
   type TeamListEntry,
   type TeamView,
   teamView,
-} from '../server/views.ts';
+} from '../domain/views.ts';
 import { ApiError } from './apiError.ts';
 import type { Api } from './serverApi.ts';
 
@@ -52,7 +52,8 @@ export function createSessionApi(storage: Storage = localStorage): Api {
 
   const loadTeam = (teamId: string): TeamState => {
     const events = stream(teamId);
-    if (events.length === 0) throw new DomainError(`Team ${teamId} unbekannt`, 'not_found');
+    if (events.length === 0)
+      throw new DomainError(`Team ${teamId} unknown`, 'team_not_found', { teamId });
     return replay(events);
   };
 
@@ -62,8 +63,8 @@ export function createSessionApi(storage: Storage = localStorage): Api {
     const currentVersion = data.events.filter((event) => event.streamId === teamId).length;
     if (currentVersion !== expectedVersion) {
       throw new DomainError(
-        `Team ${teamId} wurde seit Version ${expectedVersion} verändert`,
-        'conflict',
+        `Team ${teamId} changed since version ${expectedVersion}`,
+        'team_version_conflict',
       );
     }
     const stored = events.map((event, index) => ({
@@ -222,9 +223,15 @@ function now(): string {
 function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) return err;
   if (err instanceof DomainError) {
-    const status = err.code === 'not_found' ? 404 : err.code === 'conflict' ? 409 : 400;
-    return new ApiError(status, err.message, { error: err.message, ...err.details });
+    const status = err.status === 'not_found' ? 404 : err.status === 'conflict' ? 409 : 400;
+    return new ApiError(status, err.message, {
+      error: err.message,
+      code: err.code,
+      ...err.details,
+    });
   }
-  if (err instanceof Error) return new ApiError(500, err.message, { error: err.message });
-  return new ApiError(500, String(err), { error: String(err) });
+  if (err instanceof Error) {
+    return new ApiError(500, err.message, { error: err.message, code: 'internal_error' });
+  }
+  return new ApiError(500, String(err), { error: String(err), code: 'internal_error' });
 }

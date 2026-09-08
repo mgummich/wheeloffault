@@ -9,7 +9,7 @@ import { memberReport } from '../domain/projections/report.ts';
 import type { Commands } from './commands.ts';
 import { ConcurrencyError } from './eventStore.ts';
 import { asObject, id, optionalStr, str, strArray } from './validate.ts';
-import { spinView, type TeamListEntry, teamView } from './views.ts';
+import { spinView, type TeamListEntry, teamView } from '../domain/views.ts';
 
 type Req = IncomingMessage;
 type Res = ServerResponse;
@@ -17,6 +17,7 @@ type Handler = (req: Req, res: Res, params: Record<string, string>) => Promise<v
 type Route = { method: string; pattern: RegExp; keys: string[]; handler: Handler };
 
 const MAX_BODY = 64 * 1024;
+const MAX_SSE_CLIENTS_PER_TEAM = 100;
 
 /**
  * Plain node:http. ~15 routes do not justify a framework. Routes are declared
@@ -242,6 +243,10 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
   route('GET', '/api/teams/:teamId/events', async (req, res, p) => {
     const teamId = id(p.teamId ?? '');
     await commands.loadTeam(teamId); // 404 for unknown teams
+    if ((sseClients.get(teamId)?.size ?? 0) >= MAX_SSE_CLIENTS_PER_TEAM) {
+      json(res, 503, { error: 'Zu viele gleichzeitige Verbindungen für dieses Team' });
+      return;
+    }
     res.writeHead(200, {
       'content-type': 'text/event-stream',
       'cache-control': 'no-store',
@@ -265,7 +270,7 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
       try {
         url = new URL(req.url ?? '/', 'http://localhost');
       } catch {
-        throw new DomainError('Ungültige Request-URL');
+        throw new DomainError('Invalid request URL', 'invalid_url');
       }
       for (const r of routes) {
         if (r.method !== req.method) continue;
@@ -278,25 +283,28 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
         return;
       }
       if (url.pathname.startsWith('/api/')) {
-        json(res, 404, { error: 'Unbekannte Route' });
+        json(res, 404, { error: 'Unknown route', code: 'unknown_route' });
         return;
       }
       if (staticDir) await serveStatic(staticDir, url.pathname, res);
-      else json(res, 404, { error: 'Kein Frontend gebaut' });
+      else json(res, 404, { error: 'No frontend built', code: 'no_frontend_built' });
     } catch (err) {
       if (err instanceof DomainError) {
-        const status = err.code === 'not_found' ? 404 : err.code === 'conflict' ? 409 : 400;
-        json(res, status, { error: err.message, ...err.details });
+        const status = err.status === 'not_found' ? 404 : err.status === 'conflict' ? 409 : 400;
+        json(res, status, { error: err.message, code: err.code, ...err.details });
       } else if (err instanceof ConcurrencyError) {
-        json(res, 409, { error: 'Gleichzeitige Änderung, bitte erneut versuchen' });
+        json(res, 409, {
+          error: 'Concurrent change, please retry',
+          code: 'team_version_conflict',
+        });
       } else if (
         err instanceof SyntaxError ||
         (err instanceof Error && err.message === 'body too large')
       ) {
-        json(res, 400, { error: 'Ungültiger Request-Body' });
+        json(res, 400, { error: 'Invalid request body', code: 'invalid_body' });
       } else {
         console.error(err);
-        json(res, 500, { error: 'Interner Fehler' });
+        json(res, 500, { error: 'Internal error', code: 'internal_error' });
       }
     }
   }
@@ -311,7 +319,7 @@ function decodePathParam(raw: string): string {
   try {
     return decodeURIComponent(raw);
   } catch {
-    throw new DomainError('Ungültige URL-Kodierung');
+    throw new DomainError('Invalid URL encoding', 'invalid_url');
   }
 }
 
@@ -343,22 +351,33 @@ const mime: Record<string, string> = {
 async function serveStatic(dir: string, pathname: string, res: Res) {
   // normalize() collapses any `..`; pathname always starts with `/`, so it cannot escape dir.
   const safe = normalize(pathname);
+  const isAsset = safe.startsWith('/assets/');
   let file = join(dir, safe);
   try {
     if ((await stat(file)).isDirectory()) file = join(file, 'index.html');
   } catch {
+    // A missing hashed asset is a 404, never the SPA shell (which would then
+    // get cached as if it were that immutable asset).
+    if (isAsset) {
+      res.writeHead(404).end();
+      return;
+    }
     file = join(dir, 'index.html');
   }
   let body: Buffer;
   try {
     body = await readFile(file);
   } catch {
+    if (isAsset) {
+      res.writeHead(404).end();
+      return;
+    }
     // A bare directory or unreadable path: the hash router takes over.
     file = join(dir, 'index.html');
     body = await readFile(file);
   }
   const ext = extname(file);
-  const immutable = safe.startsWith('/assets/');
+  const immutable = file === join(dir, safe) && isAsset;
   res.writeHead(200, {
     'content-type': mime[ext] ?? 'application/octet-stream',
     'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',

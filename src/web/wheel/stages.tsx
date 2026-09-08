@@ -1,6 +1,7 @@
 import { type CSSProperties, useEffect, useMemo, useState } from 'react';
-import type { SpinView } from '../../server/views.ts';
+import type { SpinView } from '../../domain/views.ts';
 import { percent } from '../format.ts';
+import { useI18n } from '../i18n/index.ts';
 import { DURATION_MS, ease, seedNumberFor, trainDelayFor, trainKindFor } from './anim.ts';
 
 export type Participant = { memberId: string; name: string; weight: number };
@@ -77,6 +78,7 @@ function useNameTicker(
 }
 
 export function BoardStage(props: StageProps) {
+  const { t } = useI18n();
   const { participants, result, announced, poolLabel } = props;
   const { currentId, animating, tick } = useNameTicker(
     participants,
@@ -86,7 +88,7 @@ export function BoardStage(props: StageProps) {
   );
   const name = currentId
     ? (participants.find((p) => p.memberId === currentId)?.name ?? '')
-    : 'BEREIT';
+    : t('wheel.ready');
   const cellsOf = (s: string, n = 16) => s.toUpperCase().padEnd(n, ' ').slice(0, n).split('');
   const flapKey = tick + (announced ? 'f' : animating ? 'a' : 'i');
   const cell = (c: string, i: number, big: boolean) => (
@@ -137,29 +139,30 @@ export function BoardStage(props: StageProps) {
           marginBottom: 12,
         }}
       >
-        <span>Nächster Halt</span>
-        <span>Gleis {poolLabel ?? 'Alle'}</span>
+        <span>{t('wheel.nextStop')}</span>
+        <span>{t('wheel.poolPrefix', { pool: poolLabel ?? t('common.all') })}</span>
       </div>
       <div
         style={{ display: 'flex', gap: 3, marginBottom: 8, flexWrap: 'nowrap', overflow: 'hidden' }}
       >
-        {cellsOf('VERANTWORTUNG', 16).map((c, i) => cell(c, i, false))}
+        {cellsOf(t('wheel.responsibility'), 16).map((c, i) => cell(c, i, false))}
       </div>
       <div style={{ display: 'flex', gap: 3, flexWrap: 'nowrap', overflow: 'hidden' }}>
         {cellsOf(name).map((c, i) => cell(c, i, true))}
       </div>
       <p style={{ margin: '14px 0 0', fontSize: 12, color: '#B8BEC6' }}>
         {announced
-          ? 'Ankunft. Bitte Verantwortung übernehmen.'
+          ? t('wheel.boardArrived')
           : animating
-            ? 'Anzeige wird aktualisiert …'
-            : 'Anzeige betriebsbereit.'}
+            ? t('wheel.boardUpdating')
+            : t('wheel.boardReady')}
       </p>
     </div>
   );
 }
 
 export function SignalStage(props: StageProps) {
+  const { t } = useI18n();
   const { participants, result, announced } = props;
   const { currentId, animating } = useNameTicker(participants, result, announced, props.onFinished);
   return (
@@ -238,7 +241,11 @@ export function SignalStage(props: StageProps) {
                 whiteSpace: 'nowrap',
               }}
             >
-              {stop ? 'Halt · schuldig' : hot && animating ? 'Weiche' : 'Fahrt frei'}
+              {stop
+                ? t('wheel.signalStop')
+                : hot && animating
+                  ? t('wheel.signalSwitch')
+                  : t('wheel.signalClear')}
             </span>
           </li>
         );
@@ -248,6 +255,7 @@ export function SignalStage(props: StageProps) {
 }
 
 export function StampStage(props: StageProps) {
+  const { t } = useI18n();
   const { participants, result, announced } = props;
   const { currentId, animating } = useNameTicker(participants, result, announced, props.onFinished);
   const total = participants.reduce((s, p) => s + p.weight, 0) || 1;
@@ -285,7 +293,7 @@ export function StampStage(props: StageProps) {
                 color: '#5C646C',
               }}
             >
-              Fahrkarte · Gültig für 1 Ziehung
+              {t('wheel.ticketLabel')}
             </p>
             <p
               style={{
@@ -321,7 +329,7 @@ export function StampStage(props: StageProps) {
                   background: 'rgba(255,255,255,.85)',
                 }}
               >
-                Schuldig
+                {t('common.guilty')}
               </span>
             )}
           </div>
@@ -332,6 +340,7 @@ export function StampStage(props: StageProps) {
 }
 
 export function TrainStage(props: StageProps) {
+  const { t } = useI18n();
   const { participants, result, announced, poolLabel } = props;
   const { currentId, animating } = useNameTicker(participants, result, announced, props.onFinished);
   const seedNum = result ? seedNumberFor(result) : 0;
@@ -345,7 +354,7 @@ export function TrainStage(props: StageProps) {
   const headerText =
     moving || arrived
       ? `${kind.code} · ${kind.name}${delay ? ` · +${delay} min` : ''}`
-      : 'Nächste Einfahrt: unbekannte Gattung';
+      : t('wheel.trainUnknown');
   return (
     <div
       style={{
@@ -370,7 +379,7 @@ export function TrainStage(props: StageProps) {
           color: '#5C646C',
         }}
       >
-        <span>Gleis {poolLabel ?? 'Alle'}</span>
+        <span>{t('wheel.poolPrefix', { pool: poolLabel ?? t('common.all') })}</span>
         <span
           style={{
             fontWeight: 700,
@@ -479,7 +488,9 @@ export function TrainStage(props: StageProps) {
             zIndex: 2,
           }}
         >
-          <span style={{ fontSize: 10, color: '#B8BEC6', fontWeight: 600 }}>ZIEL</span>
+          <span style={{ fontSize: 10, color: '#B8BEC6', fontWeight: 600 }}>
+            {t('wheel.targetLabel')}
+          </span>
           <span
             key={(currentName ?? '') + (arrived ? 'f' : 'a')}
             style={{
@@ -490,7 +501,7 @@ export function TrainStage(props: StageProps) {
               animation: moving || arrived ? 'sr-flap .18s ease-out' : 'none',
             }}
           >
-            {currentName ?? (moving ? '…' : 'Einfahrt erwartet')}
+            {currentName ?? (moving ? '…' : t('wheel.trainExpected'))}
           </span>
         </div>
       </div>
@@ -504,10 +515,10 @@ export function TrainStage(props: StageProps) {
         }}
       >
         {arrived
-          ? `Angekommen mit ${kind.name}. ${delay ? `Verspätung von ${delay} Minuten – Grund: Verzögerungen im Betriebsablauf.` : 'Pünktlich.'} ${kind.note}`
+          ? `${t('wheel.trainArrived', { name: kind.name })} ${delay ? t('wheel.trainDelay', { min: delay }) : t('wheel.trainOnTime')} ${kind.note}`
           : moving
-            ? 'Zug fährt ein. Bitte Abstand zur Bahnsteigkante.'
-            : 'Die Zuggattung wird aus dem Ziehungs-Hash bestimmt – jede Fahrt ist anders.'}
+            ? t('wheel.trainMoving')
+            : t('wheel.trainIdle')}
       </p>
     </div>
   );
@@ -600,6 +611,7 @@ export function TimetableStage(props: StageProps) {
 }
 
 export function LineStage(props: StageProps) {
+  const { t } = useI18n();
   const { participants, result, announced } = props;
   const { animating } = useNameTicker(participants, result, announced, props.onFinished);
   // Mirror the domain's selectParticipant exactly (draw.ts): participants in
@@ -706,9 +718,7 @@ export function LineStage(props: StageProps) {
           );
         })}
       </ul>
-      <p style={{ margin: '12px 0 0', fontSize: 12, color: '#5C646C' }}>
-        Der HMAC bestimmt einen Punkt auf der Gewichtslinie. Breite = Wahrscheinlichkeit.
-      </p>
+      <p style={{ margin: '12px 0 0', fontSize: 12, color: '#5C646C' }}>{t('wheel.lineNote')}</p>
     </div>
   );
 }

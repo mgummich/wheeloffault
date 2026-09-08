@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { Pool } from '../../domain/team.ts';
-import type { SpinView, TeamView } from '../../server/views.ts';
+import type { SpinView, TeamView } from '../../domain/views.ts';
 import { AnimPanel } from '../AnimPanel.tsx';
 import { animSummary, useAnimSettings } from '../animSettings.ts';
 import { api, errorMessage } from '../api.ts';
 import { performDraw } from '../draw.ts';
+import { t as translate, useI18n } from '../i18n/index.ts';
 import { percent, probabilityOf, spinLabel } from '../format.ts';
 import { RevealName } from '../RevealName.tsx';
 import { href } from '../route.ts';
@@ -28,6 +29,7 @@ type Phase =
   | { kind: 'announced'; spin: SpinView };
 
 export function SpinPage({ team, reload }: Props) {
+  const { t } = useI18n();
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [poolId, setPoolId] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
@@ -85,11 +87,11 @@ export function SpinPage({ team, reload }: Props) {
 
   useEffect(() => {
     if (!result || !announced) return;
-    document.title = `Schuldig: ${result.selectedName} · Schuldrad`;
+    document.title = t('spin.pageTitleWinner', { name: result.selectedName });
     return () => {
-      document.title = 'Schuldrad';
+      document.title = t('app.brand');
     };
-  }, [result, announced]);
+  }, [result, announced, t]);
 
   // Teams card auto-opens shortly after the announcement (setting-controlled, off by default).
   useEffect(() => {
@@ -145,18 +147,22 @@ export function SpinPage({ team, reload }: Props) {
   const action =
     phase.kind === 'idle'
       ? pending
-        ? { label: 'Ziehung abschließen', onClick: () => draw(pending.spinId), disabled: !online }
+        ? {
+            label: t('spin.finishButton'),
+            onClick: () => draw(pending.spinId),
+            disabled: !online,
+          }
         : {
-            label: 'Ziehung starten',
+            label: t('spin.startButton'),
             onClick: () => draw(),
             disabled: eligibility.disabled || !online,
           }
       : phase.kind === 'drawing'
-        ? { label: 'Ergebnis wird festgelegt …', onClick: () => {}, disabled: true }
+        ? { label: t('spin.committingButton'), onClick: () => {}, disabled: true }
         : phase.kind === 'animating'
-          ? { label: 'Überspringen', onClick: finish, disabled: false }
+          ? { label: t('spin.skipButton'), onClick: finish, disabled: false }
           : {
-              label: 'Nächste Ziehung',
+              label: t('spin.nextButton'),
               onClick: () => setPhase({ kind: 'idle' }),
               disabled: false,
             };
@@ -165,18 +171,18 @@ export function SpinPage({ team, reload }: Props) {
     <>
       <div className="spin-head">
         <div>
-          <p className="label">Team</p>
+          <p className="label">{t('spin.teamLabel')}</p>
           <h1>{team.name}</h1>
         </div>
         <div className="spin-controls">
           <label className="field compact">
-            <span className="label">Gleis</span>
+            <span className="label">{t('spin.poolLabel')}</span>
             <select
               value={poolId}
               onChange={(e) => setPoolId(e.target.value)}
               disabled={phase.kind !== 'idle'}
             >
-              <option value="">Alle Aktiven ({activeCount})</option>
+              <option value="">{t('spin.allActive', { n: activeCount })}</option>
               {team.pools.map((p) => (
                 <option key={p.poolId} value={p.poolId}>
                   {poolOptionLabel(team, p)}
@@ -192,7 +198,7 @@ export function SpinPage({ team, reload }: Props) {
             aria-controls="sr-anim-panel"
           >
             <span className={`chevron${animOpen ? ' open' : ''}`} aria-hidden="true" />
-            <span>Animation</span>
+            <span>{t('spin.animationToggle')}</span>
             <span className="anim-summary">{animSummary(settings)}</span>
           </button>
         </div>
@@ -203,29 +209,24 @@ export function SpinPage({ team, reload }: Props) {
       <p className={eligibility.disabled ? 'notice' : 'muted spin-context'}>
         {eligibility.message}
         {poolId && ' '}
-        {poolId && <a href={href.teilnehmer(team.teamId)}>Gleis bearbeiten</a>}
+        {poolId && <a href={href.teilnehmer(team.teamId)}>{t('spin.editPool')}</a>}
       </p>
 
       {activeCount === 0 && (
         <p className="notice">
-          Keine aktiven Teilnehmer. <a href={href.teilnehmer(team.teamId)}>Teilnehmer verwalten</a>
+          {t('spin.noActiveParticipants')}{' '}
+          <a href={href.teilnehmer(team.teamId)}>{t('spin.manageParticipants')}</a>
         </p>
       )}
 
-      {!online && (
-        <p className="notice error">
-          Offline – Fahrplandaten nicht verfügbar. Eine Ziehung braucht Verbindung.
-        </p>
-      )}
+      {!online && <p className="notice error">{t('spin.offline')}</p>}
 
       {visualization}
 
       {error && <p className="error-text">{error}</p>}
 
       {pending && (
-        <p className="notice">
-          Zug {spinLabel(pending.nonce)} läuft (festgelegt, noch nicht aufgedeckt).
-        </p>
+        <p className="notice">{t('spin.pendingNotice', { label: spinLabel(pending.nonce) })}</p>
       )}
 
       <div className="actions center">
@@ -243,21 +244,23 @@ export function SpinPage({ team, reload }: Props) {
       {/* Permanently mounted live region: many AT combos never announce the
           initial content of a freshly mounted node. */}
       <p className="visually-hidden" aria-live="assertive" role="status">
-        {announced && result ? `Schuldig: ${result.selectedName}` : ''}
+        {announced && result ? t('spin.announceLiveRegion', { name: result.selectedName }) : ''}
       </p>
 
       {announced && result?.reveal && (
         <section className={`announcement fx-${settings.resultFx}`} key={result.spinId}>
-          <p className="label light">Nächster Halt</p>
-          <p className="announcement-stop">Verantwortung</p>
-          <p className="label light">Schuldig</p>
+          <p className="label light">{t('spin.nextStop')}</p>
+          <p className="announcement-stop">{t('spin.announcementStop')}</p>
+          <p className="label light">{t('common.guilty')}</p>
           <p className="announcement-name" data-testid="result-name">
             <span className="visually-hidden">{result.selectedName}</span>
             <RevealName name={result.selectedName} mode={settings.reveal} spinId={result.spinId} />
           </p>
           <p className="announcement-meta">
-            Zug {spinLabel(result.nonce)} · Wahrscheinlichkeit{' '}
-            {percent(probabilityOf(result.participants, result.reveal.selectedMemberId))}
+            {t('spin.announcementMeta', {
+              label: spinLabel(result.nonce),
+              prob: percent(probabilityOf(result.participants, result.reveal.selectedMemberId)),
+            })}
           </p>
           <div className="actions">
             <a
@@ -265,13 +268,13 @@ export function SpinPage({ team, reload }: Props) {
               data-testid="open-report"
               href={href.bericht(team.teamId, result.reveal.selectedMemberId)}
             >
-              Schuldbericht öffnen
+              {t('spin.openReportButton')}
             </a>
             <button type="button" className="ghost" onClick={() => setShareOpen(true)}>
-              Für Teams teilen
+              {t('spin.shareButton')}
             </button>
             <a className="button ghost" href={href.ziehung(team.teamId, result.spinId)}>
-              Einspruch / Nachweis
+              {t('spin.appealLinkButton')}
             </a>
           </div>
         </section>
@@ -331,12 +334,14 @@ function previewParticipants(team: TeamView, poolId: string) {
     }));
 }
 
+/** Pure, so it stays unit-testable outside React; uses the module-level `t`. */
 export function poolOptionLabel(team: TeamView, pool: Pool): string {
   const active = team.members.filter((m) => m.active && pool.memberIds.includes(m.memberId)).length;
-  return `${pool.name} (${active} aktiv)`;
+  return translate('spin.poolOption', { name: pool.name, n: active });
 }
 
 export function spinEligibility(team: TeamView, poolId: string) {
+  const t = translate;
   const pool = team.pools.find((p) => p.poolId === poolId);
   const eligibleCount = team.members.filter(
     (m) => m.active && (!pool || pool.memberIds.includes(m.memberId)),
@@ -344,11 +349,20 @@ export function spinEligibility(team: TeamView, poolId: string) {
   const inactiveInPool = pool
     ? team.members.filter((m) => !m.active && pool.memberIds.includes(m.memberId)).length
     : 0;
-  const participant = eligibleCount === 1 ? 'aktiver Teilnehmer' : 'aktive Teilnehmer';
-  const inactiveNote = inactiveInPool > 0 ? `, ${inactiveInPool} abgemeldet` : '';
+  const participant =
+    eligibleCount === 1
+      ? t('spin.eligibility.participant.one')
+      : t('spin.eligibility.participant.many');
+  const inactiveNote =
+    inactiveInPool > 0 ? t('spin.eligibility.inactiveNote', { n: inactiveInPool }) : '';
   const message = pool
-    ? `${pool.name}: ${eligibleCount} ${participant} im Lostopf${inactiveNote}.`
-    : `${eligibleCount} ${participant} im Lostopf.`;
+    ? t('spin.eligibility.pool', {
+        pool: pool.name,
+        count: eligibleCount,
+        participant,
+        inactiveNote,
+      })
+    : t('spin.eligibility.plain', { count: eligibleCount, participant });
 
   return { eligibleCount, disabled: eligibleCount === 0, message };
 }

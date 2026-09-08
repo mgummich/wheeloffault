@@ -1,11 +1,13 @@
 import { type FormEvent, useState } from 'react';
-import type { TeamView } from '../../server/views.ts';
+import type { TeamView } from '../../domain/views.ts';
 import { api, errorMessage } from '../api.ts';
+import { useI18n } from '../i18n/index.ts';
 import { href } from '../route.ts';
 
 type Props = { team: TeamView; setTeam: (t: TeamView) => void };
 
 export function ParticipantsPage({ team, setTeam }: Props) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [list, setList] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -43,8 +45,11 @@ export function ParticipantsPage({ team, setTeam }: Props) {
   }
 
   async function grantImmunity(memberId: string) {
-    const reason = window.prompt('Grund für die Immunität (z. B. Fahrgastrecht):', 'Fahrgastrecht');
-    if (reason === null) return; // Abbrechen darf keine Immunität vergeben.
+    const reason = window.prompt(
+      t('participants.immunityPrompt'),
+      t('participants.immunityDefaultReason'),
+    );
+    if (reason === null) return; // Cancel must not grant immunity.
     await run(() => api.grantImmunity(team.teamId, memberId, reason));
   }
 
@@ -55,13 +60,13 @@ export function ParticipantsPage({ team, setTeam }: Props) {
 
   return (
     <>
-      <h1>Teilnehmer</h1>
+      <h1>{t('participants.title')}</h1>
       {error && <p className="error-text">{error}</p>}
       <section className="split">
         <form onSubmit={addOne} className="stack">
-          <h2>Einzeln zusteigen</h2>
+          <h2>{t('participants.addOneHeading')}</h2>
           <label className="field">
-            <span className="label">Name</span>
+            <span className="label">{t('common.name')}</span>
             <input
               data-testid="add-member-input"
               value={name}
@@ -71,13 +76,13 @@ export function ParticipantsPage({ team, setTeam }: Props) {
             />
           </label>
           <button type="submit" data-testid="add-member-button" className="primary" disabled={busy}>
-            Hinzufügen
+            {t('participants.addButton')}
           </button>
         </form>
         <form onSubmit={addList} className="stack">
-          <h2>Liste einfügen</h2>
+          <h2>{t('participants.pasteHeading')}</h2>
           <label className="field">
-            <span className="label">Ein Name pro Zeile (Komma und Semikolon trennen auch)</span>
+            <span className="label">{t('participants.pasteLabel')}</span>
             <textarea
               data-testid="paste-list-textarea"
               rows={4}
@@ -86,46 +91,48 @@ export function ParticipantsPage({ team, setTeam }: Props) {
             />
           </label>
           <button type="submit" data-testid="paste-list-button" disabled={busy}>
-            Liste übernehmen
+            {t('participants.pasteButton')}
           </button>
         </form>
       </section>
 
       <section>
-        <h2>Aktiv ({active.length})</h2>
+        <h2>{t('participants.activeHeading', { n: active.length })}</h2>
         <table className="board participant-board">
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Status</th>
+              <th>{t('common.name')}</th>
+              <th>{t('common.status')}</th>
               <th />
             </tr>
           </thead>
           <tbody>
             {active.map((m) => (
               <tr key={m.memberId} data-testid="member-row">
-                <td data-label="Name">
+                <td data-label={t('common.name')}>
                   <a href={href.bericht(team.teamId, m.memberId)}>{m.name}</a>
                 </td>
-                <td data-label="Status">
-                  <span className="chip ok">fahrbereit</span>
+                <td data-label={t('common.status')}>
+                  <span className="chip ok">{t('participants.readyChip')}</span>
                   {immunities(m.memberId) > 0 && (
                     <>
-                      <span className="chip">immun ×{immunities(m.memberId)}</span>
+                      <span className="chip">
+                        {t('participants.immuneChip', { n: immunities(m.memberId) })}
+                      </span>
                       <button
                         type="button"
                         className="quiet chip-action"
                         disabled={busy}
                         onClick={() => run(() => api.revokeImmunity(team.teamId, m.memberId))}
                       >
-                        aufheben
+                        {t('participants.revokeButton')}
                       </button>
                     </>
                   )}
                 </td>
                 <td className="actions">
                   <button type="button" disabled={busy} onClick={() => grantImmunity(m.memberId)}>
-                    Immunität
+                    {t('participants.immunityButton')}
                   </button>
                   <button
                     type="button"
@@ -134,7 +141,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
                     disabled={busy}
                     onClick={() => run(() => api.deactivateMember(team.teamId, m.memberId))}
                   >
-                    Abmelden
+                    {t('participants.deactivateButton')}
                   </button>
                 </td>
               </tr>
@@ -142,7 +149,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
             {active.length === 0 && (
               <tr>
                 <td colSpan={3} className="muted">
-                  Niemand an Bord.
+                  {t('participants.noneActive')}
                 </td>
               </tr>
             )}
@@ -152,17 +159,17 @@ export function ParticipantsPage({ team, setTeam }: Props) {
 
       {inactive.length > 0 && (
         <section>
-          <h2>Abgemeldet ({inactive.length})</h2>
-          <p className="muted">Bleiben in der Historie. Abwesenheit löscht keine Schuld.</p>
+          <h2>{t('participants.inactiveHeading', { n: inactive.length })}</h2>
+          <p className="muted">{t('participants.inactiveNote')}</p>
           <table className="board participant-board">
             <tbody>
               {inactive.map((m) => (
                 <tr key={m.memberId} data-testid="member-row">
-                  <td data-label="Name">
+                  <td data-label={t('common.name')}>
                     <a href={href.bericht(team.teamId, m.memberId)}>{m.name}</a>
                   </td>
-                  <td data-label="Status">
-                    <span className="chip off">abgemeldet</span>
+                  <td data-label={t('common.status')}>
+                    <span className="chip off">{t('participants.inactiveChip')}</span>
                   </td>
                   <td className="actions">
                     <button
@@ -171,7 +178,7 @@ export function ParticipantsPage({ team, setTeam }: Props) {
                       disabled={busy}
                       onClick={() => run(() => api.reactivateMember(team.teamId, m.memberId))}
                     >
-                      Wieder anmelden
+                      {t('participants.reactivateButton')}
                     </button>
                   </td>
                 </tr>
@@ -195,6 +202,7 @@ function Pools({
   run: (action: () => Promise<TeamView>) => Promise<boolean>;
   busy: boolean;
 }) {
+  const { t } = useI18n();
   const [name, setName] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
   const [renaming, setRenaming] = useState<{ poolId: string; name: string } | null>(null);
@@ -217,7 +225,7 @@ function Pools({
   }
 
   async function remove(poolId: string, poolName: string) {
-    if (!window.confirm(`Gleis „${poolName}“ entfernen? Ziehungen bleiben erhalten.`)) return;
+    if (!window.confirm(t('participants.removePoolConfirm', { name: poolName }))) return;
     await run(() => api.deletePool(team.teamId, poolId));
   }
 
@@ -231,10 +239,8 @@ function Pools({
 
   return (
     <section>
-      <h2>Gleise (Pools)</h2>
-      <p className="muted">
-        Optionale Teilmengen, z. B. „Backend“ oder „Daily“. Ohne Pool fahren alle Aktiven.
-      </p>
+      <h2>{t('participants.poolsHeading')}</h2>
+      <p className="muted">{t('participants.poolsNote')}</p>
       {team.pools.map((pool) => (
         <div key={pool.poolId} className="pool">
           {renaming?.poolId === pool.poolId ? (
@@ -248,10 +254,10 @@ function Pools({
                 autoFocus
               />
               <button type="submit" disabled={busy}>
-                Speichern
+                {t('common.save')}
               </button>
               <button type="button" className="quiet" onClick={() => setRenaming(null)}>
-                Abbrechen
+                {t('common.cancel')}
               </button>
             </form>
           ) : (
@@ -263,7 +269,7 @@ function Pools({
                 disabled={busy}
                 onClick={() => setRenaming({ poolId: pool.poolId, name: pool.name })}
               >
-                Umbenennen
+                {t('participants.renameButton')}
               </button>
               <button
                 type="button"
@@ -271,7 +277,7 @@ function Pools({
                 disabled={busy}
                 onClick={() => remove(pool.poolId, pool.name)}
               >
-                Entfernen
+                {t('participants.removeButton')}
               </button>
             </div>
           )}
@@ -292,7 +298,7 @@ function Pools({
       ))}
       <form onSubmit={create} className="stack">
         <label className="field">
-          <span className="label">Neues Gleis</span>
+          <span className="label">{t('participants.newPoolLabel')}</span>
           <input value={name} onChange={(e) => setName(e.target.value)} maxLength={60} required />
         </label>
         <div className="checks">
@@ -308,7 +314,7 @@ function Pools({
           ))}
         </div>
         <button type="submit" disabled={busy}>
-          Gleis anlegen
+          {t('participants.createPoolButton')}
         </button>
       </form>
     </section>

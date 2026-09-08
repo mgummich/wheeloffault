@@ -39,7 +39,7 @@ describe('eligibleMembers', () => {
       s,
     );
 
-    expect(() => reactivateMember(s, 'm1', now)).toThrow(/Name existiert bereits/);
+    expect(() => reactivateMember(s, 'm1', now)).toThrow(/name already exists/);
   });
 });
 
@@ -97,9 +97,7 @@ describe('calculateWeights', () => {
   it('all-zero weights are an error, not a spin', () => {
     const s = team(['a']);
     const immune = replay(grantImmunity(s, 'm1', 'x', now), s);
-    expect(() => calculateWeights(immune, eligibleMembers(immune, null))).toThrow(
-      /Gewichte sind 0/,
-    );
+    expect(() => calculateWeights(immune, eligibleMembers(immune, null))).toThrow(/weights are 0/);
   });
 
   it('applies modifiers in the fixed order and records factors', async () => {
@@ -167,7 +165,8 @@ describe('commitSpin / revealSpin', () => {
     await expect(
       commitSpin(committed, { spinId: 's2', poolId: null, serverSeed: seed, now }),
     ).rejects.toMatchObject({
-      code: 'conflict',
+      code: 'spin_already_pending',
+      status: 'conflict',
       details: { spinId: 's1' },
     });
   });
@@ -176,7 +175,8 @@ describe('commitSpin / revealSpin', () => {
     const s = await runSpin(team(['a', 'b']), 's1', 'cs');
     expect(await revealSpin(s, { spinId: 's1', clientSeed: 'cs', now })).toEqual([]);
     await expect(revealSpin(s, { spinId: 's1', clientSeed: 'other', now })).rejects.toMatchObject({
-      code: 'conflict',
+      code: 'spin_already_revealed',
+      status: 'conflict',
     });
   });
 
@@ -188,7 +188,7 @@ describe('commitSpin / revealSpin', () => {
     );
     const committed = replay(tampered, s);
     await expect(revealSpin(committed, { spinId: 's1', clientSeed: 'cs', now })).rejects.toThrow(
-      /Commitment/,
+      /commitment/,
     );
   });
 

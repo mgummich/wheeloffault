@@ -25,13 +25,13 @@ Ein einziges npm-Paket, drei Quellordner:
 
 | Ordner        | Läuft in        | Darf importieren aus | Inhalt |
 |---------------|-----------------|----------------------|--------|
-| `src/domain`  | Browser + Node  | nur `src/domain`     | Events, Zustandsaufbau, Fairness, Projektionen. Pure Funktionen, keine I/O. |
+| `src/domain`  | Browser + Node  | nur `src/domain`     | Events, Zustandsaufbau, Fairness, Projektionen, öffentliche HTTP-Ansichten (`views.ts`). Pure Funktionen, keine I/O. |
 | `src/server`  | Node            | `src/domain`         | HTTP-Server, Event-Store (SQLite), Command-Handler, SSE. |
 | `src/web`     | Browser         | `src/domain`         | React-Oberfläche, Animation, Service Worker, Verifier-UI. |
 
-Ausnahme: `src/web` importiert zusätzlich **nur Typen** aus
-`src/server/views.ts` (`TeamView`, `SpinView`, …) und die pure Funktion
-`teamView`/`spinView` für den Session-Modus — beides ohne Node-I/O.
+`src/web` nutzt `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
+`spinView`) sowohl für die HTTP-Antwortformen als auch für den Session-Modus
+— keine Ausnahme mehr nötig, die Datei liegt in der Domäne.
 
 Die Domäne kennt weder HTTP noch SQLite noch React. Der Fairness-Verifier im
 Browser ist buchstäblich dieselbe Funktion wie auf dem Server.
@@ -128,7 +128,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
    commitment = SHA-256( canonicalJson({ serverSeed, nonce, participants }) )
    → SpinCommitted { commitment, nonce, participants (mit Gewichten), serverSeed }
    Der serverSeed liegt im Event (sonst überlebt ein offener Spin keinen Neustart),
-   wird aber vor dem Reveal nie über HTTP ausgeliefert (`views.ts`). Wer die
+   wird aber vor dem Reveal nie über HTTP ausgeliefert (`domain/views.ts`). Wer die
    Datenbank lesen kann, kann das Ergebnis vorhersagen – die Datenbank ist Vertrauensbasis.
 4. Client liefert clientSeed (beliebiger String, Standard: 16 Zufallsbytes hex)
 5. digest = HMAC-SHA-256(key = serverSeed, msg = `${commitment}:${clientSeed}:${nonce}`)
@@ -301,9 +301,9 @@ share.ts         Teams-Karte (Canvas-PNG) + ShareDialog.tsx (natives <dialog>)
 PWA: `manifest.webmanifest` + handgeschriebener Service Worker
 (App-Shell-Cache; `/api` wird nie angefasst, Historie kommt immer vom Server).
 
-`src/web` importiert aus `src/server/views.ts` ausschließlich Typen
-(`TeamView`, `SpinView`) und die puren View-Funktionen – das ist der
-HTTP-Vertrag, kein Serverstaat (siehe Tabelle in Abschnitt 1).
+`src/web` importiert aus `src/domain/views.ts` Typen (`TeamView`, `SpinView`)
+und die puren View-Funktionen – das ist der HTTP-Vertrag, kein Serverstaat
+(siehe Tabelle in Abschnitt 1).
 
 ## 10. Deployment
 

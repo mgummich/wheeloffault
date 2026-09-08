@@ -1,11 +1,19 @@
-import type { SpinView } from '../server/views.ts';
+import type { SpinView } from '../domain/views.ts';
 import { dateTime, percent, probabilityOf, spinLabel } from './format.ts';
+import { t } from './i18n/index.ts';
 
 export type RevealedSpin = SpinView & { reveal: NonNullable<SpinView['reveal']> };
 
 export function shareText(teamName: string, spin: RevealedSpin, name: string): string {
   const prob = percent(probabilityOf(spin.participants, spin.reveal.selectedMemberId));
-  return `Schuldrad · Zug ${spinLabel(spin.nonce)}\nSchuldig: ${name} (${prob})\nTeam: ${teamName} · ${dateTime(spin.reveal.revealedAt)}\nCommit ${spin.commitment.slice(0, 12)}… – im Browser nachprüfbar.`;
+  return t('share.text', {
+    spin: spinLabel(spin.nonce),
+    name,
+    prob,
+    team: teamName,
+    date: dateTime(spin.reveal.revealedAt),
+    commit: spin.commitment.slice(0, 12),
+  });
 }
 
 export function shareFileName(spin: RevealedSpin): string {
@@ -20,7 +28,7 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
   c.width = W;
   c.height = H;
   const g = c.getContext('2d');
-  if (!g) return Promise.reject(new Error('Canvas nicht verfügbar'));
+  if (!g) return Promise.reject(new Error(t('share.canvasUnavailable')));
   const prob = percent(probabilityOf(spin.participants, spin.reveal.selectedMemberId));
   const when = dateTime(spin.reveal.revealedAt);
   const F = 'system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif';
@@ -36,9 +44,13 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
   g.fillText('SCHULDRAD', 72, 96);
   g.fillStyle = '#B8BEC6';
   g.font = `600 22px ${F}`;
-  g.fillText(`${teamName.toUpperCase()}  ·  ZUG ${spinLabel(spin.nonce)}`, 72, 136);
+  g.fillText(
+    t('share.cardTeamZug', { team: teamName.toUpperCase(), spin: spinLabel(spin.nonce) }),
+    72,
+    136,
+  );
   g.font = `600 24px ${F}`;
-  g.fillText('NÄCHSTER HALT: VERANTWORTUNG', 72, 226);
+  g.fillText(t('share.cardNextStop'), 72, 226);
 
   // Name as split-flap tiles.
   const cells = [...name.toUpperCase()].slice(0, 18);
@@ -65,10 +77,10 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
 
   g.fillStyle = '#F7F7F5';
   g.font = `600 28px ${F}`;
-  g.fillText(`Schuldig  ·  Wahrscheinlichkeit ${prob}`, 72, 420);
+  g.fillText(t('share.cardGuiltyProb', { prob }), 72, 420);
   g.fillStyle = '#8A9199';
   g.font = `400 22px ${F}`;
-  g.fillText(`${when}  ·  Ergebnis vor der Animation festgelegt`, 72, 462);
+  g.fillText(t('share.cardWhenNote', { when }), 72, 462);
   g.strokeStyle = '#3A4147';
   g.lineWidth = 2;
   g.beginPath();
@@ -94,7 +106,7 @@ export function renderShareCard(teamName: string, spin: RevealedSpin, name: stri
 
   return new Promise((resolve, reject) => {
     c.toBlob(
-      (blob) => (blob ? resolve(blob) : reject(new Error('PNG-Export fehlgeschlagen'))),
+      (blob) => (blob ? resolve(blob) : reject(new Error(t('share.pngExportFailed')))),
       'image/png',
     );
   });

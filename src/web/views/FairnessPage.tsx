@@ -1,11 +1,13 @@
 import { type FormEvent, useEffect, useState } from 'react';
 import type { FairnessPolicy } from '../../domain/fairness/policy.ts';
-import type { TeamView } from '../../server/views.ts';
+import type { TeamView } from '../../domain/views.ts';
 import { api, errorMessage } from '../api.ts';
+import { t as translate, useI18n } from '../i18n/index.ts';
 
 type Props = { team: TeamView; setTeam: (t: TeamView) => void };
 
 export function FairnessPage({ team, setTeam }: Props) {
+  const { t } = useI18n();
   const [policy, setPolicy] = useState<FairnessPolicy>(team.policy);
   const [dirty, setDirty] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -37,12 +39,8 @@ export function FairnessPage({ team, setTeam }: Props) {
 
   return (
     <>
-      <h1>Fairness</h1>
-      <p className="lede">
-        Jede Gewichtsänderung steht hier. Gamification, Punkte und Auszeichnungen ändern nie
-        Wahrscheinlichkeiten. Die tatsächlichen Gewichte jeder Ziehung sind im Nachweis
-        festgeschrieben.
-      </p>
+      <h1>{t('fairness.title')}</h1>
+      <p className="lede">{t('fairness.lede')}</p>
       <p className="notice policy-summary">{fairnessSummary(policy, team)}</p>
 
       <form onSubmit={save} className="stack policy">
@@ -54,13 +52,13 @@ export function FairnessPage({ team, setTeam }: Props) {
                 checked={policy.pity.enabled}
                 onChange={(e) => update('pity', { enabled: e.target.checked })}
               />{' '}
-              Pity
+              {t('fairness.pity')}
             </label>
           </legend>
-          <p className="field-status">{policy.pity.enabled ? 'Aktiv' : 'Aus'}</p>
-          <p className="muted">Gewicht steigt pro Ziehung ohne Schuld seit der letzten Schuld.</p>
+          <p className="field-status">{policy.pity.enabled ? t('common.on') : t('common.off')}</p>
+          <p className="muted">{t('fairness.pityDesc')}</p>
           <NumberField
-            label="% pro Ziehung"
+            label={t('fairness.percentPerSpinLabel')}
             value={policy.pity.percentPerSpin}
             onChange={(n) => update('pity', { percentPerSpin: n })}
             min={0}
@@ -76,13 +74,15 @@ export function FairnessPage({ team, setTeam }: Props) {
                 checked={policy.cooldown.enabled}
                 onChange={(e) => update('cooldown', { enabled: e.target.checked })}
               />{' '}
-              Cooldown
+              {t('fairness.cooldown')}
             </label>
           </legend>
-          <p className="field-status">{policy.cooldown.enabled ? 'Aktiv' : 'Aus'}</p>
-          <p className="muted">Wer zuletzt schuldig war, hat für N Ziehungen Gewicht 0.</p>
+          <p className="field-status">
+            {policy.cooldown.enabled ? t('common.on') : t('common.off')}
+          </p>
+          <p className="muted">{t('fairness.cooldownDesc')}</p>
           <NumberField
-            label="Ziehungen"
+            label={t('fairness.spinsLabel')}
             value={policy.cooldown.spins}
             onChange={(n) => update('cooldown', { spins: n })}
             min={0}
@@ -98,21 +98,23 @@ export function FairnessPage({ team, setTeam }: Props) {
                 checked={policy.exhaustion.enabled}
                 onChange={(e) => update('exhaustion', { enabled: e.target.checked })}
               />{' '}
-              Erschöpfung
+              {t('fairness.exhaustion')}
             </label>
           </legend>
-          <p className="field-status">{policy.exhaustion.enabled ? 'Aktiv' : 'Aus'}</p>
-          <p className="muted">Gewicht sinkt pro Schuldspruch innerhalb der letzten N Ziehungen.</p>
+          <p className="field-status">
+            {policy.exhaustion.enabled ? t('common.on') : t('common.off')}
+          </p>
+          <p className="muted">{t('fairness.exhaustionDesc')}</p>
           <div className="row">
             <NumberField
-              label="% pro Schuld"
+              label={t('fairness.percentPerSelectionLabel')}
               value={policy.exhaustion.percentPerSelection}
               onChange={(n) => update('exhaustion', { percentPerSelection: n })}
               min={0}
               max={100}
             />
             <NumberField
-              label="Fenster"
+              label={t('fairness.windowLabel')}
               value={policy.exhaustion.window}
               onChange={(n) => update('exhaustion', { window: n })}
               min={1}
@@ -129,19 +131,21 @@ export function FairnessPage({ team, setTeam }: Props) {
                 checked={policy.newcomer.enabled}
                 onChange={(e) => update('newcomer', { enabled: e.target.checked })}
               />{' '}
-              Neuzugang
+              {t('fairness.newcomer')}
             </label>
           </legend>
-          <p className="field-status">{policy.newcomer.enabled ? 'Aktiv' : 'Aus'}</p>
-          <p className="muted">Faktor (1000 = 1×) für Mitglieder mit weniger als N Teilnahmen.</p>
+          <p className="field-status">
+            {policy.newcomer.enabled ? t('common.on') : t('common.off')}
+          </p>
+          <p className="muted">{t('fairness.newcomerDesc')}</p>
           <div className="row">
             <NumberField
-              label="Faktor"
+              label={t('fairness.factorLabel')}
               value={policy.newcomer.factor}
               onChange={(n) => update('newcomer', { factor: n })}
             />
             <NumberField
-              label="Teilnahmen"
+              label={t('fairness.participationsLabel')}
               value={policy.newcomer.spins}
               onChange={(n) => update('newcomer', { spins: n })}
               min={0}
@@ -158,11 +162,11 @@ export function FairnessPage({ team, setTeam }: Props) {
                 checked={policy.manual.enabled}
                 onChange={(e) => update('manual', { enabled: e.target.checked })}
               />{' '}
-              Manuell
+              {t('fairness.manual')}
             </label>
           </legend>
-          <p className="field-status">{policy.manual.enabled ? 'Aktiv' : 'Aus'}</p>
-          <p className="muted">Expliziter Faktor je Mitglied (1000 = 1×, 0 = ausgeschlossen).</p>
+          <p className="field-status">{policy.manual.enabled ? t('common.on') : t('common.off')}</p>
+          <p className="muted">{t('fairness.manualDesc')}</p>
           <div className="checks">
             {team.members.map((m) => (
               <NumberField
@@ -178,65 +182,67 @@ export function FairnessPage({ team, setTeam }: Props) {
         </fieldset>
 
         <fieldset>
-          <legend>Immunität (immer aktiv)</legend>
-          <p className="muted">
-            Eine Immunität setzt das Gewicht bei der nächsten Ziehung auf 0 und wird dabei
-            verbraucht. Vergabe unter „Teilnehmer“.
-          </p>
+          <legend>{t('fairness.immunityLegend')}</legend>
+          <p className="muted">{t('fairness.immunityDesc')}</p>
         </fieldset>
 
         <div className="actions">
           <button type="submit" className="primary">
-            Richtlinie speichern
+            {t('fairness.saveButton')}
           </button>
-          {saved && <span className="chip ok">gespeichert</span>}
+          {saved && <span className="chip ok">{t('fairness.savedChip')}</span>}
         </div>
         {error && <p className="error-text">{error}</p>}
       </form>
 
       <section>
-        <h2>So wird gezogen</h2>
+        <h2>{t('fairness.protocolHeading')}</h2>
         <ol className="protocol">
-          <li>
-            Der Server berechnet die Gewichte aller aktiven Teilnehmer nach dieser Richtlinie.
-          </li>
-          <li>
-            Er erzeugt einen geheimen Server-Seed und veröffentlicht SHA-256(Seed, Nonce, Gewichte)
-            als Commitment.
-          </li>
-          <li>Der Browser liefert einen Client-Seed, den der Server vorher nicht kannte.</li>
-          <li>
-            HMAC-SHA-256(Server-Seed, Commitment:Client-Seed:Nonce) bestimmt den Punkt auf der
-            Gewichtslinie.
-          </li>
-          <li>
-            Das Ergebnis wird gespeichert, dann erst dreht sich das Rad. Jede Ziehung ist im Browser
-            nachrechenbar.
-          </li>
+          <li>{t('fairness.protocol1')}</li>
+          <li>{t('fairness.protocol2')}</li>
+          <li>{t('fairness.protocol3')}</li>
+          <li>{t('fairness.protocol4')}</li>
+          <li>{t('fairness.protocol5')}</li>
         </ol>
       </section>
     </>
   );
 }
 
+/** Pure so it stays unit-testable outside React; uses the module-level `t`
+ * directly since it has no component tree to subscribe from. */
 export function fairnessSummary(policy: FairnessPolicy, team: TeamView): string {
+  const t = translate;
   const parts: string[] = [];
-  if (policy.pity.enabled) parts.push(`Pity +${policy.pity.percentPerSpin} %`);
-  if (policy.cooldown.enabled) parts.push(`Cooldown ${policy.cooldown.spins}`);
+  if (policy.pity.enabled) parts.push(t('fairness.summaryPity', { n: policy.pity.percentPerSpin }));
+  if (policy.cooldown.enabled)
+    parts.push(t('fairness.summaryCooldown', { n: policy.cooldown.spins }));
   if (policy.exhaustion.enabled) {
-    parts.push(`Erschöpfung -${policy.exhaustion.percentPerSelection} %`);
+    parts.push(t('fairness.summaryExhaustion', { n: policy.exhaustion.percentPerSelection }));
   }
-  if (policy.newcomer.enabled) parts.push(`Neuzugang ${policy.newcomer.factor / 1000}×`);
+  if (policy.newcomer.enabled) {
+    parts.push(t('fairness.summaryNewcomer', { n: policy.newcomer.factor / 1000 }));
+  }
   if (policy.manual.enabled) {
     const changed = Object.values(policy.manual.factors).filter((f) => f !== 1000).length;
-    if (changed > 0) parts.push(`${changed} manuelle Anpassung${changed === 1 ? '' : 'en'}`);
+    if (changed > 0) {
+      parts.push(
+        changed === 1
+          ? t('fairness.summaryManual.one')
+          : t('fairness.summaryManual.many', { n: changed }),
+      );
+    }
   }
   if (team.immunities.length > 0) {
-    parts.push(`${team.immunities.length} Immunität${team.immunities.length === 1 ? '' : 'en'}`);
+    parts.push(
+      team.immunities.length === 1
+        ? t('fairness.summaryImmunity.one')
+        : t('fairness.summaryImmunity.many', { n: team.immunities.length }),
+    );
   }
   return parts.length > 0
-    ? `Beim nächsten Speichern aktiv: ${parts.join(', ')}.`
-    : 'Keine optionalen Modifier aktiv. Alle aktiven Teilnehmer starten gleich gewichtet.';
+    ? t('fairness.summaryPrefix', { parts: parts.join(', ') })
+    : t('fairness.summaryNone');
 }
 
 function NumberField({

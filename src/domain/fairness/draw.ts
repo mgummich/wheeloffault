@@ -13,7 +13,9 @@ export function toHex(bytes: Uint8Array): string {
 }
 
 export function fromHex(hex: string): Uint8Array<ArrayBuffer> {
-  if (hex.length % 2 !== 0 || /[^0-9a-f]/i.test(hex)) throw new DomainError('Ungültiges Hex');
+  if (hex.length % 2 !== 0 || /[^0-9a-f]/i.test(hex)) {
+    throw new DomainError('Invalid hex', 'invalid_hex');
+  }
   return new Uint8Array((hex.match(/../g) ?? []).map((h) => Number.parseInt(h, 16)));
 }
 
@@ -69,15 +71,18 @@ export function drawMessage(commitment: string, clientSeed: string, nonce: numbe
 }
 
 export function assertValidWeights(participants: WeightedParticipant[]): void {
-  if (participants.length === 0) throw new DomainError('Keine Teilnehmer');
+  if (participants.length === 0) throw new DomainError('No participants', 'no_participants');
   let total = 0;
   for (const p of participants) {
     if (!Number.isSafeInteger(p.weight) || p.weight < 0) {
-      throw new DomainError(`Ungültiges Gewicht für ${p.memberId}: ${p.weight}`);
+      throw new DomainError(`Invalid weight for ${p.memberId}: ${p.weight}`, 'invalid_weight', {
+        memberId: p.memberId,
+        weight: p.weight,
+      });
     }
     total += p.weight;
   }
-  if (total === 0) throw new DomainError('Alle Gewichte sind 0');
+  if (total === 0) throw new DomainError('All weights are 0', 'all_weights_zero');
 }
 
 /**
@@ -95,7 +100,7 @@ export function selectParticipant(digestHex: string, participants: WeightedParti
     cumulative += BigInt(p.weight);
     if (point < cumulative) return p.memberId;
   }
-  throw new DomainError('Ziehung ohne Ergebnis – darf nicht passieren');
+  throw new DomainError('Draw without a result – must not happen', 'spin_without_result');
 }
 
 export type SpinProof = {

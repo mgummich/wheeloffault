@@ -12,8 +12,12 @@ const MAX_NAME = 60;
 
 export function cleanName(raw: string): string {
   const name = raw.trim().replace(/\s+/g, ' ');
-  if (name.length === 0) throw new DomainError('Name darf nicht leer sein');
-  if (name.length > MAX_NAME) throw new DomainError(`Name länger als ${MAX_NAME} Zeichen`);
+  if (name.length === 0) throw new DomainError('Name must not be empty', 'name_empty');
+  if (name.length > MAX_NAME) {
+    throw new DomainError(`Name longer than ${MAX_NAME} characters`, 'name_too_long', {
+      max: MAX_NAME,
+    });
+  }
   return name;
 }
 
@@ -55,15 +59,18 @@ export function reactivateMember(state: TeamState, memberId: string, now: string
       other.active &&
       other.name.toLowerCase() === m.name.toLowerCase(),
   );
-  if (duplicate)
-    throw new DomainError('Aktiver Teilnehmer mit diesem Name existiert bereits', 'conflict');
+  if (duplicate) {
+    throw new DomainError('An active member with this name already exists', 'member_name_conflict');
+  }
   return [{ type: 'MemberReactivated', memberId, at: now }];
 }
 
 export function changePolicy(state: TeamState, policy: FairnessPolicy, now: string): DomainEvent[] {
   for (const id of Object.keys(policy.manual.factors)) {
     if (!state.members.some((m) => m.memberId === id)) {
-      throw new DomainError(`manual.factors: Mitglied ${id} unbekannt`);
+      throw new DomainError(`manual.factors: unknown member ${id}`, 'unknown_policy_member', {
+        memberId: id,
+      });
     }
   }
   return [{ type: 'FairnessPolicyChanged', policy: normalizePolicy(policy), at: now }];
@@ -78,7 +85,7 @@ export function createPool(
 ): DomainEvent[] {
   const clean = cleanName(name);
   if (state.pools.some((p) => p.name.toLowerCase() === clean.toLowerCase())) {
-    throw new DomainError('Pool mit diesem Namen existiert bereits', 'conflict');
+    throw new DomainError('A pool with this name already exists', 'pool_name_conflict');
   }
   return [
     { type: 'PoolCreated', poolId, name: clean, at: now },
@@ -98,7 +105,7 @@ export function changePoolMembers(
   now: string,
 ): DomainEvent[] {
   if (!state.pools.some((p) => p.poolId === poolId)) {
-    throw new DomainError(`Pool ${poolId} unbekannt`, 'not_found');
+    throw new DomainError(`Pool ${poolId} unknown`, 'pool_not_found', { poolId });
   }
   const unique = [...new Set(memberIds)];
   for (const id of unique) findMember(state, id);
@@ -112,20 +119,20 @@ export function renamePool(
   now: string,
 ): DomainEvent[] {
   const pool = state.pools.find((p) => p.poolId === poolId);
-  if (!pool) throw new DomainError(`Pool ${poolId} unbekannt`, 'not_found');
+  if (!pool) throw new DomainError(`Pool ${poolId} unknown`, 'pool_not_found', { poolId });
   const clean = cleanName(name);
   if (pool.name === clean) return [];
   if (
     state.pools.some((p) => p.poolId !== poolId && p.name.toLowerCase() === clean.toLowerCase())
   ) {
-    throw new DomainError('Pool mit diesem Namen existiert bereits', 'conflict');
+    throw new DomainError('A pool with this name already exists', 'pool_name_conflict');
   }
   return [{ type: 'PoolRenamed', poolId, name: clean, at: now }];
 }
 
 export function deletePool(state: TeamState, poolId: string, now: string): DomainEvent[] {
   if (!state.pools.some((p) => p.poolId === poolId)) {
-    throw new DomainError(`Pool ${poolId} unbekannt`, 'not_found');
+    throw new DomainError(`Pool ${poolId} unknown`, 'pool_not_found', { poolId });
   }
   return [{ type: 'PoolDeleted', poolId, at: now }];
 }
@@ -143,7 +150,7 @@ export function grantImmunity(
 export function revokeImmunity(state: TeamState, memberId: string, now: string): DomainEvent[] {
   findMember(state, memberId);
   if (!state.immunities.some((i) => i.memberId === memberId)) {
-    throw new DomainError('Keine Immunität vorhanden', 'not_found');
+    throw new DomainError('No immunity present', 'no_immunity');
   }
   return [{ type: 'ImmunityRevoked', memberId, at: now }];
 }
@@ -155,8 +162,9 @@ export function appealGuilt(
   now: string,
 ): DomainEvent[] {
   const spin = findSpin(state, spinId);
-  if (!spin.reveal) throw new DomainError('Ziehung noch nicht abgeschlossen');
-  if (spin.appeal) throw new DomainError('Einspruch wurde bereits eingelegt', 'conflict');
+  if (!spin.reveal) throw new DomainError('Draw not yet completed', 'spin_not_revealed');
+  if (spin.appeal)
+    throw new DomainError('An appeal has already been filed', 'appeal_already_filed');
   return [{ type: 'GuiltAppealed', spinId, reason: reason.trim().slice(0, 500), at: now }];
 }
 
@@ -167,10 +175,10 @@ export function decideAppeal(
   now: string,
 ): DomainEvent[] {
   const spin = findSpin(state, spinId);
-  if (!spin.appeal) throw new DomainError('Kein Einspruch vorhanden');
+  if (!spin.appeal) throw new DomainError('No appeal present', 'no_appeal');
   if (spin.appeal.outcome === outcome) return [];
   if (spin.appeal.outcome !== 'open') {
-    throw new DomainError('Einspruch wurde bereits entschieden', 'conflict');
+    throw new DomainError('The appeal has already been decided', 'appeal_already_decided');
   }
   return [{ type: outcome === 'upheld' ? 'AppealUpheld' : 'AppealRejected', spinId, at: now }];
 }

@@ -68,7 +68,7 @@ export function validatePolicy(input: unknown): string | null {
 /** Throwing variant of validatePolicy that narrows the type for handlers. */
 export function assertPolicy(input: unknown): asserts input is FairnessPolicy {
   const problem = validatePolicy(input);
-  if (problem !== null) throw new DomainError(problem);
+  if (problem !== null) throw new DomainError(problem, 'policy_invalid');
 }
 
 /** Drops unknown fields so only the validated shape is persisted. */

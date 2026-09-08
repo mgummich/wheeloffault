@@ -1,8 +1,9 @@
 import { type FormEvent, useState } from 'react';
 import { type Verification, verifySpin } from '../../domain/fairness/draw.ts';
-import type { TeamView } from '../../server/views.ts';
+import type { TeamView } from '../../domain/views.ts';
 import { api, errorMessage } from '../api.ts';
 import { dateTime, factor, percent, probabilityOf, spinLabel } from '../format.ts';
+import { useI18n } from '../i18n/index.ts';
 import { href } from '../route.ts';
 
 type Props = {
@@ -12,12 +13,13 @@ type Props = {
 };
 
 export function SpinDetailPage({ team, setTeam, spinId }: Props) {
+  const { t } = useI18n();
   const spin = team.spins.find((s) => s.spinId === spinId);
   const [verification, setVerification] = useState<Verification | null>(null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  if (!spin) return <p className="error-text">Ziehung {spinId} unbekannt.</p>;
+  if (!spin) return <p className="error-text">{t('spinDetail.unknown', { id: spinId })}</p>;
   const nameOf = (id: string) => team.members.find((m) => m.memberId === id)?.name ?? id;
   const reveal = spin.reveal;
   const proof = reveal
@@ -45,32 +47,34 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
 
   return (
     <>
-      <p className="label">Ziehung</p>
-      <h1>Zug {spinLabel(spin.nonce)}</h1>
+      <p className="label">{t('nav.spin')}</p>
+      <h1>{t('spinDetail.title', { label: spinLabel(spin.nonce) })}</h1>
       <p className="muted">
-        Festgelegt {dateTime(spin.committedAt)}
-        {reveal && <> · Aufgedeckt {dateTime(reveal.revealedAt)}</>}
+        {t('spinDetail.committedAt', { date: dateTime(spin.committedAt) })}
+        {reveal && <> · {t('spinDetail.revealedAt', { date: dateTime(reveal.revealedAt) })}</>}
         {reveal && (
           <>
             {' '}
-            · Schuldig:{' '}
+            · {t('spinDetail.guiltyPrefix')}{' '}
             <a href={href.bericht(team.teamId, reveal.selectedMemberId)}>
               {nameOf(reveal.selectedMemberId)}
             </a>
           </>
         )}
-        {spin.appeal?.outcome === 'upheld' && <span className="chip"> aufgehoben</span>}
+        {spin.appeal?.outcome === 'upheld' && (
+          <span className="chip"> {t('common.chipOverturned')}</span>
+        )}
       </p>
       {error && <p className="error-text">{error}</p>}
 
       <section>
-        <h2>Teilnehmer und Gewichte</h2>
+        <h2>{t('spinDetail.participantsHeading')}</h2>
         <table className="board">
           <thead>
             <tr>
-              <th>Name</th>
-              <th className="num">Gewicht</th>
-              <th className="num">Wahrscheinl.</th>
+              <th>{t('common.name')}</th>
+              <th className="num">{t('common.weight')}</th>
+              <th className="num">{t('common.probability')}</th>
               {spin.modifiers.map((m) => (
                 <th key={m.name} className="num">
                   {m.name}
@@ -99,25 +103,25 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
       </section>
 
       <section>
-        <h2>Nachweis</h2>
+        <h2>{t('spinDetail.proofHeading')}</h2>
         <table className="board kv mono">
           <tbody>
             <tr>
-              <th scope="row">Nonce</th>
+              <th scope="row">{t('spinDetail.nonce')}</th>
               <td>{spin.nonce}</td>
             </tr>
             <tr>
-              <th scope="row">Commitment</th>
+              <th scope="row">{t('spinDetail.commitment')}</th>
               <td>{spin.commitment}</td>
             </tr>
             {reveal ? (
               <>
                 <tr>
-                  <th scope="row">Server-Seed</th>
+                  <th scope="row">{t('spinDetail.serverSeed')}</th>
                   <td>{reveal.serverSeed}</td>
                 </tr>
                 <tr>
-                  <th scope="row">Client-Seed</th>
+                  <th scope="row">{t('spinDetail.clientSeed')}</th>
                   <td>{reveal.clientSeed}</td>
                 </tr>
                 <tr>
@@ -127,8 +131,8 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
               </>
             ) : (
               <tr>
-                <th scope="row">Server-Seed</th>
-                <td className="muted">wird erst nach dem Aufdecken veröffentlicht</td>
+                <th scope="row">{t('spinDetail.serverSeed')}</th>
+                <td className="muted">{t('spinDetail.serverSeedHidden')}</td>
               </tr>
             )}
           </tbody>
@@ -137,29 +141,26 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
           <div className="stack">
             <div className="actions">
               <button type="button" data-testid="verify-button" onClick={verify}>
-                Im Browser prüfen
+                {t('spinDetail.verifyButton')}
               </button>
               <button
                 type="button"
                 onClick={() => navigator.clipboard?.writeText(JSON.stringify(proof, null, 2))}
               >
-                Nachweis kopieren
+                {t('spinDetail.copyProofButton')}
               </button>
             </div>
             {verification && (
               <ul className="checks-list" data-testid="verify-result">
                 <Check
                   ok={verification.commitmentMatches}
-                  label="Commitment = SHA-256(Server-Seed, Nonce, Gewichte)"
+                  label={t('spinDetail.checkCommitment')}
                 />
-                <Check
-                  ok={verification.digestMatches}
-                  label="HMAC-SHA-256(Server-Seed, Commitment:Client-Seed:Nonce)"
-                />
-                <Check ok={verification.selectionMatches} label="Ergebnis folgt aus dem HMAC" />
+                <Check ok={verification.digestMatches} label={t('spinDetail.checkDigest')} />
+                <Check ok={verification.selectionMatches} label={t('spinDetail.checkSelection')} />
                 <li>
                   <strong>
-                    {verification.ok ? 'Ziehung gültig' : 'Ziehung NICHT reproduzierbar'}
+                    {verification.ok ? t('spinDetail.valid') : t('spinDetail.invalid')}
                   </strong>
                 </li>
               </ul>
@@ -170,16 +171,16 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
 
       {reveal && (
         <section>
-          <h2>Einspruch</h2>
+          <h2>{t('spinDetail.appealHeading')}</h2>
           {spin.appeal ? (
             <div className="stack">
               <p>
                 <span className="chip">
                   {spin.appeal.outcome === 'open'
-                    ? 'offen'
+                    ? t('common.chipOpen')
                     : spin.appeal.outcome === 'upheld'
-                      ? 'stattgegeben'
-                      : 'abgelehnt'}
+                      ? t('common.chipUpheld')
+                      : t('common.chipRejected')}
                 </span>{' '}
                 {spin.appeal.reason}
               </p>
@@ -190,13 +191,13 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
                     className="primary"
                     onClick={() => run(() => api.decideAppeal(team.teamId, spin.spinId, 'uphold'))}
                   >
-                    Stattgeben
+                    {t('spinDetail.upholdButton')}
                   </button>
                   <button
                     type="button"
                     onClick={() => run(() => api.decideAppeal(team.teamId, spin.spinId, 'reject'))}
                   >
-                    Ablehnen
+                    {t('spinDetail.rejectButton')}
                   </button>
                 </div>
               )}
@@ -204,7 +205,7 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
           ) : (
             <form onSubmit={appeal} className="stack">
               <label className="field">
-                <span className="label">Begründung</span>
+                <span className="label">{t('spinDetail.reasonLabel')}</span>
                 <input
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
@@ -212,7 +213,7 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
                   required
                 />
               </label>
-              <button type="submit">Einspruch einlegen</button>
+              <button type="submit">{t('spinDetail.fileAppealButton')}</button>
             </form>
           )}
         </section>
@@ -222,9 +223,13 @@ export function SpinDetailPage({ team, setTeam, spinId }: Props) {
 }
 
 function Check({ ok, label }: { ok: boolean; label: string }) {
+  const { t } = useI18n();
   return (
     <li>
-      <span className={`chip ${ok ? 'ok' : 'red'}`}>{ok ? 'OK' : 'FEHLER'}</span> {label}
+      <span className={`chip ${ok ? 'ok' : 'red'}`}>
+        {ok ? t('common.ok') : t('common.errorShort')}
+      </span>{' '}
+      {label}
     </li>
   );
 }

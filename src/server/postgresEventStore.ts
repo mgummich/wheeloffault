@@ -71,8 +71,7 @@ export async function openPostgresEventStore(connectionString: string): Promise<
         await client.query('ROLLBACK');
         if (
           err instanceof ConcurrencyError ||
-          (err instanceof Error &&
-            /duplicate key value violates unique constraint/.test(err.message))
+          (err instanceof Error && (err as Error & { code?: string }).code === '23505')
         ) {
           throw new ConcurrencyError(streamId, expectedVersion);
         }
@@ -83,8 +82,9 @@ export async function openPostgresEventStore(connectionString: string): Promise<
     },
 
     async streamsWithEvent(type: DomainEvent['type']): Promise<string[]> {
+      // Ordered by first occurrence, matching the SQLite adapter's ORDER BY position.
       const result = await pool.query<{ stream_id: string }>(
-        'SELECT DISTINCT stream_id FROM events WHERE type = $1 ORDER BY stream_id',
+        'SELECT stream_id FROM events WHERE type = $1 GROUP BY stream_id ORDER BY MIN(position)',
         [type],
       );
       return result.rows.map((r) => r.stream_id);
@@ -103,34 +103,56 @@ export async function openPostgresEventStore(connectionString: string): Promise<
   };
 }
 
+// Arbitrary fixed key for the session-level advisory lock guarding migrations
+// across concurrently booting instances.
+const MIGRATION_LOCK_KEY = 727_100_1;
+
 async function migrate(pool: pg.Pool) {
-  await pool.query(
-    'CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)',
-  );
-  const appliedResult = await pool.query<{ id: string }>('SELECT id FROM schema_migrations');
-  const applied = new Set(appliedResult.rows.map((r) => r.id));
-  for (const m of migrations) {
-    if (applied.has(m.id)) continue;
-    const client = await pool.connect();
+  const client = await pool.connect();
+  try {
+    await client.query('SELECT pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
     try {
-      await client.query('BEGIN');
-      await client.query(toPostgresMigration(m.sql));
-      await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
-        m.id,
-        new Date().toISOString(),
-      ]);
-      await client.query('COMMIT');
-    } catch (err) {
-      await client.query('ROLLBACK');
-      throw err;
+      await client.query(
+        'CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)',
+      );
+      const appliedResult = await client.query<{ id: string }>('SELECT id FROM schema_migrations');
+      const applied = new Set(appliedResult.rows.map((r) => r.id));
+      for (const m of migrations) {
+        if (applied.has(m.id)) continue;
+        try {
+          await client.query('BEGIN');
+          await client.query(toPostgresMigration(m.sql));
+          await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
+            m.id,
+            new Date().toISOString(),
+          ]);
+          await client.query('COMMIT');
+        } catch (err) {
+          await client.query('ROLLBACK');
+          throw err;
+        }
+      }
     } finally {
-      client.release();
+      await client.query('SELECT pg_advisory_unlock($1)', [MIGRATION_LOCK_KEY]);
     }
+  } finally {
+    client.release();
   }
 }
 
+const PORTING_RULES: [RegExp, string][] = [
+  [/position\s+INTEGER\s+PRIMARY\s+KEY\s+AUTOINCREMENT/, 'position   BIGSERIAL PRIMARY KEY'],
+  [/payload\s+TEXT\s+NOT\s+NULL/, 'payload    JSONB   NOT NULL'],
+];
+
+/** Ports SQLite migration SQL to Postgres. Throws rather than silently applying SQLite SQL. */
 function toPostgresMigration(sql: string): string {
-  return sql
-    .replace('position   INTEGER PRIMARY KEY AUTOINCREMENT', 'position   BIGSERIAL PRIMARY KEY')
-    .replace('payload    TEXT    NOT NULL', 'payload    JSONB   NOT NULL');
+  let ported = sql;
+  for (const [pattern, replacement] of PORTING_RULES) {
+    if (!pattern.test(ported)) {
+      throw new Error(`Migration porting rule did not match: ${pattern}`);
+    }
+    ported = ported.replace(pattern, replacement);
+  }
+  return ported;
 }

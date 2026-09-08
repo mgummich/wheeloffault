@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { TeamView } from '../server/views.ts';
+import type { TeamView } from '../domain/views.ts';
 import { api, errorMessage, rememberTeam, serverMode } from './api.ts';
 
 /**

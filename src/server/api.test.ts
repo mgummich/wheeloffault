@@ -1,4 +1,7 @@
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { type AddressInfo, connect } from 'node:net';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { StoredEvent } from '../domain/events.ts';
 import { verifySpin } from '../domain/fairness/draw.ts';
@@ -6,7 +9,7 @@ import type { MemberReport } from '../domain/projections/report.ts';
 import { createCommands } from './commands.ts';
 import { openEventStore } from './eventStore.ts';
 import { createHttpServer } from './http.ts';
-import type { SpinView, TeamView } from './views.ts';
+import type { SpinView, TeamView } from '../domain/views.ts';
 
 /** Boots the real HTTP server on an in-memory store; tests talk plain HTTP. */
 function boot() {
@@ -352,5 +355,55 @@ describe('API', () => {
     expect(text).toContain('event: appended');
     expect(text).toContain('"type":"MemberJoined"');
     await reader.cancel();
+  });
+});
+
+describe('static fallback', () => {
+  async function bootStatic() {
+    const dir = await mkdtemp(join(tmpdir(), 'schuldrad-static-'));
+    await mkdir(join(dir, 'assets'), { recursive: true });
+    await writeFile(join(dir, 'index.html'), '<html>shell</html>');
+    await writeFile(join(dir, 'assets', 'app.abc123.js'), 'console.log(1)');
+    const store = openEventStore(':memory:');
+    const commands = createCommands(store);
+    const http = createHttpServer(commands, dir);
+    await new Promise<void>((r) => http.server.listen(0, '127.0.0.1', r));
+    return { store, http, base: `http://127.0.0.1:${(http.server.address() as AddressInfo).port}` };
+  }
+
+  it('serves an existing hashed asset as immutable', async () => {
+    const ctx = await bootStatic();
+    try {
+      const res = await fetch(`${ctx.base}/assets/app.abc123.js`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('cache-control')).toBe('public, max-age=31536000, immutable');
+    } finally {
+      await new Promise<void>((r) => ctx.http.server.close(() => r()));
+      ctx.store.close();
+    }
+  });
+
+  it('404s a missing asset instead of falling back to the SPA shell', async () => {
+    const ctx = await bootStatic();
+    try {
+      const res = await fetch(`${ctx.base}/assets/missing.js`);
+      expect(res.status).toBe(404);
+    } finally {
+      await new Promise<void>((r) => ctx.http.server.close(() => r()));
+      ctx.store.close();
+    }
+  });
+
+  it('falls back to the SPA shell with non-immutable caching for a navigation path', async () => {
+    const ctx = await bootStatic();
+    try {
+      const res = await fetch(`${ctx.base}/teams/some-id`);
+      expect(res.status).toBe(200);
+      expect(await res.text()).toBe('<html>shell</html>');
+      expect(res.headers.get('cache-control')).toBe('no-cache');
+    } finally {
+      await new Promise<void>((r) => ctx.http.server.close(() => r()));
+      ctx.store.close();
+    }
   });
 });

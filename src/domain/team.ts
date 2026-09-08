@@ -151,6 +151,8 @@ export function applyEvent(state: TeamState, e: DomainEvent): TeamState {
       const idx = s.immunities.findIndex((i) => i.memberId === e.memberId);
       return { ...s, immunities: s.immunities.filter((_, i) => i !== idx) };
     }
+    default:
+      throw new DomainError(`Unknown event type: ${(e as DomainEvent).type}`, 'unknown_event_type');
   }
 }
 
@@ -176,13 +178,13 @@ function setAppealOutcome(spins: Spin[], spinId: string, outcome: Appeal['outcom
 
 export function findMember(state: TeamState, memberId: string): Member {
   const m = state.members.find((x) => x.memberId === memberId);
-  if (!m) throw new DomainError(`Mitglied ${memberId} unbekannt`, 'not_found');
+  if (!m) throw new DomainError(`Member ${memberId} unknown`, 'member_not_found', { memberId });
   return m;
 }
 
 export function findSpin(state: TeamState, spinId: string): Spin {
   const s = state.spins.find((x) => x.spinId === spinId);
-  if (!s) throw new DomainError(`Ziehung ${spinId} unbekannt`, 'not_found');
+  if (!s) throw new DomainError(`Spin ${spinId} unknown`, 'spin_not_found', { spinId });
   return s;
 }
 

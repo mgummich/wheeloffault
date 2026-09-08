@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { t } from './i18n/index.ts';
 
 export type Vis = 'wheel' | 'train' | 'board' | 'signal' | 'stamp' | 'timetable' | 'line';
 export type WheelStyle = 'db' | 'bunt' | 'nacht' | 'pastell';
@@ -52,33 +53,18 @@ export function useAnimSettings(): [AnimSettings, (patch: Partial<AnimSettings>)
   return [settings, update];
 }
 
-export const visLabels: Record<Vis, string> = {
-  wheel: 'Drehscheibe',
-  train: 'Zugeinfahrt',
-  board: 'Fallblattanzeige',
-  signal: 'Gleis & Signal',
-  stamp: 'Fahrkartenstempel',
-  timetable: 'Fahrplan-Rolle',
-  line: 'Gewichtslinie',
-};
+export function visLabel(vis: Vis): string {
+  return t(`anim.vis.${vis}`);
+}
 
-const visShort: Record<Vis, string> = {
-  wheel: 'Drehscheibe',
-  train: 'Zugeinfahrt',
-  board: 'Fallblatt',
-  signal: 'Signal',
-  stamp: 'Stempel',
-  timetable: 'Fahrplan',
-  line: 'Linie',
-};
+function visShort(vis: Vis): string {
+  return t(`anim.visShort.${vis}`);
+}
 
-const wheelShort: Record<WheelStyle, string> = {
-  db: 'Bahn',
-  bunt: 'Bunt',
-  nacht: 'Nacht',
-  pastell: 'Pastell',
-};
+function wheelShort(style: WheelStyle): string {
+  return t(`anim.wheelShort.${style}`);
+}
 
 export function animSummary(s: AnimSettings): string {
-  return visShort[s.vis] + (s.vis === 'wheel' ? ` · ${wheelShort[s.wheelStyle]}` : '');
+  return visShort(s.vis) + (s.vis === 'wheel' ? ` · ${wheelShort(s.wheelStyle)}` : '');
 }

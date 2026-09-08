@@ -1,9 +1,11 @@
 import { type FormEvent, useEffect, useState } from 'react';
-import type { TeamListEntry } from '../../server/views.ts';
+import type { TeamListEntry } from '../../domain/views.ts';
 import { api, errorMessage, recentTeams } from '../api.ts';
+import { useI18n } from '../i18n/index.ts';
 import { href, navigate } from '../route.ts';
 
 export function HomePage() {
+  const { t } = useI18n();
   const [teams, setTeams] = useState<TeamListEntry[]>([]);
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,19 +36,16 @@ export function HomePage() {
   return (
     <>
       <section className="hero">
-        <p className="label">Betriebszentrale</p>
-        <h1>Wer ist diesmal schuldig?</h1>
-        <p className="lede">
-          Nachvollziehbare Ziehungen nach Commit/Reveal-Verfahren, lückenlose Historie,
-          Schuldberichte nach Fahrgastrechte-Standard.
-        </p>
+        <p className="label">{t('home.label')}</p>
+        <h1>{t('home.title')}</h1>
+        <p className="lede">{t('home.lede')}</p>
       </section>
 
       <section className="split">
         <form onSubmit={create} className="stack">
-          <h2>Neues Team anlegen</h2>
+          <h2>{t('home.createHeading')}</h2>
           <label className="field">
-            <span className="label">Teamname</span>
+            <span className="label">{t('home.teamNameLabel')}</span>
             <input
               data-testid="create-team-input"
               value={name}
@@ -61,26 +60,26 @@ export function HomePage() {
             className="primary"
             disabled={busy}
           >
-            Team eröffnen
+            {t('home.createButton')}
           </button>
           {error && <p className="error-text">{error}</p>}
         </form>
 
         <div className="stack">
-          <h2>Abfahrten</h2>
-          {teams.length === 0 && <p className="muted">Noch keine Teams. Der Bahnsteig ist leer.</p>}
+          <h2>{t('home.departuresHeading')}</h2>
+          {teams.length === 0 && <p className="muted">{t('home.noTeams')}</p>}
           <table className="board">
             <tbody>
-              {teams.map((t) => (
-                <tr key={t.teamId}>
+              {teams.map((team) => (
+                <tr key={team.teamId}>
                   <td>
-                    <a href={href.team(t.teamId)}>{t.name}</a>
+                    <a href={href.team(team.teamId)}>{team.name}</a>
                   </td>
-                  <td className="num">{t.memberCount} aktiv</td>
-                  <td className="num">{t.spinCount} Ziehungen</td>
-                  {recent.some((r) => r.teamId === t.teamId) && (
+                  <td className="num">{t('home.memberCount', { n: team.memberCount })}</td>
+                  <td className="num">{t('home.spinCount', { n: team.spinCount })}</td>
+                  {recent.some((r) => r.teamId === team.teamId) && (
                     <td>
-                      <span className="chip">zuletzt</span>
+                      <span className="chip">{t('home.recentChip')}</span>
                     </td>
                   )}
                 </tr>

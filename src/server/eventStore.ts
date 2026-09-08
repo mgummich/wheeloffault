@@ -5,7 +5,7 @@ import { migrations } from './migrations.ts';
 
 export class ConcurrencyError extends Error {
   constructor(streamId: string, expectedVersion: number) {
-    super(`Stream ${streamId} wurde seit Version ${expectedVersion} verändert`);
+    super(`Stream ${streamId} changed since version ${expectedVersion}`);
     this.name = 'ConcurrencyError';
   }
 }

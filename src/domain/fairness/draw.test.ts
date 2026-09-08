@@ -63,11 +63,11 @@ describe('selectParticipant', () => {
   });
 
   it('rejects all-zero, negative and non-integer weights', () => {
-    expect(() => selectParticipant('00', [{ memberId: 'a', weight: 0 }])).toThrow(/Gewichte/);
-    expect(() => selectParticipant('00', [{ memberId: 'a', weight: -1 }])).toThrow(/Ungültig/);
-    expect(() => selectParticipant('00', [{ memberId: 'a', weight: 1.5 }])).toThrow(/Ungültig/);
+    expect(() => selectParticipant('00', [{ memberId: 'a', weight: 0 }])).toThrow(/weights/);
+    expect(() => selectParticipant('00', [{ memberId: 'a', weight: -1 }])).toThrow(/Invalid/);
+    expect(() => selectParticipant('00', [{ memberId: 'a', weight: 1.5 }])).toThrow(/Invalid/);
     expect(() => selectParticipant('00', [{ memberId: 'a', weight: Number.NaN }])).toThrow();
-    expect(() => selectParticipant('00', [])).toThrow(/Keine/);
+    expect(() => selectParticipant('00', [])).toThrow(/No participants/);
   });
 });
 

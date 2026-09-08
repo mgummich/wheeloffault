@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { SpinStyle, WheelStyle } from '../animSettings.ts';
+import { useI18n } from '../i18n/index.ts';
 import { DURATION_MS, ease, hashHex, targetRotation } from './anim.ts';
 import type { Participant, StageResult } from './stages.tsx';
 
@@ -16,14 +17,14 @@ type Props = {
 
 const R = 120;
 
-const statusLines = [
-  'Verspätung wird berechnet …',
-  'Grund: Signalstörung im Sprint',
-  'Wagenreihung abweichend',
-  'Bitte beachten Sie die Durchsagen',
-  'Zugbegleiter prüft Schuldzuweisung',
-  'Halt auf freier Strecke',
-];
+const statusKeys = [
+  'wheel.status1',
+  'wheel.status2',
+  'wheel.status3',
+  'wheel.status4',
+  'wheel.status5',
+  'wheel.status6',
+] as const;
 
 type Theme = {
   bg: string;
@@ -108,6 +109,7 @@ export function Wheel({
   tickSound,
   onFinished,
 }: Props) {
+  const { t } = useI18n();
   const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
   const drawn = participants.filter((p) => p.weight > 0);
   const total = drawn.reduce((s, p) => s + p.weight, 0);
@@ -267,17 +269,17 @@ export function Wheel({
     <div className="wheel-wrap">
       {/* Decorative status ticker: deliberately NOT a live region — the result has its own announcement. */}
       <div className="board-strip">
-        <span className="label">Zug</span>
+        <span className="label">{t('common.train')}</span>
         <span>SR {result ? String(result.nonce).padStart(4, '0') : '––––'}</span>
-        <span className="label">Nach</span>
-        <span>Verantwortung</span>
-        <span className="label">Status</span>
+        <span className="label">{t('wheel.toLabel')}</span>
+        <span>{t('common.responsibility')}</span>
+        <span className="label">{t('common.status')}</span>
         <span className={spinning ? 'blink' : ''}>
           {!result
-            ? 'Abfahrtbereit'
+            ? t('wheel.departureReady')
             : done
-              ? 'Angekommen'
-              : statusLines[status % statusLines.length]}
+              ? t('wheel.arrivedShort')
+              : t(statusKeys[status % statusKeys.length] ?? 'wheel.status1')}
         </span>
       </div>
       <div
@@ -320,7 +322,7 @@ export function Wheel({
           className="wheel"
           style={{ transform: `rotate(${rotation}deg)` }}
           role="img"
-          aria-label={`Drehscheibe mit ${segments.length} Abschnitten`}
+          aria-label={t('wheel.ariaLabel', { n: segments.length })}
         >
           {segments.map((s) => {
             const isWinner = done && s.index === winnerIndex;
@@ -366,7 +368,7 @@ export function Wheel({
       </div>
       {excluded.length > 0 && (
         <p className="muted small">
-          Fällt aus (Gewicht 0): {excluded.map((p) => p.name).join(', ')}
+          {t('wheel.excluded', { names: excluded.map((p) => p.name).join(', ') })}
         </p>
       )}
     </div>

@@ -24,7 +24,8 @@ export function createCommands(
 
   async function loadTeam(teamId: string): Promise<TeamState> {
     const events = await store.load(teamId);
-    if (events.length === 0) throw new DomainError(`Team ${teamId} unbekannt`, 'not_found');
+    if (events.length === 0)
+      throw new DomainError(`Team ${teamId} unknown`, 'team_not_found', { teamId });
     return replay(events);
   }
 

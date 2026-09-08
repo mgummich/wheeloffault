@@ -5,7 +5,8 @@ import { FACTOR_ONE, modifierOrder, type ParticipantContext } from './modifiers.
 
 export function eligibleMembers(state: TeamState, poolId: string | null): Member[] {
   const pool = poolId ? state.pools.find((p) => p.poolId === poolId) : null;
-  if (poolId && !pool) throw new DomainError(`Pool ${poolId} unbekannt`, 'not_found');
+  if (poolId && !pool)
+    throw new DomainError(`Pool ${poolId} unknown`, 'pool_not_found', { poolId });
   return state.members
     .filter((m) => m.active && (!pool || pool.memberIds.includes(m.memberId)))
     .sort((a, b) => (a.memberId < b.memberId ? -1 : 1));
@@ -55,7 +56,7 @@ export function calculateWeights(state: TeamState, members: Member[]): WeightRes
 }
 
 function weigh(state: TeamState, members: Member[], skipCooldown: boolean): WeightResult {
-  if (members.length === 0) throw new DomainError('Keine aktiven Teilnehmer');
+  if (members.length === 0) throw new DomainError('No active members', 'no_active_members');
   const contexts = members.map((m) => participantContext(state, m.memberId));
   const weights = new Map(members.map((m) => [m.memberId, FACTOR_ONE]));
   const modifiers: AppliedModifier[] = [];
@@ -68,7 +69,10 @@ function weigh(state: TeamState, members: Member[], skipCooldown: boolean): Weig
           ? FACTOR_ONE
           : modifier.factor(ctx, state.policy);
       if (!Number.isInteger(f) || f < 0) {
-        throw new DomainError(`Modifikator ${modifier.name} lieferte ungültigen Faktor ${f}`);
+        throw new DomainError(
+          `Modifier ${modifier.name} returned an invalid factor ${f}`,
+          'invalid_modifier_factor',
+        );
       }
       factors[ctx.memberId] = f;
     }
@@ -86,7 +90,7 @@ function weigh(state: TeamState, members: Member[], skipCooldown: boolean): Weig
     // Evaluate the fallback after all exclusions. Preserve modifier order and
     // rounding by replaying the calculation with neutral cooldown factors.
     if (!skipCooldown && state.policy.cooldown.enabled) return weigh(state, members, true);
-    throw new DomainError('Alle Gewichte sind 0 – niemand kann gezogen werden');
+    throw new DomainError('All weights are 0 – nobody can be drawn', 'all_weights_zero');
   }
   return { participants, modifiers };
 }

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { SpinView } from '../server/views.ts';
+import type { SpinView } from '../domain/views.ts';
 import { createSessionApi } from './sessionApi.ts';
 
 function memoryStorage(): Storage {

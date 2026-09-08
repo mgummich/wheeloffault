@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useI18n } from './i18n/index.ts';
 import { type RevealedSpin, renderShareCard, shareFileName, shareText } from './share.ts';
 
 type Props = {
@@ -14,6 +15,7 @@ type Props = {
  * focus restore on close come for free.
  */
 export function ShareDialog({ teamName, spin, selectedName, onClose, onToast }: Props) {
+  const { t } = useI18n();
   const [url, setUrl] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const blobRef = useRef<Blob | null>(null);
@@ -33,12 +35,12 @@ export function ShareDialog({ teamName, spin, selectedName, onClose, onToast }: 
         objectUrl = URL.createObjectURL(blob);
         setUrl(objectUrl);
       })
-      .catch(() => onToast('Bild konnte nicht erzeugt werden.', true));
+      .catch(() => onToast(t('share.imageFailed'), true));
     return () => {
       cancelled = true;
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [teamName, spin, selectedName, onToast]);
+  }, [teamName, spin, selectedName, onToast, t]);
 
   const download = () => {
     if (!url) return;
@@ -56,20 +58,20 @@ export function ShareDialog({ teamName, spin, selectedName, onClose, onToast }: 
         throw new Error('no clipboard');
       await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobRef.current })]);
       setCopied(true);
-      onToast('Bild kopiert – in Teams einfügen.');
+      onToast(t('share.imageCopied'));
       setTimeout(() => setCopied(false), 2200);
     } catch {
       download();
-      onToast('Kopieren nicht möglich – Bild wurde heruntergeladen.', true);
+      onToast(t('share.copyFailedDownloaded'), true);
     }
   };
 
   const copyText = async () => {
     try {
       await navigator.clipboard.writeText(shareText(teamName, spin, selectedName));
-      onToast('Text kopiert.');
+      onToast(t('share.textCopied'));
     } catch {
-      onToast('Kopieren nicht möglich.', true);
+      onToast(t('share.copyFailed'), true);
     }
   };
 
@@ -86,11 +88,11 @@ export function ShareDialog({ teamName, spin, selectedName, onClose, onToast }: 
       }}
     >
       <div className="share-header">
-        <h2 id="sr-share-h">Ergebnis für den Teams-Chat</h2>
+        <h2 id="sr-share-h">{t('share.dialogTitle')}</h2>
         <button
           type="button"
           className="share-close"
-          aria-label="Schließen"
+          aria-label={t('common.close')}
           onClick={() => dialogRef.current?.close()}
         >
           ×
@@ -98,19 +100,19 @@ export function ShareDialog({ teamName, spin, selectedName, onClose, onToast }: 
       </div>
       <div className="share-preview">
         <div className="share-image">
-          {url && <img src={url} alt="Ergebniskarte" />}
-          {!url && <div className="share-loading">Bild wird erzeugt …</div>}
+          {url && <img src={url} alt={t('share.imageAlt')} />}
+          {!url && <div className="share-loading">{t('share.imageLoading')}</div>}
         </div>
       </div>
       <div className="share-footer">
         <button type="button" className="primary share-copy" disabled={!url} onClick={copyImage}>
-          {copied ? 'Kopiert ✓' : 'Bild kopieren'}
+          {copied ? t('share.copiedLabel') : t('share.copyImageButton')}
         </button>
         <button type="button" className="share-download" disabled={!url} onClick={download}>
-          PNG herunterladen
+          {t('share.downloadButton')}
         </button>
         <button type="button" className="share-textcopy" onClick={copyText}>
-          Nur Text kopieren
+          {t('share.copyTextButton')}
         </button>
       </div>
     </dialog>

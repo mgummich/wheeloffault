@@ -1,6 +1,6 @@
 import type { FairnessPolicy } from '../domain/fairness/policy.ts';
 import type { MemberReport } from '../domain/projections/report.ts';
-import type { SpinView, TeamListEntry, TeamView } from '../server/views.ts';
+import type { SpinView, TeamListEntry, TeamView } from '../domain/views.ts';
 
 import { ApiError } from './apiError.ts';
 

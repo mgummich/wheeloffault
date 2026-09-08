@@ -22,7 +22,9 @@ export async function commitSpin(state: TeamState, input: CommitInput): Promise<
   if (existing) return { events: [], spinId: existing.spinId };
   const pending = pendingSpin(state);
   if (pending) {
-    throw new DomainError('Eine Ziehung läuft bereits', 'conflict', { spinId: pending.spinId });
+    throw new DomainError('A draw is already running', 'spin_already_pending', {
+      spinId: pending.spinId,
+    });
   }
   const members = eligibleMembers(state, input.poolId);
   const { participants, modifiers } = calculateWeights(state, members);
@@ -62,12 +64,15 @@ export async function revealSpin(state: TeamState, input: RevealInput): Promise<
   const spin = findSpin(state, input.spinId);
   if (spin.reveal) {
     if (spin.reveal.clientSeed === input.clientSeed) return [];
-    throw new DomainError('Ziehung wurde bereits mit anderem Client-Seed aufgedeckt', 'conflict');
+    throw new DomainError(
+      'Draw was already revealed with a different client seed',
+      'spin_already_revealed',
+    );
   }
   // Defensive: history must be self-consistent before we build on it.
   const expected = await commitmentOf(spin.serverSeed, spin.nonce, spin.participants);
   if (expected !== spin.commitment) {
-    throw new DomainError('Server-Seed passt nicht zum Commitment', 'conflict');
+    throw new DomainError('Server seed does not match the commitment', 'commitment_mismatch');
   }
   const digest = await hmacSha256Hex(
     spin.serverSeed,
