@@ -361,8 +361,18 @@ export const de: Record<MessageKey, string> = {
   'share.cardWhenNote': '{when}  ·  Ergebnis vor der Animation festgelegt',
   'share.pngExportFailed': 'PNG-Export fehlgeschlagen',
 
+  // ---------- auth ----------
+  'auth.title': 'Betriebssperre',
+  'auth.lede': 'Diese Strecke ist gesperrt. Betriebspasswort eingeben, um freizuschalten.',
+  'auth.passwordLabel': 'Passwort',
+  'auth.submitButton': 'Freigabe beantragen',
+  'auth.wrongPassword': 'Freigabe verweigert. Passwort prüfen.',
+  'auth.rateLimited': 'Zu viele Versuche. Bitte eine Minute warten.',
+  'auth.logoutButton': 'Schicht beenden',
+
   // ---------- api errors ----------
   'apiError.connectionFailed': 'Verbindung fehlgeschlagen. Bitte erneut versuchen.',
+  'error.unauthorized': 'Zugriff erfordert Anmeldung.',
   'error.name_empty': 'Name darf nicht leer sein.',
   'error.name_too_long': 'Name ist zu lang.',
   'error.member_name_conflict': 'Ein aktiver Teilnehmer mit diesem Namen existiert bereits.',

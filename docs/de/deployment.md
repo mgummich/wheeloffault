@@ -94,6 +94,61 @@ eingecheckte `src/web/.env.server`), was den Client vom
 | `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
+| `SCHULDRAD_PASSWORD` | — | optionales Betriebspasswort — siehe § 3a |
+| `SCHULDRAD_PASSWORD_FILE` | — | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind |
+| `SCHULDRAD_SECURE_COOKIES` | — | auf `1` setzen, um das `Secure`-Cookie-Attribut zu erzwingen — siehe § 3a |
+
+## § 3a Optionaler Passwortschutz
+
+Der Serverbetrieb kann ein einzelnes Betriebspasswort verlangen, bevor
+Team-Daten erreichbar sind. Standardmäßig aus — `SCHULDRAD_PASSWORD` (oder
+`SCHULDRAD_PASSWORD_FILE` für ein Docker-Secret) setzen, um es zu
+aktivieren:
+
+```bash
+docker run -d -p 127.0.0.1:3000:3000 \
+  -v schuldrad-data:/data \
+  -e SCHULDRAD_PASSWORD=correct-horse-battery-staple \
+  schuldrad
+```
+
+Oder mit einem Docker-Secret (die Datei gewinnt, wenn beide gesetzt sind):
+
+```yaml
+services:
+  schuldrad:
+    build: .
+    secrets:
+      - schuldrad_password
+    environment:
+      SCHULDRAD_PASSWORD_FILE: /run/secrets/schuldrad_password
+secrets:
+  schuldrad_password:
+    file: ./schuldrad_password.txt
+```
+
+Das Passwort wird von Schuldrad selbst nie auf Platte geschrieben und nie
+geloggt. Beim Start leitet der Server mit scrypt gegen ein zufälliges,
+nur im Speicher gehaltenes Salt einen Prüfwert ab; Logins werden
+zeitkonstant verglichen. Sitzungen liegen in einer In-Memory-`Map` (12h
+gleitende TTL, bei Nutzung verlängert) — **ein Neustart des Servers
+meldet alle ab**, mit Absicht; es gibt keine Sitzungs-Persistenz, die
+verloren gehen könnte.
+
+Das Session-Cookie (`schuldrad_session`) ist `HttpOnly` und
+`SameSite=Strict`. Es trägt außerdem `Secure`, sobald die Anfrage mit
+`x-forwarded-proto: https` ankommt (der Standard-Header, den ein
+TLS-terminierender Reverse Proxy setzt) oder wenn `SCHULDRAD_SECURE_COOKIES=1`
+explizit gesetzt ist. Wird TLS an einem Proxy terminiert, der diesen
+Header nicht setzt, die Umgebungsvariable selbst setzen — sonst wird das
+Cookie auf der Strecke Proxy→App nur dann unverschlüsselt übertragen,
+wenn diese Strecke selbst unverschlüsselt ist, was auf localhost/privaten
+Netzen unproblematisch ist, sonst aber nicht.
+
+Das schützt Team-Daten hinter einem gemeinsamen Geheimnis; es ist keine
+Mehrbenutzer-Authentifizierung (keine Einzelkonten, Rollen oder
+Audit-Trail) — siehe [SECURITY.md](../../SECURITY.md) für das genaue
+Bedrohungsmodell.
 
 ## § 4 Bind-Adresse, Reverse Proxy und TLS
 

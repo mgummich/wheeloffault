@@ -8,10 +8,10 @@ you arrived from.
 
 ## § 1 Threat model
 
-Schuldrad ships **without authentication or authorization, by design, in
-the current release.** There is no login, no session, no API key, no
-per-team secret. Anyone who can reach the HTTP server can read and write
-every team it holds.
+Schuldrad ships **without authentication or authorization by default.**
+Out of the box there is no login, no session, no API key, no per-team
+secret. Anyone who can reach the HTTP server can read and write every team
+it holds.
 
 This is a deliberate scope decision, not an oversight: Schuldrad is built
 to be run on a network already trusted by its participants — a team's LAN,
@@ -21,9 +21,52 @@ expose a Schuldrad server directly to the open internet.** See
 [docs/en/deployment.md](docs/en/deployment.md) § 4 for the bind-address and
 reverse-proxy guidance that follows from this.
 
-Optional server-mode password protection is planned but not implemented as
-of this writing. Until it ships, the network boundary described above is
-the only access control this project provides.
+Server mode can optionally require a single deployment password (§ 1a).
+Until that env var is set, the network boundary described above is the
+only access control this project provides.
+
+## § 1a Optional server-mode password
+
+Setting `SCHULDRAD_PASSWORD` (or `SCHULDRAD_PASSWORD_FILE`) gates every
+`/api/*` route except `/api/health` and `/api/auth/*` behind one shared
+password, gated by a server-side session cookie. See
+[docs/en/deployment.md](docs/en/deployment.md) § 3a for setup and exact
+cookie/session semantics.
+
+**What it protects against:** a passer-by who can reach the server (on a
+LAN, over a VPN, or through a reverse proxy without its own auth) but does
+not know the deployment password. Login attempts are rate-limited (5
+failed attempts per IP per minute); the password is verified with scrypt
+and a constant-time comparison, never logged, never written to disk.
+
+**What it does not protect against, and is not trying to:**
+
+* **A single shared secret, not multi-user auth.** There are no
+  per-user accounts, no roles, no audit trail of who did what — everyone
+  who knows the password is equally privileged, same as everyone reachable
+  on the network was before. This is a door lock, not a badge system.
+* **Anyone who already has the password**, including a departed team
+  member nobody thought to tell. Rotate the password (and restart the
+  server, which also revokes every existing session) if that matters to
+  you.
+* **Network-level eavesdropping without TLS.** The cookie is `HttpOnly`
+  and `Secure` when a proxy terminates TLS in front of it, but Schuldrad
+  itself never terminates TLS — see § 1 and
+  [docs/en/deployment.md](docs/en/deployment.md) § 4.
+* **A compromised server process.** The password lives in that process's
+  memory for as long as it runs; anyone with code execution on the host or
+  in the container reads it the same way they would read anything else the
+  process holds.
+
+**Why static (GitHub Pages) mode cannot be protected the same way:**
+static mode has no server — the entire app, including whatever would check
+a password, ships as public files to the participant's own browser. There
+is no process holding a secret the browser doesn't already have full
+access to; a "password check" implemented client-side would just be
+obfuscated JavaScript the browser itself executes, trivially bypassed by
+reading the source or the network tab. A real password gate needs a party
+other than the requester to hold the secret and decide — that party is the
+server, which is why this feature exists only in server mode.
 
 ## § 2 `teamId` is not a capability
 
@@ -70,8 +113,10 @@ database the operator's browser does not control.
 
 **Not protected**, beyond what §§ 1–3 already say:
 
-* Confidentiality of team data from anyone who can reach the server (no
-  per-team access control — see § 2).
+* Confidentiality of team data from anyone who can reach the server *and*
+  knows the deployment password, if one is set (no per-team access control
+  even with § 1a enabled — see § 2). Without § 1a, from anyone who can
+  reach the server at all.
 * Availability — there is no rate limiting; a server exposed to an
   untrusted network can be flooded.
 * Anything about the underlying host, container runtime, SQLite/Postgres

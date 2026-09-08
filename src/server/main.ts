@@ -1,6 +1,7 @@
 import { mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createAuth } from './auth.ts';
 import { createBroadcastHub, openRedisBroadcastHub } from './broadcast.ts';
 import { createCommands } from './commands.ts';
 import { createHttpServer } from './http.ts';
@@ -19,7 +20,8 @@ const store = await openConfiguredEventStore(process.env, dataDir);
 // The command layer and the HTTP layer reference each other only through this callback.
 let broadcast: (teamId: string, events: Parameters<typeof http.broadcast>[1]) => void = () => {};
 const commands = createCommands(store, (teamId, events) => broadcast(teamId, events));
-const http = createHttpServer(commands, process.env.WEB_DIR === '' ? null : webDir);
+const auth = createAuth(process.env);
+const http = createHttpServer(commands, process.env.WEB_DIR === '' ? null : webDir, auth);
 const hub = process.env.REDIS_URL
   ? await openRedisBroadcastHub(process.env.REDIS_URL, http.broadcast)
   : createBroadcastHub(http.broadcast);
@@ -30,7 +32,10 @@ broadcast = (teamId, events) => {
 };
 
 http.server.listen(port, host, () => {
-  console.log(`Schuldrad fährt auf http://${host}:${port} (Daten: ${dataDir})`);
+  console.log(
+    `Schuldrad fährt auf http://${host}:${port} (Daten: ${dataDir})` +
+      (auth.enabled ? ' [Betriebssperre aktiv]' : ''),
+  );
 });
 
 for (const signal of ['SIGINT', 'SIGTERM'] as const) {

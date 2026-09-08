@@ -360,8 +360,18 @@ export const en = {
   'share.cardWhenNote': '{when}  ·  Result fixed before the animation',
   'share.pngExportFailed': 'PNG export failed',
 
+  // ---------- auth ----------
+  'auth.title': 'Service restricted',
+  'auth.lede': 'This line requires clearance. Enter the operations password to continue.',
+  'auth.passwordLabel': 'Password',
+  'auth.submitButton': 'Request clearance',
+  'auth.wrongPassword': 'Clearance denied. Check the password.',
+  'auth.rateLimited': 'Too many attempts. Wait a minute before trying again.',
+  'auth.logoutButton': 'End shift',
+
   // ---------- api errors ----------
   'apiError.connectionFailed': 'Connection failed. Please try again.',
+  'error.unauthorized': 'Access requires authentication.',
   'error.name_empty': 'Name must not be empty.',
   'error.name_too_long': 'Name is too long.',
   'error.member_name_conflict': 'An active member with this name already exists.',

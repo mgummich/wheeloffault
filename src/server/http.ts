@@ -6,6 +6,13 @@ import { DomainError } from '../domain/errors.ts';
 import type { StoredEvent } from '../domain/events.ts';
 import { assertPolicy } from '../domain/fairness/policy.ts';
 import { memberReport } from '../domain/projections/report.ts';
+import {
+  type Auth,
+  clearSessionCookieHeader,
+  createAuth,
+  parseSessionCookie,
+  sessionCookieHeader,
+} from './auth.ts';
 import type { Commands } from './commands.ts';
 import { ConcurrencyError } from './eventStore.ts';
 import { asObject, id, optionalStr, str, strArray } from './validate.ts';
@@ -23,7 +30,11 @@ const MAX_SSE_CLIENTS_PER_TEAM = 100;
  * Plain node:http. ~15 routes do not justify a framework. Routes are declared
  * with `:param` placeholders and matched in order.
  */
-export function createHttpServer(commands: Commands, staticDir: string | null) {
+export function createHttpServer(
+  commands: Commands,
+  staticDir: string | null,
+  auth: Auth = createAuth({}),
+) {
   const routes: Route[] = [];
   const sseClients = new Map<string, Set<Res>>();
 
@@ -63,6 +74,45 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
   }
 
   route('GET', '/api/health', (_req, res) => json(res, 200, { ok: true }));
+
+  route('GET', '/api/auth/status', (req, res) => {
+    const sid = parseSessionCookie(req);
+    const authenticated = auth.enabled && sid !== undefined && auth.touchSession(sid);
+    json(res, 200, { enabled: auth.enabled, authenticated });
+  });
+
+  route('POST', '/api/auth/login', async (req, res) => {
+    if (!auth.enabled) {
+      json(res, 404, { error: 'Auth is not enabled', code: 'auth_disabled' });
+      return;
+    }
+    const ip = req.socket.remoteAddress ?? 'unknown';
+    const retryAfterSec = auth.rateLimited(ip);
+    if (retryAfterSec !== null) {
+      res.setHeader('retry-after', String(retryAfterSec));
+      json(res, 429, { error: 'Too many attempts, please wait', code: 'rate_limited' });
+      return;
+    }
+    const body = asObject(await readJson(req));
+    const password = str(body, 'password', 200);
+    if (!(await auth.verify(password))) {
+      auth.recordFailure(ip);
+      json(res, 401, { error: 'Invalid password', code: 'invalid_password' });
+      return;
+    }
+    const sid = auth.createSession();
+    res.setHeader('set-cookie', sessionCookieHeader(sid, auth.secureCookie(req)));
+    res.writeHead(204);
+    res.end();
+  });
+
+  route('POST', '/api/auth/logout', (req, res) => {
+    const sid = parseSessionCookie(req);
+    if (sid) auth.destroySession(sid);
+    res.setHeader('set-cookie', clearSessionCookieHeader(auth.secureCookie(req)));
+    res.writeHead(204);
+    res.end();
+  });
 
   route('GET', '/api/teams', async (_req, res) => {
     const list: TeamListEntry[] = (await commands.listTeams()).map((t) => ({
@@ -271,6 +321,18 @@ export function createHttpServer(commands: Commands, staticDir: string | null) {
         url = new URL(req.url ?? '/', 'http://localhost');
       } catch {
         throw new DomainError('Invalid request URL', 'invalid_url');
+      }
+      if (
+        auth.enabled &&
+        url.pathname.startsWith('/api/') &&
+        url.pathname !== '/api/health' &&
+        !url.pathname.startsWith('/api/auth/')
+      ) {
+        const sid = parseSessionCookie(req);
+        if (!sid || !auth.touchSession(sid)) {
+          json(res, 401, { error: 'Authentication required', code: 'unauthorized' });
+          return;
+        }
       }
       for (const r of routes) {
         if (r.method !== req.method) continue;

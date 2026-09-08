@@ -6,6 +6,15 @@ services:
       - '127.0.0.1:3000:3000'
     volumes:
       - schuldrad-data:/data
+    # Optional single-password protection (server mode only, off by
+    # default). Uncomment to require SCHULDRAD_PASSWORD before any team
+    # data is reachable — see docs/en/deployment.md § 3a and SECURITY.md.
+    # Prefer a Docker secret over a plain env var so the password does not
+    # end up in `docker inspect` output:
+    # secrets:
+    #   - schuldrad_password
+    # environment:
+    #   SCHULDRAD_PASSWORD_FILE: /run/secrets/schuldrad_password
 
   schuldrad-overengineered:
     profiles: ['overengineered']
@@ -37,3 +46,7 @@ services:
 volumes:
   schuldrad-data:
   schuldrad-postgres:
+
+# secrets:
+#   schuldrad_password:
+#     file: ./schuldrad_password.txt

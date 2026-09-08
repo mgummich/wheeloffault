@@ -1,3 +1,8 @@
+import { useEffect } from 'react';
+import { authApi } from './authApi.ts';
+import { markUnauthenticated, setAuthStatus, useAuthState } from './authState.ts';
+import { Login } from './Login.tsx';
+import { serverMode } from './api.ts';
 import { href, useRoute } from './route.ts';
 import { type Theme, useTheme } from './theme.ts';
 import { useTeam } from './useTeam.ts';
@@ -13,23 +18,52 @@ import { type Lang, useI18n } from './i18n/index.ts';
 export function App() {
   const route = useRoute();
   const { t } = useI18n();
+  const auth = useAuthState();
+
+  // Server mode only: static builds never call this endpoint and never gate.
+  useEffect(() => {
+    if (!serverMode) return;
+    authApi
+      .status()
+      .then(setAuthStatus)
+      .catch(() => {});
+  }, []);
+
+  const gated = serverMode && auth.enabled && !auth.authenticated;
+
   return (
     <>
       <header className="topbar">
         <a className="wordmark" href={href.home()}>
           {t('app.brand')}
         </a>
-        {route.page !== 'home' && <TeamNav teamId={route.teamId} page={route.page} />}
+        {!gated && route.page !== 'home' && <TeamNav teamId={route.teamId} page={route.page} />}
         <LangSwitch />
         <ThemeSwitch />
+        {serverMode && auth.enabled && auth.authenticated && <LogoutButton />}
       </header>
       <main className="container">
-        {route.page === 'home' ? <HomePage /> : <TeamRoutes route={route} />}
+        {gated ? <Login /> : route.page === 'home' ? <HomePage /> : <TeamRoutes route={route} />}
       </main>
       <footer className="footer">
         {t('footer.disclaimer')} <a href={`${import.meta.env.BASE_URL}docs/`}>{t('footer.docs')}</a>
       </footer>
     </>
+  );
+}
+
+function LogoutButton() {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      className="quiet"
+      onClick={() => {
+        void authApi.logout().finally(markUnauthenticated);
+      }}
+    >
+      {t('auth.logoutButton')}
+    </button>
   );
 }
 

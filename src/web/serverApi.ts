@@ -3,6 +3,7 @@ import type { MemberReport } from '../domain/projections/report.ts';
 import type { SpinView, TeamListEntry, TeamView } from '../domain/views.ts';
 
 import { ApiError } from './apiError.ts';
+import { markUnauthenticated } from './authState.ts';
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const res = await fetch(`/api${path}`, {
@@ -12,6 +13,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   });
   const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
   if (!res.ok) {
+    if (res.status === 401 && data.code === 'unauthorized') markUnauthenticated();
     throw new ApiError(
       res.status,
       typeof data.error === 'string' ? data.error : res.statusText,

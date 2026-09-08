@@ -89,6 +89,57 @@ checked-in `src/web/.env.server`), which switches the client from the
 | `EVENT_STORE` | `sqlite` | `sqlite` or `postgres` |
 | `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; enables cross-instance SSE fanout |
+| `SCHULDRAD_PASSWORD` | — | optional deployment password — see § 3a |
+| `SCHULDRAD_PASSWORD_FILE` | — | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set |
+| `SCHULDRAD_SECURE_COOKIES` | — | set to `1` to force the `Secure` cookie attribute — see § 3a |
+
+## § 3a Optional password protection
+
+Server mode can require a single deployment password before any team data
+is reachable. It is off by default — set `SCHULDRAD_PASSWORD` (or
+`SCHULDRAD_PASSWORD_FILE` for a Docker secret) to turn it on:
+
+```bash
+docker run -d -p 127.0.0.1:3000:3000 \
+  -v schuldrad-data:/data \
+  -e SCHULDRAD_PASSWORD=correct-horse-battery-staple \
+  schuldrad
+```
+
+Or with a Docker secret (the file wins if both are set):
+
+```yaml
+services:
+  schuldrad:
+    build: .
+    secrets:
+      - schuldrad_password
+    environment:
+      SCHULDRAD_PASSWORD_FILE: /run/secrets/schuldrad_password
+secrets:
+  schuldrad_password:
+    file: ./schuldrad_password.txt
+```
+
+The password is never written to disk by Schuldrad itself and never
+logged. At startup, the server derives a verifier with scrypt against a
+random salt held only in memory; logins are compared with a
+constant-time comparison. Sessions are an in-memory `Map` (12h sliding
+TTL, refreshed on use) — **restarting the server logs everyone out**, by
+design; there is no session persistence to lose.
+
+The session cookie (`schuldrad_session`) is `HttpOnly` and
+`SameSite=Strict`. It also carries `Secure` whenever the request arrives
+with `x-forwarded-proto: https` (the standard header a TLS-terminating
+reverse proxy sets) or when `SCHULDRAD_SECURE_COOKIES=1` is set explicitly.
+If you terminate TLS at a proxy that does not set that header, set the env
+var yourself — otherwise the cookie is sent in the clear over the
+proxy-to-app hop only if that hop is itself unencrypted, which is fine on
+localhost/private networks but not otherwise.
+
+This protects team data behind one shared secret; it is not multi-user
+auth (no per-user accounts, roles, or audit trail) — see
+[SECURITY.md](../../SECURITY.md) for the exact threat model.
 
 ## § 4 Bind address, reverse proxy, and TLS
 
