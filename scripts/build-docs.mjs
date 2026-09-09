@@ -135,6 +135,94 @@ async function checkCompleteness() {
   }
 }
 
+// SYMBOL GUARD: a backticked identifier that looks like a code symbol —
+// call syntax (`foo()`, `spinHistory(state)`) or an ALL_CAPS_CONSTANT — must
+// actually be exported somewhere in src/ (ALL_CAPS names may also be an env
+// var read via `env.NAME`/`process.env.NAME`, since those never appear as a
+// JS export). Catches a doc still claiming an API that was renamed or
+// un-exported out from under it — e.g. `spinHistory(state)` listed as a
+// projection API after it went module-private.
+//
+// Deliberately does NOT check bare identifiers without call syntax
+// (`someExport`, no parens): those collide constantly with plain object/prop
+// names in prose (`memberId`, `onFinished`, `packageManager`, ...), which
+// would make the ignore list unmanageable. Call syntax and ALL_CAPS
+// constants are the two shapes that stayed unambiguous in practice.
+const SYMBOL_IGNORE = new Set([
+  'append', // `EventStore.append` is an interface method, not a bare export
+  'decide', // ARCHITECTURE.md's diagram name for the whole family of
+  // decision functions (addMembers, commitSpin, revealSpin, ...), not one
+  // literal function called `decide`
+  'uint64', // pseudocode in the fairness formula's ASCII diagram, not a
+  // real identifier anywhere in the codebase
+  'events', // "`events(stream_id, version)` is `UNIQUE`" names SQL table
+  // columns, not a JS function call
+  'finish', // each animation stage has its own local finish(), not one
+  // shared export named `finish`
+  'onFinished', // a prop name (`props.onFinished`), not an exported symbol
+  'nameOf', // a local const inside SpinDetailPage, not a shared export
+  'SHA256', // pseudocode for the hash step; the code calls Web Crypto with
+  // the string 'SHA-256', there is no identifier `SHA256`
+]);
+
+async function buildKnownSymbols() {
+  const names = new Set();
+  for (const file of await listFiles(join(root, 'src'))) {
+    if (!/\.(ts|tsx)$/.test(file)) continue;
+    const text = await readFile(file, 'utf8');
+    for (const m of text.matchAll(
+      /\bexport\s+(?:default\s+)?(?:async\s+)?(?:function\*?|const|class|type|interface|enum)\s+([A-Za-z_$][\w$]*)/g,
+    )) {
+      names.add(m[1]);
+    }
+    for (const m of text.matchAll(/\benv\.([A-Z][A-Z0-9_]*)/g)) names.add(m[1]);
+    for (const m of text.matchAll(/\bprocess\.env\.([A-Z][A-Z0-9_]*)/g)) names.add(m[1]);
+  }
+  return names;
+}
+
+const SYMBOL_CALL_RE = /^([A-Za-z_$][\w$]*)\(([^()]*)\)$/;
+const SYMBOL_CONST_RE = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+$/;
+
+// A symbol can be named two ways in these docs: an inline `span` (single
+// backticks), or a line inside a fenced ``` block — ARCHITECTURE.md's
+// projections/HTTP-contract listings are written as fenced blocks, not
+// inline spans, so both need scanning.
+function symbolCandidates(md) {
+  const out = [];
+  const fenceRe = /```[^\n]*\n([\s\S]*?)```/g;
+  for (const m of md.matchAll(fenceRe)) {
+    for (const c of m[1].matchAll(/\b[A-Za-z_$][\w$]*\([^()\n]{0,80}\)/g)) out.push(c[0]);
+    for (const c of m[1].matchAll(/\b[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)+\b/g)) out.push(c[0]);
+  }
+  for (const m of md.replace(fenceRe, '').matchAll(/`([^`\n]+)`/g)) out.push(m[1]);
+  return out;
+}
+
+async function checkSymbolGuard() {
+  const known = await buildKnownSymbols();
+  const problems = [];
+  for (const doc of docs) {
+    for (const lang of LANGS) {
+      if (!doc.src[lang]) continue;
+      const md = await readFile(join(root, doc.src[lang]), 'utf8');
+      for (const raw of symbolCandidates(md)) {
+        const call = SYMBOL_CALL_RE.exec(raw);
+        const name = call ? call[1] : SYMBOL_CONST_RE.test(raw) ? raw : null;
+        if (!name || SYMBOL_IGNORE.has(name) || known.has(name)) continue;
+        problems.push(
+          `${doc.src[lang]}: \`${raw}\` names "${name}", which is not exported anywhere in src/ (renamed, un-exported, or a typo?).`,
+        );
+      }
+    }
+  }
+  if (problems.length > 0) {
+    console.error('docs: symbol guard failed — a doc names a symbol the code does not export:');
+    for (const p of problems) console.error(`  - ${p}`);
+    process.exit(1);
+  }
+}
+
 // ponytail: known ceiling — two headings that slug() to the same id collide
 // silently (last one wins in the id set, anchors bind to the first heading
 // in the DOM); not deduped, upgrade to a counter suffix if it ever bites.
@@ -297,6 +385,7 @@ ${body}
 };
 
 await checkCompleteness();
+await checkSymbolGuard();
 
 await mkdir(join(outDir, 'en'), { recursive: true });
 await mkdir(join(outDir, 'de'), { recursive: true });

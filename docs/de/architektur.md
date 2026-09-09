@@ -32,7 +32,7 @@ Ein einziges npm-Paket, drei Quellordner:
 | Ordner        | Läuft in        | Darf importieren aus | Inhalt |
 |---------------|-----------------|----------------------|--------|
 | `src/domain`  | Browser + Node  | nur `src/domain`     | Events, Zustandsaufbau, Fairness, Projektionen, öffentliche HTTP-Ansichten (`views.ts`). Pure Funktionen, keine I/O. |
-| `src/server`  | Node            | `src/domain`         | HTTP-Server, Event-Store (SQLite), Command-Handler, SSE. |
+| `src/server`  | Node            | `src/domain`         | HTTP-Server, Event-Store (SQLite oder Postgres, § 7), Command-Handler, SSE. |
 | `src/web`     | Browser         | `src/domain`         | React-Oberfläche, Animation, Service Worker, Verifier-UI. |
 
 `src/web` nutzt `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
@@ -197,8 +197,10 @@ Alle Read Models sind pure Funktionen über `TeamState` in `src/domain/projectio
 memberReport(state, memberId)   Schuldbericht: Treffer, Schuldquote, Erwartungswert, Schuldindex,
                                 Zeit seit letzter Schuld, Streaks, Fairness-Abweichung, Achievements,
                                 Schuldpunkte, Entschädigungsminuten
-teamStatistics(state)           Hall of Shame, Rangliste, Verteilung, Fairness-Übersicht
-spinHistory(state)              Liste neuste zuerst inkl. Einsprüche
+teamStatistics(state)           Hall of Shame (Rangliste), maximale Fairness-Abweichung,
+                                Ziehungszähler und Ziehungshistorie (`.history`, neuste zuerst
+                                inkl. Einsprüche — gebaut vom modulprivaten spinHistory-Helfer,
+                                kein eigener Export)
 ```
 
 Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
@@ -240,9 +242,12 @@ Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 401
 stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
 (`src/web/apiError.ts`, `src/web/i18n/`); die menschenlesbare `error`-Meldung
 ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
-explizit validiert
-(`src/server/validate.ts`; die FairnessPolicy in
-`src/domain/fairness/policy.ts`, weil der Browser dieselbe Prüfung nutzt).
+serverseitig
+explizit validiert (`src/server/validate.ts`; die FairnessPolicy über
+`assertPolicy` in `src/domain/fairness/policy.ts`, das nur von
+`src/server/http.ts` importiert wird). Der Browser importiert aus diesem
+Modul nur den Typ `FairnessPolicy`, nicht die Prüfung; die `min`/`max`-Werte
+der Zahlenfelder im Fairness-Formular sind UI-Hinweise, keine Durchsetzung.
 
 Es gibt standardmäßig keine Authentifizierung: Schuldrad ist für ein
 vertrauenswürdiges Netz (Team-LAN, VPN) gedacht; wer es öffentlich
@@ -335,7 +340,7 @@ draw.ts          performDraw(): Commit → Reveal inkl. 409-Wiederaufnahme
 useTeam.ts       Team laden, SSE-Refresh
 route.ts         Hash-Router; views/ die Seiten; wheel/ die Visualisierungen
 AnimPanel.tsx    Animationseinstellungen (localStorage via animSettings.ts)
-share.ts         Teams-Karte (Canvas-PNG) + ShareDialog.tsx (natives <dialog>)
+share.ts         Ergebniskarte pro Ziehung (Canvas-PNG) + ShareDialog.tsx (natives <dialog>)
 ```
 
 PWA: `manifest.webmanifest` + handgeschriebener Service Worker
@@ -360,3 +365,11 @@ sonst nur auf `127.0.0.1` bindet. Kein Reverse Proxy nötig.
 build. E2E (`pnpm e2e`) mit Playwright gegen den gebauten Server. CI
 (`.github/workflows/ci.yml`) führt zusätzlich Container-Build, `pnpm audit`,
 Trivy-Scan und SBOM aus.
+
+`docs/STATUS.json` ist eine handgepflegte Momentaufnahme
+vom letzten Mal, als alle acht oben genannten Prüfungen (die sechs aus
+`pnpm verify`, plus `build:server` und `e2e`) grün liefen, mit
+Bestanden/Fehlgeschlagen und einer Ergebniszeile je Prüfung. Nichts
+regeneriert oder erzwingt sie — von Hand aktualisieren, wenn die
+vollständige Schleife durchläuft; sie ist ein Vermerk für einen schnellen
+Blick, kein Gate.

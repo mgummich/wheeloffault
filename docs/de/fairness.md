@@ -35,7 +35,7 @@ Vor einer Ziehung berechnet der Server:
    | Reihenfolge | Modifikator | Wirkung |
    |---|---|---|
    | 1 | `pity` | `+X %` pro Ziehung ohne Treffer seit der letzten Schuld dieses Mitglieds |
-   | 2 | `cooldown` | Gewicht `0` für `N` Ziehungen nach einem Treffer. Würde dies alle ausschließen, wird cooldown nur für diese eine Ziehung übersprungen und für die betroffenen Mitglieder mit Faktor `1000` protokolliert |
+   | 2 | `cooldown` | Gewicht `0` für `N` Ziehungen nach einem Treffer. Würde dies alle ausschließen, wird cooldown nur für diese eine Ziehung übersprungen und für alle Mitglieder mit Faktor `1000` protokolliert, nicht nur die, die es ausgeschlossen hätte |
    | 3 | `exhaustion` | `−X %` pro Treffer innerhalb der letzten `N` Ziehungen |
    | 4 | `newcomer` | `×Faktor` für Mitglieder mit weniger als `N` Teilnahmen |
    | 5 | `manual` | expliziter, von einem Bediener gesetzter Faktor pro Mitglied |
@@ -201,14 +201,21 @@ Browser-Verifier reproduziert Server
 
 Wer die veröffentlichten Werte einer Ziehung besitzt — `nonce`,
 `commitment`, `participants`, `serverSeed`, `clientSeed`, `digest`,
-`selectedMemberId`, alle auf der Detailseite dieses Spins angezeigt
-(`src/web/views/SpinDetailPage.tsx`) — kann die gesamte Ziehung nachrechnen,
-ohne Schuldrad überhaupt zu betreiben, mit `scripts/verify-draw.mjs`. Es
-ist ein abhängigkeitsfreies Node-Skript, das § 3–§ 4 dieser Verordnung
-eigenständig nachbildet; es importiert `src/domain/fairness/draw.ts` nicht,
-kann also keinen Fehler der geprüften Anwendung stillschweigend erben.
+`selectedMemberId`, alle über die Detailseite dieses Spins erreichbar
+(`src/web/views/SpinDetailPage.tsx`, siehe unten wie) — kann die gesamte
+Ziehung nachrechnen, ohne Schuldrad überhaupt zu betreiben, mit
+`scripts/verify-draw.mjs`. Es ist ein abhängigkeitsfreies Node-Skript, das
+§ 3–§ 4 dieser Verordnung eigenständig nachbildet; es importiert
+`src/domain/fairness/draw.ts` nicht, kann also keinen Fehler der geprüften
+Anwendung stillschweigend erben.
 
-Die auf der Detailseite angezeigten Werte in eine JSON-Datei kopieren:
+Die Detailseite zeigt Mitgliedernamen an (`nameOf(p.memberId)`), nie rohe
+Mitglieds-IDs — das JSON unten lässt sich also nicht von Hand aus dem
+Angezeigten abschreiben. Stattdessen den Button **„Nachweis kopieren“** auf
+dieser Seite nutzen (`src/web/views/SpinDetailPage.tsx`): Er kopiert genau
+diese Form — `{ nonce, commitment, participants, serverSeed, clientSeed,
+digest, selectedMemberId }` — in die Zwischenablage. Direkt in eine Datei
+einfügen:
 
 ```json
 {
@@ -232,7 +239,7 @@ node scripts/verify-draw.mjs --file draw.json
 Das Skript gibt ein Prüfprotokoll mit je einer ✓/✗-Zeile pro Prüfung aus —
 Commitment, Digest, Auswahl — und liefert Exit-Code `0` nur, wenn alle drei
 bestehen, `1` wenn eine Prüfung fehlschlägt und `2` bei einem Aufruffehler
-(eine unbekannte Flag, fehlendes `--file`, fehlendes Pflichtfeld,
-`participants` nicht als Array oder leer, oder ein nicht-ganzzahliger
-`nonce`), bevor überhaupt eine Prüfung läuft — lässt sich also in CI oder
-eine Shell-`&&`-Kette einbinden.
+(ein unerwartetes Argument, ein unbekanntes Flag, ein Flag ohne Wert,
+fehlendes `--file`, fehlendes Pflichtfeld, `participants` nicht als Array
+oder leer, oder ein nicht-ganzzahliger `nonce`), bevor überhaupt eine
+Prüfung läuft — lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.

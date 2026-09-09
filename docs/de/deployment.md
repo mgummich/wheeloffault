@@ -45,9 +45,10 @@ die Laufzeitstufe entfernt `npm`/`npx`/`corepack` vollständig (die
 Anwendung selbst braucht nur `node`), läuft als nicht-root-Benutzer `node`
 und liefert den Server als unveränderte TypeScript-Quelle unter Nodes
 nativem Type-Stripping aus — kein Bundler, kein Kompilierschritt zur
-Laufzeit. `HEALTHCHECK` pollt `/api/health` mit BusyBox `wget` (der einzige
-verbliebene HTTP-Client im Image, nachdem `npm`/`npx`/`corepack` entfernt
-sind). Daten liegen standardmäßig im `/data`-Volume als `schuldrad.db`
+Laufzeit. `HEALTHCHECK` pollt `/api/health` mit BusyBox `wget` — ein per
+Shell direkt aufrufbarer HTTP-Client, leichter als eine Anfrage über `node`
+zu skripten (das weiterhin im Image steckt, aber kein direkt einsetzbarer
+`HEALTHCHECK`-Befehl ist). Daten liegen standardmäßig im `/data`-Volume als `schuldrad.db`
 (SQLite).
 
 ### Ohne Docker
@@ -162,8 +163,10 @@ Sitzungen verlängern sich bei Nutzung gleitend (12h), laufen aber
 unabhängig von der Aktivität nach 7 Tagen endgültig ab.
 
 **Nur für eine einzelne Instanz.** Sitzungen und die Zähler für das
-Login-Rate-Limiting liegen in genau dieser In-Memory-`Map`, pro Prozess —
-nichts teilt diesen Zustand über Replicas hinweg, auch `REDIS_URL` nicht
+Login-Rate-Limiting (jeder Versuch, nicht nur Fehlschläge) liegen in zwei
+getrennten In-Memory-`Map`s (`sessions`, `failures` in `src/server/auth.ts`),
+pro Prozess — nichts teilt diesen Zustand über Replicas hinweg, auch
+`REDIS_URL` nicht
 (das fächert nur Domain-Events per SSE instanzübergreifend auf, siehe die
 Umgebungsvariablen-Tabelle in § 3 — es berührt keinen Auth-Zustand). Läuft
 `SCHULDRAD_PASSWORD` hinter mehr als einer Replica ohne Sticky Sessions,

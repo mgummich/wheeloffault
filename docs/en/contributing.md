@@ -49,7 +49,10 @@ format:check → lint → typecheck → test:unit → test:integration → build
 ```
 
 This is the single command that must pass before anything is considered
-done; it is also what CI runs (`.github/workflows/ci.yml`, `verify` job).
+done. CI's `verify` job (`.github/workflows/ci.yml`) runs the same six
+steps individually rather than calling this script — it does not invoke
+`pnpm verify` itself (that call lives in `.github/workflows/pages.yml`
+instead) — but the sequence and the pass/fail bar are identical either way.
 `audit` runs in parallel with it; `e2e` and `container` run afterward and
 need it to pass. Run it locally before opening a PR — there is no faster
 feedback loop than not waiting for CI to tell you `lint` failed.

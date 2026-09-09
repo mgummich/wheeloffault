@@ -41,8 +41,9 @@ stage strips `npm`/`npx`/`corepack` entirely (the application itself only
 ever needs `node`), runs as the non-root `node` user, and serves the
 server as unmodified TypeScript source under Node's native type-stripping
 — no bundler, no compile step at runtime. `HEALTHCHECK` polls
-`/api/health` with BusyBox `wget` (the only HTTP client left in the image
-once `npm`/`npx`/`corepack` are removed). Data lives in the `/data` volume
+`/api/health` with BusyBox `wget` — a plain shell-invokable HTTP client,
+lighter than scripting a request through `node` (which is still in the
+image, but isn't a drop-in `HEALTHCHECK` command). Data lives in the `/data` volume
 as `schuldrad.db` (SQLite) by default.
 
 ### Without Docker
@@ -153,8 +154,9 @@ Sessions slide their expiry on use (12h) but always expire after 7 days of
 elapsed time regardless of activity.
 
 **Single-instance only.** Sessions and the login-attempt counts used for
-rate limiting (every attempt, not just failures) are that in-memory `Map`,
-per process — nothing shares this
+rate limiting (every attempt, not just failures) live in two separate
+in-memory `Map`s (`sessions`, `failures` in `src/server/auth.ts`), per
+process — nothing shares this
 state across replicas, including `REDIS_URL` (that only fans out domain
 events over SSE across instances; see § 3's env var table — it does not
 touch auth). Run `SCHULDRAD_PASSWORD` behind more than one replica without

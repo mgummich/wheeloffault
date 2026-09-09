@@ -28,7 +28,7 @@ A single npm package, three source folders:
 | Folder        | Runs in         | May import from | Contents |
 |---------------|------------------|------------------|----------|
 | `src/domain`  | Browser + Node   | only `src/domain` | Events, state building, fairness, projections, public HTTP views (`views.ts`). Pure functions, no I/O. |
-| `src/server`  | Node             | `src/domain`     | HTTP server, event store (SQLite), command handlers, SSE. |
+| `src/server`  | Node             | `src/domain`     | HTTP server, event store (SQLite or Postgres, § 7), command handlers, SSE. |
 | `src/web`     | Browser          | `src/domain`     | React UI, animation, service worker, verifier UI. |
 
 `src/web` uses `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
@@ -193,8 +193,9 @@ All read models are pure functions over `TeamState` in `src/domain/projections/`
 memberReport(state, memberId)   Guilt report: hits, guilt rate, expected value, guilt index,
                                 time since last guilt, streaks, fairness deviation, achievements,
                                 guilt points, compensation minutes
-teamStatistics(state)           Hall of shame, ranking, distribution, fairness overview
-spinHistory(state)              newest-first list including appeals
+teamStatistics(state)           Hall of shame (ranked), max fairness deviation, spin counts, and
+                                spin history (`.history`, newest-first including appeals — built
+                                by the module-private spinHistory helper, not its own export)
 ```
 
 None of this is stored. The event history is the sole source of truth;
@@ -236,9 +237,11 @@ Errors: `{ error: string, code: string }` with 400 (invalid input), 401
 machine-readable identifier that the client localizes (`src/web/apiError.ts`,
 `src/web/i18n/`); the human `error` message is English and only a fallback
 for unknown codes. All
-input is explicitly validated (`src/server/validate.ts`; the
-FairnessPolicy in `src/domain/fairness/policy.ts`, because the browser
-uses the same check).
+input is explicitly validated server-side (`src/server/validate.ts`; the
+FairnessPolicy via `assertPolicy` in `src/domain/fairness/policy.ts`,
+imported only by `src/server/http.ts`). The browser imports just the
+`FairnessPolicy` type from that module, not the check; its `min`/`max` on
+the policy form's number inputs are UI hints, not enforcement.
 
 There is no authentication by default: Schuldrad is meant for a trusted
 network (team LAN, VPN); anyone running it publicly puts a reverse proxy
@@ -353,3 +356,9 @@ proxy required.
 build. E2E (`pnpm e2e`) with Playwright against the built server. CI
 (`.github/workflows/ci.yml`) additionally runs container build, `pnpm
 audit`, a Trivy scan, and SBOM generation.
+
+`docs/STATUS.json` is a hand-maintained snapshot of the
+last time all eight checks above (`pnpm verify`'s six, plus `build:server`
+and `e2e`) were run to green, with pass/fail and a one-line result per
+check. Nothing regenerates or enforces it — update it by hand when you run
+the full loop, it is a record for a reviewer to glance at, not a gate.

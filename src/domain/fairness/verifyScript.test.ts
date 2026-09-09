@@ -112,4 +112,20 @@ describe('scripts/verify-draw.mjs', () => {
     const result = runWith({ ...vector, nonce: -1 });
     expect(result.status).toBe(2);
   });
+
+  it('accepts a leading bare "--" (what `pnpm verify:draw -- --file draw.json` actually forwards)', () => {
+    // pnpm 11 forwards the literal "--" instead of consuming it, so the
+    // documented invocation (docs/en+de/fairness.md § 8) passes the script
+    // ['--', '--file', <path>] rather than ['--file', <path>]. This is the
+    // exact argv shape that produced, without the parser skipping "--":
+    // "unknown flag --", exit 2 — the documented command never ran.
+    dir = mkdtempSync(join(tmpdir(), 'verify-draw-'));
+    const file = join(dir, 'draw.json');
+    writeFileSync(file, JSON.stringify(vector));
+    const result = spawnSync(process.execPath, [scriptPath, '--', '--file', file], {
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain('bestanden');
+  });
 });

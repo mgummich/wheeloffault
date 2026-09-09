@@ -1,5 +1,5 @@
 {
-  "date": "2026-09-08",
+  "date": "2026-09-09",
   "branch": "main",
   "environment": {
     "node": "v26.8.1",
@@ -10,42 +10,42 @@
     {
       "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Checked 95 files in 21ms. No fixes applied."
+      "details": "Checked 95 files. No fixes applied."
     },
     {
       "name": "lint (pnpm lint)",
       "status": "pass",
-      "details": "Found 5 warnings."
+      "details": "Checked 97 files. Found 5 warnings."
     },
     {
       "name": "typecheck (pnpm typecheck)",
       "status": "pass",
-      "details": "(no output)"
+      "details": "No errors."
     },
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "Duration  475ms (transform 42%, tests 41%, import 15%, worker 2%)"
+      "details": "16 test files, 96 tests passed."
     },
     {
       "name": "test:integration (pnpm test:integration)",
       "status": "pass",
-      "details": "Duration  1.46s (tests 81%, transform 14%, import 5%, worker 1%)"
+      "details": "5 test files, 47 tests passed."
     },
     {
       "name": "build (pnpm build)",
       "status": "pass",
-      "details": "docs: → dist/web/docs/index.html (redirect to en/)"
+      "details": "60 modules transformed; all docs rendered without a symbol-guard or completeness failure."
     },
     {
       "name": "build:server (pnpm build:server)",
       "status": "pass",
-      "details": "✓ built in 97ms"
+      "details": "60 modules transformed."
     },
     {
       "name": "e2e (pnpm e2e)",
       "status": "pass",
-      "details": "3 passed (5.1s)"
+      "details": "3 tests passed."
     }
   ]
 }

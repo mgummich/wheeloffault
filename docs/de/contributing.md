@@ -53,9 +53,13 @@ format:check → lint → typecheck → test:unit → test:integration → build
 ```
 
 Das ist der eine Befehl, der bestehen muss, bevor irgendetwas als fertig
-gilt; er läuft auch in CI (`.github/workflows/ci.yml`, Job `verify`).
-`audit` läuft parallel dazu; `e2e` und `container` laufen danach und setzen
-ihn voraus. Vor dem Öffnen eines PR lokal ausführen — es gibt keine
+gilt. Der CI-Job `verify` (`.github/workflows/ci.yml`) führt dieselben
+sechs Schritte einzeln aus statt dieses Skript aufzurufen — `pnpm verify`
+selbst wird dort nicht aufgerufen (dieser Aufruf steckt in
+`.github/workflows/pages.yml`) —, aber Reihenfolge und Bestehens-Kriterium
+sind in beiden Fällen identisch. `audit` läuft parallel dazu; `e2e` und
+`container` laufen danach und setzen ihn voraus. Vor dem Öffnen eines PR
+lokal ausführen — es gibt keine
 schnellere Rückmeldeschleife, als nicht auf CI zu warten, um zu erfahren,
 dass `lint` fehlgeschlagen ist.
 

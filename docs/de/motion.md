@@ -19,8 +19,9 @@ Bewegung ist Dekoration. Sie entscheidet nie etwas.
 Der Gewinner steht durch das Commit/Reveal-Protokoll
 (`docs/de/fairness.md`) fest, bevor auch nur ein Bild gezeichnet wird: Der
 Server bindet sich an Seed und Gewichte, deckt dann ein Ergebnis auf, und
-erst *danach* schaltet `SpinPage.draw()` (`src/web/views/SpinPage.tsx`) die
-Phase auf `animating` — mit dem bereits bekannten Ergebnis in der Hand
+erst *danach* schaltet die zu `SpinPage` lokale `draw`-Callback
+(`src/web/views/SpinPage.tsx`) die Phase auf `animating` — mit dem bereits
+bekannten Ergebnis in der Hand
 (`src/web/draw.ts` → `performDraw`). Jede Visualisierung erhält das fertige
 `result` als Prop beim Mounten und verbringt die folgenden Sekunden damit,
 es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
@@ -126,7 +127,8 @@ zu stoppen:
 eine laufende Animation weder zurück noch pausiert oder beschleunigt es
 sie — es rastet sofort im bereits feststehenden Ergebnis ein:
 
-- `SpinPage.finish()` schaltet die Phase direkt auf `announced`.
+- Die zu `SpinPage` lokale `finish`-Callback schaltet die Phase direkt auf
+  `announced`.
 - `Wheel.tsx` besitzt einen an `announced` gebundenen Effekt, der die
   `rotation` — falls die Spin-Schleife noch läuft — sofort auf das
   vorab berechnete Ziel setzt und `finished` markiert: Der nächste Frame
@@ -134,8 +136,11 @@ sie — es rastet sofort im bereits feststehenden Ergebnis ein:
 - Jede andere Bühne leitet `currentId` in ihrem `useNameTicker` zuerst aus
   `announced` ab: Sobald angesagt wurde, *ist* der angezeigte Name
   `result.reveal.selectedMemberId`, unabhängig davon, welchen Tick die
-  RAF-Schleife erreicht hatte. Es gibt keinen Rückspul-Pfad — ein Abbruch
-  springt immer nur vorwärts zum feststehenden Endzustand.
+  RAF-Schleife erreicht hatte. (`LineStage` liest `currentId` gar nicht —
+  sie steuert ihre Nadel direkt aus `result.reveal` — destrukturiert aber
+  dasselbe `animating`-Flag aus `useNameTicker`, sodass dieselbe
+  Nur-vorwärts-Garantie auch für sie gilt.) Es gibt keinen Rückspul-Pfad —
+  ein Abbruch springt immer nur vorwärts zum feststehenden Endzustand.
 
 ## § 7 Reduzierte Bewegung
 
@@ -162,7 +167,7 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 
 | Visualisierung | Was sie in diesen Begriffen tut |
 |---|---|
-| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein "Kick" des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenze — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
+| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein "Kick" des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenze außer der ersten (`lastSeg` startet bei `-1`, das anfängliche Segment unter dem Zeiger kickt also nie) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
 | **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 der 16 Zellen der Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass die Zeile wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
 | **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
 | **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |

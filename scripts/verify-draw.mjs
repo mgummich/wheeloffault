@@ -24,6 +24,11 @@ function parseArgs(argv) {
   const out = {};
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
+    // A bare "--" is the standard argv convention for "end of flags, the
+    // rest are positional args" — pnpm 11 forwards it literally instead of
+    // consuming it (`pnpm verify:draw -- --file draw.json`), so it must be
+    // skipped here rather than rejected as an unknown flag.
+    if (arg === '--') continue;
     if (!arg.startsWith('--')) usageAndExit(`unexpected argument "${arg}"`);
     const key = arg.slice(2);
     if (key !== 'file') usageAndExit(`unknown flag --${key}`);

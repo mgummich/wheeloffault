@@ -15,9 +15,9 @@ Motion is decoration. It never decides anything.
 
 The winner is fixed by the commit/reveal protocol
 (`docs/en/fairness.md`) before a single frame is drawn: the server commits
-to a seed and weights, then reveals a result, and only *then* does
-`SpinPage.draw()` (`src/web/views/SpinPage.tsx`) switch the phase to
-`animating` with that already-known result in hand
+to a seed and weights, then reveals a result, and only *then* does the
+`draw` callback local to `SpinPage` (`src/web/views/SpinPage.tsx`) switch
+the phase to `animating` with that already-known result in hand
 (`src/web/draw.ts` → `performDraw`). Every visualization receives the
 finished `result` as a prop on mount and spends the following seconds
 *performing* it — spinning a wheel to the winning segment, rolling a
@@ -114,7 +114,8 @@ overshoots and eases back rather than stopping dead:
 pause, or fast-forward an animation — it commits to the already-decided
 result immediately:
 
-- `SpinPage.finish()` moves the phase straight to `announced`.
+- The `finish` callback local to `SpinPage` moves the phase straight to
+  `announced`.
 - `Wheel.tsx` has an effect keyed on `announced` that, if the spin loop is
   still running, snaps `rotation` to the precomputed target and marks
   `finished` — the next frame renders the final pose, not an interpolated
@@ -122,8 +123,11 @@ result immediately:
 - Every other stage's `useNameTicker` derives `currentId` from `announced`
   first: once announced, the displayed name *is* `result.reveal
   .selectedMemberId`, regardless of which tick the RAF loop had reached.
-  There is no rewind path — cancellation only ever jumps forward to the
-  committed end state.
+  (`LineStage` doesn't read `currentId` at all — it drives its needle
+  straight from `result.reveal` — but it destructures the same `animating`
+  flag from `useNameTicker`, so the same jump-forward-only guarantee holds
+  for it too.) There is no rewind path — cancellation only ever jumps
+  forward to the committed end state.
 
 ## § 7 Reduced motion
 
@@ -149,7 +153,7 @@ skip the announcement, it just skips the show beforehand.
 
 | Visualization | What it does, in these terms |
 |---|---|
-| **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
+| **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary crossed after the first (`lastSeg` starts at `-1`, so the initial segment under the pointer never kicks) — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
 | **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of the row's 16 cells, then the same 0–84ms cascade repeats for the second 8 — so the row reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
 | **Signal** (`SignalStage`) | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red. |
 | **Ticket stamp** (`StampStage`) | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`. |

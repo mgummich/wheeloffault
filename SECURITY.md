@@ -61,8 +61,9 @@ you choose not to unmask can still lock the login for everyone behind it;
 that trade-off is deliberate given the deployment target (§ 1).
 
 **Password mode is single-instance only.** Sessions and the login-attempt
-map (every attempt, not just failures — see § 1a above) live in an
-in-memory `Map`, per process — there is no shared store,
+map (every attempt, not just failures) live in two separate in-memory
+`Map`s (`sessions`, `failures` in `src/server/auth.ts`), per process — there
+is no shared store,
 Redis included (`REDIS_URL` only fans out *domain* events over SSE, it does
 not touch auth state; see [docs/en/deployment.md](docs/en/deployment.md)
 § 3a). Behind more than one replica without sticky sessions: a session
@@ -83,10 +84,12 @@ instance of server mode.
   member nobody thought to tell. Rotate the password (and restart the
   server, which also revokes every existing session) if that matters to
   you.
-* **Network-level eavesdropping without TLS.** The cookie is `HttpOnly`
-  and `Secure` when a proxy terminates TLS in front of it, but Schuldrad
-  itself never terminates TLS — see § 1 and
-  [docs/en/deployment.md](docs/en/deployment.md) § 4.
+* **Network-level eavesdropping without TLS.** The cookie is `HttpOnly` and
+  carries `Secure` when a proxy terminates TLS in front of it *and*
+  `SCHULDRAD_TRUST_PROXY=1` is set (or `SCHULDRAD_SECURE_COOKIES=1` is set
+  explicitly) — the env var is required, not automatic just because a proxy
+  happens to terminate TLS. Schuldrad itself never terminates TLS — see § 1
+  and [docs/en/deployment.md](docs/en/deployment.md) § 3a and § 4.
 * **A compromised server process.** The password lives in that process's
   memory for as long as it runs; anyone with code execution on the host or
   in the container reads it the same way they would read anything else the
@@ -106,7 +109,9 @@ server, which is why this feature exists only in server mode.
 
 Every `/api/*` request is checked against three cheap rules, applied
 regardless of whether § 1a's password is enabled — they hold even in the
-fully-open default mode:
+fully-open default mode. A fourth item below is not a request check but a
+cookie attribute, relevant only once § 1a's password is on (in the default
+mode there is no session cookie to attach `SameSite` to):
 
 * **Content-Type.** A state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`)
   must be `application/json`. This alone defeats the classic browser CSRF
@@ -131,10 +136,12 @@ fully-open default mode:
   is worth doing wherever the reachable hostnames are known ahead of time.
   See [docs/en/deployment.md](docs/en/deployment.md) § 3b.
 * **`SameSite=Strict` session cookie.** Set on `schuldrad_session` in
-  `src/server/auth.ts`, independent of § 1a being enabled — the browser
-  never attaches the cookie to a cross-site request in the first place, so
-  a forged request from another origin arrives with no session at all,
-  regardless of the checks above. It also carries `Secure` when
+  `src/server/auth.ts` — this cookie exists only when § 1a's password is
+  enabled (`/api/auth/login` is `404` and issues no cookie otherwise); when
+  it does exist, the browser never attaches it to a cross-site request in
+  the first place, so a forged request from another origin arrives with no
+  session at all, regardless of the checks above. It also carries `Secure`
+  when
   `SCHULDRAD_SECURE_COOKIES=1` is set, or when the request is confirmed to
   have arrived over TLS via `SCHULDRAD_TRUST_PROXY=1` — see
   [docs/en/deployment.md](docs/en/deployment.md) § 3a.
@@ -200,10 +207,13 @@ database the operator's browser does not control.
   only catches tampering with the fields a commitment actually binds.
 * **Input validation.** All HTTP input is validated server-side —
   `src/server/validate.ts` for most routes, and `assertPolicy`
-  (`src/domain/fairness/policy.ts`) for the fairness-policy body, which the
-  browser checks with the same function — independent of anything the
-  browser sends, a malicious or buggy client cannot inject a malformed
-  event.
+  (`src/domain/fairness/policy.ts`) for the fairness-policy body. `assertPolicy`
+  is the actual enforcement and runs only on the server (imported by
+  `src/server/http.ts`); the browser imports only the `FairnessPolicy` type
+  from that module, not the check itself, so its `min`/`max` on the policy
+  form's number inputs are UI hints, not a validation boundary — they do not
+  constrain a programmatic write. Independent of anything the browser sends,
+  a malicious or buggy client cannot inject a malformed event.
 
 **Not protected**, beyond what §§ 1–3 already say:
 

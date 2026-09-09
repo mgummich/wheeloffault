@@ -29,7 +29,7 @@ Before a draw, the server computes:
    | Order | Modifier | Effect |
    |---|---|---|
    | 1 | `pity` | `+X %` per draw without a hit since this member's last guilt |
-   | 2 | `cooldown` | weight `0` for `N` draws after a hit. If this would exclude everyone, cooldown is skipped for this draw only and logged with factor `1000` for the affected members |
+   | 2 | `cooldown` | weight `0` for `N` draws after a hit. If this would exclude everyone, cooldown is skipped for this draw only and logged with factor `1000` for every member, not just the ones it would have excluded |
    | 3 | `exhaustion` | `−X %` per hit within the last `N` draws |
    | 4 | `newcomer` | `×factor` for members with fewer than `N` participations |
    | 5 | `manual` | explicit per-member factor set by an operator |
@@ -181,14 +181,20 @@ browser verifier reproduces server
 
 Anyone with the published values of a draw — `nonce`, `commitment`,
 `participants`, `serverSeed`, `clientSeed`, `digest`, `selectedMemberId`, all
-shown on that spin's detail page (`src/web/views/SpinDetailPage.tsx`) —
-can recompute the entire draw without running Schuldrad at all, using
+available from that spin's detail page (`src/web/views/SpinDetailPage.tsx`,
+see below for how) — can recompute the entire draw without running Schuldrad
+at all, using
 `scripts/verify-draw.mjs`. It is a zero-dependency Node script that
 re-implements § 3–§ 4 from this document independently; it does not import
 `src/domain/fairness/draw.ts`, so it cannot silently inherit a bug from the
 application it is checking.
 
-Copy the values shown on the spin's detail page into a JSON file:
+The spin detail page renders member names (`nameOf(p.memberId)`), never raw
+member IDs, so the JSON below cannot be hand-copied from what's on screen.
+Use the **"Copy proof"** button on that page instead
+(`src/web/views/SpinDetailPage.tsx`): it copies exactly this shape —
+`{ nonce, commitment, participants, serverSeed, clientSeed, digest,
+selectedMemberId }` — to the clipboard. Paste it straight into a file:
 
 ```json
 {
@@ -211,7 +217,7 @@ node scripts/verify-draw.mjs --file draw.json
 
 The script prints a Prüfprotokoll (verification record) with one ✓/✗ line
 per check — commitment, digest, selection — and exits `0` only if all three
-pass, `1` if any check fails, and `2` for a usage error (an unknown flag, a
-missing `--file`, a missing required field, non-array or empty
-`participants`, or a non-integer `nonce`) before any check runs — so it
-composes with CI or a shell `&&`.
+pass, `1` if any check fails, and `2` for a usage error (an unexpected
+argument, an unknown flag, a flag with no value, a missing `--file`, a
+missing required field, non-array or empty `participants`, or a non-integer
+`nonce`) before any check runs — so it composes with CI or a shell `&&`.
