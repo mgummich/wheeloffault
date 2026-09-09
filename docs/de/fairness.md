@@ -44,8 +44,8 @@ Vor einer Ziehung berechnet der Server:
    Ist das Gewicht jedes Teilnehmers nach allen Modifikatoren `0` —
    aus beliebigem Grund, nicht nur cooldown (auch immunity, ein manueller
    Faktor `0` oder exhaustion können dorthin führen) — und ist cooldown
-   aktiviert, läuft die gesamte Berechnung einmal erneut mit neutralisiertem
-   cooldown und wird mit Faktor `1000` für jedes Mitglied protokolliert; die
+   aktiviert, läuft die gesamte Berechnung einmal erneut, wobei cooldown
+   neutralisiert und mit Faktor `1000` je Mitglied protokolliert wird; die
    Ziehung schlägt nur fehl, wenn danach immer noch alle Gewichte `0` sind.
 
    Die Modifikator-Reihenfolge ist Teil des Fairness-Vertrags: sie ist im
@@ -251,6 +251,6 @@ bestehen, `1`, wenn eine Prüfung fehlschlägt, und `2` bei einem Aufruffehler
 (ein unerwartetes Argument, ein unbekanntes Flag, ein Flag ohne Wert,
 fehlendes `--file`, ein `--file`-Pfad, der sich nicht lesen lässt, eine
 Datei, die kein gültiges JSON ist, fehlendes Pflichtfeld, `participants`
-nicht als Array oder leer, oder ein `nonce`, der keine nicht-negative
-Ganzzahl ist — auch ein negativer), bevor überhaupt eine Prüfung läuft —
+nicht als Array oder leer, oder die Nonce, wenn sie keine nicht-negative
+Ganzzahl ist — auch eine negative), bevor überhaupt eine Prüfung läuft —
 lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.

@@ -25,7 +25,7 @@ wird durch `.github/workflows/pages.yml` bei jedem Push auf `main`
 veröffentlicht. Es gibt kein Backend: `src/web/sessionApi.ts` führt dieselbe
 Command/Decide/Replay-Domänenlogik wie der Server aus, gegen `localStorage`
 statt SQLite. Die genaue Persistenz-Semantik steht in
-[README.de.md](../../README.de.md) (überlebt Reload/Tab-schließen/Neustart, wird
+[README.de.md](../../README.de.md) (überlebt Reload/Tab-Schließen/Neustart, wird
 nur über die Website-Daten-Einstellungen des Browsers gelöscht), und was
 dieser Modus schützt und was nicht, steht in
 [SECURITY.md](../../SECURITY.md).
@@ -166,13 +166,12 @@ unabhängig von der Aktivität nach 7 Tagen endgültig ab.
 Login-Rate-Limiting (jeder Versuch, nicht nur Fehlschläge) liegen in zwei
 getrennten In-Memory-`Map`s (`sessions`, `failures` in `src/server/auth.ts`),
 pro Prozess — nichts teilt diesen Zustand über Replicas hinweg, auch
-`REDIS_URL` nicht
-(das fächert nur Domain-Events per SSE instanzübergreifend auf, siehe die
-Umgebungsvariablen-Tabelle in § 3 — es berührt keinen Auth-Zustand). Ist
-`SCHULDRAD_PASSWORD` gesetzt und läuft der Server hinter mehr als einer
-Replica ohne Sticky Sessions, ergibt sich: eine auf Instanz A erzeugte
-Sitzung wird von Instanz B als
-nicht authentifiziert abgelehnt (zufällige 401 bei gültigem Cookie), ein
+`REDIS_URL` nicht (das fächert nur Domain-Events per SSE
+instanzübergreifend auf, siehe die Umgebungsvariablen-Tabelle in § 3 — es
+berührt keinen Auth-Zustand). Ist `SCHULDRAD_PASSWORD` gesetzt und läuft
+der Server hinter mehr als einer Replica ohne Sticky Sessions, ergibt
+sich: eine auf Instanz A erzeugte Sitzung wird von Instanz B als nicht
+authentifiziert abgelehnt (zufällige 401 bei gültigem Cookie), ein
 Logout auf A kann einen auf B noch offenen Stream nicht schließen, und das
 effektive Rate-Limit liegt bei 5×Replicas statt 5. Entweder Clients per
 Sticky Sessions am Load Balancer an eine Instanz binden, oder nur eine

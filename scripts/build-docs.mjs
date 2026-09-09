@@ -160,16 +160,28 @@ async function checkGermanHyphenWraps() {
     if (!rel.endsWith('.md')) continue;
     const text = await readFile(join(root, rel), 'utf8');
     const lines = text.split('\n');
-    let fenceChar = null; // '`' or '~' while inside a fenced code block opened by that marker
+    let fence = null; // { ch, len } while inside a fenced code block opened by that marker
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
       const fenceMatch = line.trimStart().match(/^(`{3,}|~{3,})/);
       if (fenceMatch) {
-        const ch = fenceMatch[1][0];
-        fenceChar = fenceChar === ch ? null : (fenceChar ?? ch);
+        const marker = fenceMatch[1];
+        const ch = marker[0];
+        // CommonMark: a fence only closes on a line of the SAME character
+        // whose run is at least as long as the opening fence — a shorter or
+        // differently-charactered run is just more fence-marker text inside
+        // the block. Ignoring length here (matching only on `ch`) makes a
+        // 3-backtick line inside a 4-backtick fence close it early, and an
+        // odd number of such false closes then leaves the tracker
+        // permanently "inside a fence" for the rest of the file.
+        if (fence === null) {
+          fence = { ch, len: marker.length };
+        } else if (ch === fence.ch && marker.length >= fence.len) {
+          fence = null;
+        }
         continue;
       }
-      if (fenceChar !== null) continue; // inside a fenced code block
+      if (fence !== null) continue; // inside a fenced code block
       if (/^( {4}|\t)/.test(line)) continue; // 4-space/tab-indented code block
       if (!hyphenWrap.test(line.trimEnd())) continue;
       const next = lines.slice(i + 1).find((l) => l.trim() !== '');
@@ -495,15 +507,15 @@ const lexerOnly = new Marked({ gfm: true });
 // visit type === 'image' and add an image() renderer override that copies
 // the file into dist and rewrites its src, same as link() does for hrefs.
 function collectLinks(md) {
-  const hrefs = [];
+  const links = [];
   const visit = (node) => {
     if (Array.isArray(node)) return node.forEach(visit);
     if (!node || typeof node !== 'object') return;
-    if (node.type === 'link') hrefs.push(node.href);
+    if (node.type === 'link') links.push({ href: node.href, text: node.text });
     for (const v of Object.values(node)) visit(v);
   };
   visit(lexerOnly.lexer(md));
-  return hrefs;
+  return links;
 }
 
 // Independent of markedFor()'s link() renderer — deliberately not shared
@@ -549,13 +561,12 @@ function expectedTarget(hrefPath, frag, pageLang) {
 async function checkContentLanguage() {
   const problems = [];
   for (const lang of LANGS) {
-    const otherLang = lang === 'en' ? 'de' : 'en';
     for (const doc of docs) {
       if (!doc.src[lang]) continue;
       const md = await readFile(join(root, doc.src[lang]), 'utf8');
       const body = renderedBodies.get(`${lang}/${doc.slug}`) ?? '';
 
-      for (const href of collectLinks(md)) {
+      for (const { href, text } of collectLinks(md)) {
         const hashIdx = href.indexOf('#');
         const hrefPath = hashIdx === -1 ? href : href.slice(0, hashIdx);
         if (!hrefPath.endsWith('.md')) continue; // not a doc-to-doc link
@@ -594,24 +605,32 @@ async function checkContentLanguage() {
           );
         }
 
-        // Not just a doc's OWN counterpart: any raw-markdown link whose
-        // basename is the OTHER language's file for its target, while that
-        // target also has a same-language file for THIS page, opens the
-        // wrong-language page on GitHub (the site's fallback masks it, but
-        // GitHub renders the literal href) — unless a marker says so on
-        // purpose.
+        // Real crossover check: for a target whose EN and DE sources have
+        // different basenames, the top-of-file language-switch links spell
+        // the destination filename out as the link's visible TEXT (e.g.
+        // "Deutsch → [architektur.md](docs/de/architektur.md)"). If that
+        // named file differs from the file the href actually resolves to,
+        // the link is lying about its destination — most dangerously when
+        // the href's basename is THIS page's own-language file, so on
+        // GitHub (which renders the literal href, not the site's
+        // marker-aware rewrite) the reader stays on the page they're
+        // already reading instead of crossing languages as the label
+        // promised. This is deliberately independent of expectedTarget()'s
+        // marker resolution: that marker is inferred FROM the href's
+        // basename, so comparing a value against a marker derived from
+        // itself can never disagree — checking the link's own claimed text
+        // is what makes this non-tautological, and it isn't short-circuited
+        // by a self-link the way a `hrefBase !== pageLangBase` guard would be.
         const hrefBase = hrefPath.split('/').pop();
-        const pageLangBase = info.target.src[lang]?.split('/').pop();
-        const otherLangBase = info.target.src[otherLang]?.split('/').pop();
-        if (
-          pageLangBase &&
-          hrefBase !== pageLangBase &&
-          hrefBase === otherLangBase &&
-          info.marker !== otherLang
-        ) {
-          problems.push(
-            `${doc.src[lang]}: link "${href}" points at the ${otherLang} file ${hrefBase}, but this is a ${lang} page and '${info.target.slug}' has a ${lang} counterpart (${pageLangBase}); link to it directly or add an explicit ${otherLang} marker.`,
-          );
+        const enBase = info.target.src.en.split('/').pop();
+        const deBase = info.target.src.de?.split('/').pop();
+        if (deBase && enBase !== deBase) {
+          const textBase = text.trim();
+          if ((textBase === enBase || textBase === deBase) && textBase !== hrefBase) {
+            problems.push(
+              `${doc.src[lang]}: link text "${text}" names ${textBase}, but href "${href}" resolves to ${hrefBase} — the link doesn't go where it says it does.`,
+            );
+          }
         }
       }
     }

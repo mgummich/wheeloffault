@@ -19,10 +19,10 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   installiert es explizit (`npm install -g pnpm@11.24.0`), weil
   das Laufzeit-Image `npm`/`npx`/`corepack` danach entfernt. `.npmrc` setzt
   `auto-install-peers=true`. Die übrige pnpm-Konfiguration steht in
-  `pnpm-workspace.yaml` — `allowBuilds: esbuild: true` (erlaubt esbuilds
-  Postinstall-Skript, zu laufen) und eine `minimumReleaseAgeExclude`-Liste
+  `pnpm-workspace.yaml` — `allowBuilds: esbuild: true` (lässt esbuilds
+  Postinstall-Skript laufen) und eine `minimumReleaseAgeExclude`-Liste
   mit Paketen, die von pnpms Mindest-Release-Alter-Prüfung ausgenommen sind
-  — und ist so tragend, dass das Dockerfile sie neben `package.json` und dem
+  — und ist so entscheidend, dass das Dockerfile sie neben `package.json` und dem
   Lockfile ins Build-Image kopiert.
 * **Biome** für Formatierung und Linting (`biome.json`) — ein Werkzeug
   statt ESLint + Prettier. `pnpm format` schreibt, `pnpm format:check` und
@@ -80,15 +80,20 @@ folgenden Punkte scheitern lässt:
   Sprachpräfix gerendert werden, und jedes gerenderte `href="#…"` muss auf
   eine Überschriften-ID zeigen, die auf der Zielseite tatsächlich existiert.
   Das findet einen vertippten Pfad und einen Link auf eine Überschrift, die
-  umbenannt oder entfernt wurde. Es findet auch einen unmarkierten Link,
-  der auf die Datei der falschen Sprache verweist — aber nur bei den
+  umbenannt oder entfernt wurde. Es findet auch einen Link, dessen sichtbarer
+  TEXT eine Datei nennt (z. B. `[README.md]`), während sein Href tatsächlich
+  auf eine andere verweist — der relevante Fall ist ein Sprachwechsel-Link,
+  dessen Beschriftung einen Sprachwechsel verspricht, den der Href nicht
+  einlöst (z. B. `English → [README.md](README.de.md)`, dessen Href still
+  wieder auf die deutsche Datei zeigt). Das funktioniert nur bei den
   Dokumentpaaren, deren englische und deutsche Quelldatei unterschiedliche
   Basisnamen haben (`README.md`/`README.de.md`,
-  `ARCHITECTURE.md`/`architektur.md`). Paare mit gleichem Basisnamen
-  (`fairness.md`, `contributing.md`, …) lassen sich so nicht unterscheiden:
-  Ein Sprachwechsel-Link mit fehlendem `../de/`- (oder `../en/`-) Präfix
-  fällt still auf die Sprache der aktuellen Seite zurück, statt einen
-  Fehler auszulösen.
+  `ARCHITECTURE.md`/`architektur.md`) — nur bei diesen Paaren können Linktext
+  und Href-Basisname überhaupt zwei verschiedene reale Dateien benennen.
+  Paare mit gleichem Basisnamen (`fairness.md`, `contributing.md`, …) lassen
+  sich so nicht unterscheiden: Ein Sprachwechsel-Link mit fehlendem
+  `../de/`- (oder `../en/`-) Präfix fällt still auf die Sprache der
+  aktuellen Seite zurück, statt einen Fehler auszulösen.
 * **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
   ALL_CAPS-Konstante *mit Unterstrich* (`MAX_NAME`, nicht `PORT`) in einem
   Dokument muss tatsächlich aus `src/` exportiert werden (bei ALL_CAPS
@@ -113,8 +118,8 @@ folgenden Punkte scheitern lässt:
   „Wort- Wort“ statt des gemeinten zusammenhängenden Worts. Ausgenommen ist
   ein zeilenendständiger Ergänzungsstrich (ein Bindestrich, der für einen
   gemeinsamen Wortteil steht, wie bei „Vor-“ vor einer Folgezeile, die mit
-  „und“/„oder“/„bzw.“ beginnt), ebenso beide Zäunungsstile (` ``` ` und
-  `~~~`) sowie ein mit 4 Leerzeichen eingerückter Codeblock.
+  „und“/„oder“/„bzw.“ beginnt), ebenso beide Auszeichnungsformen für Codeblöcke (` ``` ` und
+  `~~~`) sowie ein mit 4 Leerzeichen oder einem Tab eingerückter Codeblock.
 
 `pnpm status` erzeugt `docs/STATUS.json` neu aus der tatsächlichen Ausgabe
 der `verify`-/`build:server`-/`e2e`-Prüfungen (bestanden/fehlgeschlagen

@@ -96,7 +96,7 @@ nicht fehlerhaft:
 
 - Der `windup`-Spin-Stil des Rades schwingt vor dem eigentlichen
   Vorwärts-Spin um rund 3,5 % der gesamten Spin-Strecke zurück (Fall
-  `windup` in `ease()`) — etwa 63° über die ~1800° Mindeststrecke von
+  `windup` in `ease()`) — etwa 63° über die ~1800°-Mindeststrecke von
   `windup` selbst.
   Zum Vergleich: dieselben 3,5 % über die ~3600°-Strecke des `lang`-Stils
   wären ~126° (`lang` und `windup` sind eigenständige, nicht kombinierbare
@@ -127,8 +127,8 @@ zu stoppen:
 ## § 6 Abbruch
 
 „Überspringen“ (`data-testid="skip-animation"`, `spin.skipButton`) spult
-eine laufende Animation weder zurück noch pausiert oder beschleunigt es
-sie — es rastet sofort im bereits feststehenden Ergebnis ein:
+eine laufende Animation nicht zurück und pausiert oder beschleunigt sie
+auch nicht — es rastet sofort im bereits feststehenden Ergebnis ein:
 
 - Der in `SpinPage` definierte `finish`-Callback schaltet die Phase direkt
   auf `announced`.

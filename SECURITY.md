@@ -209,48 +209,78 @@ database the operator's browser does not control.
 * **Input validation.** All HTTP input is validated server-side —
   `src/server/validate.ts` for most routes (see [ARCHITECTURE.md](ARCHITECTURE.md)
   for the exact length limits), and `assertPolicy`
-  (`src/domain/fairness/policy.ts`) for the fairness-policy body. Every path
-  parameter that names an entity (`teamId`, `memberId`, `poolId`, `spinId`)
-  is additionally checked against `id()`'s `^[A-Za-z0-9_-]{1,64}$` shape
-  before it reaches a command handler, and the request body as a whole is
-  capped at `MAX_BODY` = 64 KiB (`src/server/http.ts`) before any
-  field-level check runs, so an oversized or malformed body is rejected
-  cheaply rather than parsed first. The
-  `min`/`max` on the policy form's number inputs are UI hints, not the
-  validation boundary — they do not constrain a programmatic write. The
-  actual enforcement is `assertPolicy`, called from
-  `decide.changePolicy` (`src/domain/decisions.ts`), so it runs in both
-  modes: server mode via `src/server/http.ts` before the command layer even
-  sees the body, and static mode via `src/web/sessionApi.ts`, which calls
-  the same domain function directly against `localStorage`. Likewise,
-  member names are length- and NUL-checked in one place —
-  `cleanName` (`src/domain/decisions.ts`) — shared by every path that
-  creates a name in either mode; the immunity reason, appeal reason, and
-  `clientSeed` get the same NUL check and length cap from `cleanReason`
-  (`src/domain/decisions.ts`) and directly in `revealSpin`
-  (`src/domain/fairness/spin.ts`), closing what used to be a static-mode-only
-  gap (both used to only `.slice()` the length, with no NUL check, in the
-  domain layer — the server's own NUL/length check via `str()`/`optionalStr()`
-  never ran for a static-mode write). A malicious or buggy client cannot
-  persist a malformed policy, name, reason, or `clientSeed` in server mode,
-  where the server is a trust boundary the client cannot bypass; in static
-  mode there is no such boundary; a client with page access can still write
-  directly to its own `localStorage`, but the shared domain validation is the
-  same code either way and behaves identically, and that write is confined to
-  the attacker's own browser and cannot lie to anyone else about a signed
-  commitment (see [docs/en/fairness.md](docs/en/fairness.md) § 6). One
-  asymmetry remains, deliberately not closed: static mode does not run the
-  `id()` shape check (`^[A-Za-z0-9_-]{1,64}$`) that server mode applies to
-  every path parameter, because static mode has no path parameters — every
-  ID a normal UI action generates is already a `crypto.randomUUID` value
-  created in the browser (`src/web/sessionApi.ts`, `src/web/draw.ts`), the
-  same as server mode's own `randomUUID` calls (`src/server/commands.ts`).
-  Only a client bypassing the UI to call `sessionApi`/`localStorage` directly could
-  supply a malformed ID, and that write is confined to the attacker's own
-  browser for the same reason the paragraph above already gives — so the
-  fix would add shape-checking to every domain function that accepts an ID,
-  for a bypass whose blast radius is already limited to the attacker's own
-  session. Documented here rather than closed.
+  (`src/domain/fairness/policy.ts`) for the fairness-policy body.
+
+  * *Shape and size checks at the HTTP boundary.* Every path parameter
+    that names an entity (`teamId`, `memberId`, `poolId`, `spinId`) is
+    checked against `id()`'s `^[A-Za-z0-9_-]{1,64}$` shape before it
+    reaches a command handler, and the request body as a whole is capped
+    at `MAX_BODY` = 64 KiB (`src/server/http.ts`) before any field-level
+    check runs, so an oversized or malformed body is rejected cheaply
+    rather than parsed first. An over-`MAX_BODY` body returns 400
+    `invalid_body` (`src/server/http.ts:434`), not 413 — the size limit
+    is enforced by throwing and reusing the same malformed-JSON error
+    path, not a distinct HTTP status.
+
+  * *Fairness-policy validation runs in both modes.* The `min`/`max` on
+    the policy form's number inputs are UI hints, not the validation
+    boundary — they do not constrain a programmatic write. The actual
+    enforcement is `assertPolicy`, called from `decide.changePolicy`
+    (`src/domain/decisions.ts`), so it runs in both modes: server mode
+    via `src/server/http.ts` before the command layer even sees the
+    body, and static mode via `src/web/sessionApi.ts`, which calls the
+    same domain function directly against `localStorage`.
+
+  * *Names, reasons, and the client seed validate in one place.* Member
+    names are length- and NUL-checked by `cleanName`
+    (`src/domain/decisions.ts`), shared by every path that creates a
+    name in either mode; the immunity reason, appeal reason, and
+    `clientSeed` get the same NUL check and length cap from
+    `cleanReason` (`src/domain/decisions.ts`) and directly in
+    `revealSpin` (`src/domain/fairness/spin.ts`), closing what used to
+    be a static-mode-only gap (both used to only `.slice()` the length,
+    with no NUL check, in the domain layer — the server's own
+    NUL/length check via `str()`/`optionalStr()` never ran for a
+    static-mode write). A malicious or buggy client cannot persist a
+    malformed policy, name, reason, or `clientSeed` in server mode,
+    where the server is a trust boundary the client cannot bypass; in
+    static mode there is no such boundary — a client with page access
+    can still write directly to its own `localStorage`.
+
+  * *What can be stored is identical; how a bad write is handled is
+    not.* `cleanReason`/`revealSpin` cap the same fields at the same
+    lengths in both modes, but server mode rejects an over-length
+    reason or `clientSeed` outright (400 `field_too_long` from
+    `str()`/`optionalStr()` in `src/server/validate.ts`, before the
+    domain even runs), while static mode's `cleanReason`/`revealSpin`
+    silently truncate to the same limit instead of rejecting. Either
+    way that write is confined to the attacker's own browser and
+    cannot lie to anyone else about a signed commitment (see
+    [docs/en/fairness.md](docs/en/fairness.md) § 6).
+
+  * *One asymmetry remains, deliberately not closed:* static mode does
+    not run the `id()` shape check (`^[A-Za-z0-9_-]{1,64}$`) that
+    server mode applies to every path parameter *and* to ID-shaped body
+    fields (`memberIds` in `POST /api/teams/:teamId/pools` and `PUT
+    .../pools/:poolId`, `spinId` in `POST /api/teams/:teamId/spins`;
+    `src/server/http.ts`). Every ID a normal UI action generates is
+    already a `crypto.randomUUID` value created in the browser
+    (`src/web/sessionApi.ts`, `src/web/draw.ts`), the same as server
+    mode's own `randomUUID` calls (`src/server/commands.ts`), so the
+    gap only matters for a client bypassing the UI to call
+    `sessionApi`/`localStorage` directly with a hand-crafted ID —
+    `sessionApi.ts` passes such values (e.g. `memberIds`, `spinId`;
+    lines 166, 171, 180) straight to the domain with no shape check,
+    same as server mode would for a body field that reached `id()`.
+    The reason this gap is left open is not that static mode lacks the
+    parameters to check — it has them — but that the write is confined
+    to the attacker's own browser: unlike server mode, where an
+    unchecked ID could reach shared storage other users read, static
+    mode's `localStorage` is per-browser, so a malformed ID can only
+    corrupt the attacker's own session state, not anyone else's.
+    Closing it would mean adding shape-checking to every domain
+    function that accepts an ID, for a bypass whose blast radius is
+    already that narrow. Documented here rather than closed.
 
 **Not protected**, beyond what §§ 1–3 already say:
 

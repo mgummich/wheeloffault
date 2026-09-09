@@ -10,7 +10,7 @@ English → [events.md](../en/events.md) (kanonisch)
 `src/domain/events.ts` definiert den persistierten Vertrag für Schuldrads
 Event-Store. Dieses Dokument ist das Betriebsreglement zu diesem Vertrag:
 was sich ändern darf, was sich nie ändern darf, und wie eine Migration
-hinzugefügt wird, ohne bereits gespeicherte Historie zu brechen.
+hinzugefügt wird, ohne bereits gespeicherte Historie zu beschädigen.
 
 ## § 1 Die 17 Event-Typen
 

@@ -18,7 +18,7 @@
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "17 test files, 110 tests passed."
+      "details": "17 test files, 114 tests passed."
     },
     {
       "name": "test:integration (pnpm test:integration)",

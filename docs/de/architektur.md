@@ -18,7 +18,7 @@ Leitsatz: **Das System darf over-engineered sein, der Code nicht.**
 ```
 Browser (PWA, React)                       Server (Node 26, kein Framework)
 ┌──────────────────────────┐   HTTP/JSON   ┌────────────────────────────────┐
-│ Ansichten                │ ────────────▶ │ Command-Handler                 │
+│ Ansichten                │ ────────────▶ │ Command-Handler                │
 │ Rad-Animation            │               │   lädt Stream → Domänenfunktion│
 │ Schuldbericht/Statistik  │ ◀──────────── │   → Events → Event-Store       │
 │ Verifier (Web Crypto)    │   SSE         │ Projektionen (pure Funktionen) │
@@ -187,8 +187,8 @@ immunity    Gewicht 0, wenn eine Immunität vorliegt (wird durch den Spin verbra
 Ist das Gewicht jedes Teilnehmers nach allen Modifikatoren 0 — aus
 beliebigem Grund (cooldown, immunity, ein manueller Faktor 0 oder
 exhaustion, das dorthin führt), nicht nur cooldown — und ist cooldown
-aktiviert, läuft die gesamte Berechnung einmal erneut mit neutralisiertem
-cooldown und wird mit Faktor 1,000 für jedes Mitglied protokolliert; die
+aktiviert, läuft die gesamte Berechnung einmal erneut, wobei cooldown
+neutralisiert und mit Faktor 1000 je Mitglied protokolliert wird; die
 Ziehung schlägt nur fehl, wenn danach immer noch alle Gewichte 0 sind.
 
 Gamification ändert nie Gewichte. Jede Gewichtsänderung ist über die aktive
@@ -209,7 +209,7 @@ teamStatistics(state)           Hall of Shame (Rangliste), maximale Fairness-Abw
                                 kein eigener Export)
 ```
 
-Nichts davon wird gespeichert. Die Event-Historie ist die einzige Quelle der Wahrheit;
+Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
 „Projektion neu aufbauen“ heißt: Seite neu laden.
 
 ## 6. HTTP-Vertrag
@@ -251,11 +251,15 @@ ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
 explizit validiert: serverseitig an der HTTP-Grenze (`src/server/validate.ts`
 — `clientSeed` ≤ 200 Zeichen, Immunitätsgrund ≤ 200 Zeichen, Einspruchsgrund
 ≤ 500 Zeichen, bis zu 500 Namen je Sammel-Anlage, dort je ≤ 100 Zeichen).
-Die tatsächliche Grenze für einen Namen liegt niedriger: Die Domänenschicht
-weist zusätzlich alles über `MAX_NAME` = 60 Zeichen zurück
-(`src/domain/decisions.ts`, Fehlercode `name_too_long`), sodass die
-100-Zeichen-Prüfung der HTTP-Schicht pro Name nie wirklich greift — die
-Domänenprüfung läuft danach und lehnt zuerst ab, bei 60. Policy-Faktorschlüssel
+Ein Name durchläuft zwei Schichten mit zwei Grenzen: Die HTTP-Schicht lehnt
+alles über 100 Zeichen zuerst ab (`field_too_long`, z. B. `str(body, 'name',
+100)` in `src/server/http.ts`, ausgewertet bevor der Befehl aufgerufen wird,
+dessen Argument es ist), und die Domänenschicht weist zusätzlich alles über
+`MAX_NAME` = 60 Zeichen zurück (`src/domain/decisions.ts`, Fehlercode
+`name_too_long`) — für alles, was sie erreicht. Ein Name mit 101+ Zeichen
+wird also bereits von der HTTP-Schicht abgelehnt und erreicht die
+Domänenprüfung nie, während ein Name mit 61–100 Zeichen die HTTP-Schicht
+passiert und dann von der Domäne bei 60 abgelehnt wird. Policy-Faktorschlüssel
 sind über `assertPolicy` (`src/domain/fairness/policy.ts`) auf ≤ 64 Zeichen
 begrenzt, nicht über `validate.ts`; die FairnessPolicy wird zusätzlich über
 eben dieses `assertPolicy` validiert, aufgerufen aus `decide.changePolicy`
@@ -332,7 +336,7 @@ Optional kann Redis als reines Broadcast-Fanout aktiviert werden:
 REDIS_URL=redis://localhost:6379 pnpm start
 ```
 
-Redis ist kein Cache und keine zweite Quelle der Wahrheit. Ein Server publiziert nach
+Redis ist kein Cache und keine zweite Wahrheit. Ein Server publiziert nach
 persistierten Appends die Event-Metadaten, andere Instanzen liefern sie an
 ihre lokalen SSE-Clients aus.
 
@@ -374,7 +378,7 @@ Ein Container (`Dockerfile`, Multi-Stage): Vite-Build → statische Dateien;
 der Server läuft als unveränderte TypeScript-Quelle direkt unter Node ≥ 26
 (natives Type-Stripping, kein Bundler). Volume für `/data`. `PORT`, `HOST`,
 `DATA_DIR` und `WEB_DIR` per Umgebungsvariable (`src/server/main.ts`) —
-`HOST` ist tragend: Das Dockerfile setzt es auf `0.0.0.0`, da der Server
+`HOST` ist entscheidend: Das Dockerfile setzt es auf `0.0.0.0`, da der Server
 sonst nur auf `127.0.0.1` bindet. Kein Reverse Proxy nötig.
 
 ## 11. Verifikationsschleife

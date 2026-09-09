@@ -72,14 +72,19 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   file at that relative path and render with the right language prefix, and
   every rendered `href="#…"` must point at a heading id that actually
   exists on its target page. This catches a typo'd path and a link into a
-  heading that got renamed or removed. It also catches an unmarked link
-  that resolves to the wrong language's file — but only for the doc pairs
-  whose English and German source files have different basenames
-  (`README.md`/`README.de.md`, `ARCHITECTURE.md`/`architektur.md`). Doc
-  pairs that share a basename (`fairness.md`, `contributing.md`, …) can't be
-  told apart this way: a language-switcher link with a dropped `../de/` (or
-  `../en/`) prefix silently falls back to the current page's own language
-  instead of erroring.
+  heading that got renamed or removed. It also catches a link whose visible
+  TEXT names one file (e.g. `[README.md]`) while its href actually resolves
+  to a different one — the case that matters is a language-switch link
+  whose label promises a language crossover the href doesn't deliver (e.g.
+  `English → [README.md](README.de.md)`, where the href quietly points back
+  at the German file). This only works for the doc pairs whose English and
+  German source files have different basenames (`README.md`/`README.de.md`,
+  `ARCHITECTURE.md`/`architektur.md`) — those are the only pairs where a
+  link's text and its href basename can name two distinct real files in the
+  first place. Doc pairs that share a basename (`fairness.md`,
+  `contributing.md`, …) can't be told apart this way: a language-switcher
+  link with a dropped `../de/` (or `../en/`) prefix silently falls back to
+  the current page's own language instead of erroring.
 * **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
   constant *with an underscore* (`MAX_NAME`, not `PORT`) in a doc must
   actually be exported from `src/` (or, for ALL_CAPS, be an
@@ -102,7 +107,7 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   line-final Ergänzungsstrich (a hyphen standing in for a shared word part,
   as in "Vor-" before a following line that starts with "und"/"oder"/"bzw."),
   and it does not flag either fence style (` ``` ` or `~~~`) or a
-  4-space-indented code block.
+  4-space- or tab-indented code block.
 
 `pnpm status` regenerates `docs/STATUS.json` from the actual output of the
 `verify`/`build:server`/`e2e` checks (pass/fail plus deterministic counts —

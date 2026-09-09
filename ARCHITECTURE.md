@@ -14,10 +14,10 @@ Guiding principle: **The system may be over-engineered, the code may not.**
 ```
 Browser (PWA, React)                       Server (Node 26, no framework)
 ┌──────────────────────────┐   HTTP/JSON   ┌────────────────────────────────┐
-│ Views                     │ ────────────▶ │ Command handlers                │
-│ Wheel animation            │               │   loads stream → domain function│
-│ Guilt report/statistics   │ ◀──────────── │   → events → event store       │
-│ Verifier (Web Crypto)     │   SSE         │ Projections (pure functions)   │
+│ Views                    │ ────────────▶ │ Command handlers               │
+│ Wheel animation          │               │  loads stream → domain function│
+│ Guilt report/statistics  │ ◀──────────── │   → events → event store       │
+│ Verifier (Web Crypto)    │   SSE         │ Projections (pure functions)   │
 └──────────────────────────┘               │ SQLite (node:sqlite, 1 file)   │
               ▲                            └────────────────────────────────┘
               └── same domain module (src/domain) on both sides
@@ -183,7 +183,7 @@ immunity    weight 0 if an immunity applies (consumed by the spin)
 If every participant's weight is 0 after all modifiers — for any reason
 (cooldown, immunity, a manual 0 factor, or exhaustion driving it there),
 not just cooldown — and cooldown is enabled, the whole calculation retries
-once with cooldown neutralized and logged with factor 1.000 for every
+once with cooldown neutralized and logged with factor 1000 for every
 member; it fails the draw only if weights are still all 0 after that.
 
 Gamification never changes weights. Every weight change is visible via the
@@ -244,11 +244,15 @@ human `error` message is English and only a fallback for unknown codes. All
 input is explicitly validated: server-side at the HTTP boundary
 (`src/server/validate.ts` — `clientSeed` ≤ 200 chars, immunity reason ≤ 200
 chars, appeal reason ≤ 500 chars, up to 500 names per bulk-add call, each
-≤ 100 chars at this layer). A name's *effective* limit is lower: the domain
-layer separately rejects anything over `MAX_NAME` = 60 characters
-(`src/domain/decisions.ts`, error code `name_too_long`), so the HTTP
-layer's own 100-char per-name check never actually binds — the domain
-check runs afterward and rejects first, at 60. Policy factor keys are
+≤ 100 chars at this layer). A name passes through two layers with two
+limits: the HTTP layer rejects anything over 100 chars first
+(`field_too_long`, e.g. `str(body, 'name', 100)` in `src/server/http.ts`,
+evaluated before the command it's an argument to), and the domain layer
+separately rejects anything over `MAX_NAME` = 60 characters
+(`src/domain/decisions.ts`, error code `name_too_long`) for whatever
+reaches it — so a 101+ char name is rejected at the HTTP layer and never
+reaches the domain check, while a 61–100 char name passes the HTTP layer
+and is rejected by the domain at 60. Policy factor keys are
 capped at ≤ 64 chars by `assertPolicy` (`src/domain/fairness/policy.ts`),
 not by `validate.ts`; the FairnessPolicy is additionally validated via that
 same `assertPolicy`, called from `decide.changePolicy` (`src/domain/decisions.ts`) so it runs in
