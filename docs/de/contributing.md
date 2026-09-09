@@ -48,9 +48,34 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   `base: './'` aus `vite.config.ts`, der Unterpfad `/wheeloffault/` wird
   erst beim Ausliefern über `vite preview --base /wheeloffault/` angewendet
   —, startet beide und führt zwei Projekte gegen sie aus: `server`
-  (`journey.spec.ts`) und `static` (`static.spec.ts`) — derselbe Unterpfad,
-  unter dem GitHub Pages den Build veröffentlicht, damit ein kaputter
-  Base-Path vor der Produktion auffällt.
+  (`journey.spec.ts`) und `static` (`static.spec.ts` und `visual.spec.ts`) —
+  derselbe Unterpfad, unter dem GitHub Pages den Build veröffentlicht,
+  damit ein kaputter Base-Path vor der Produktion auffällt.
+
+  `visual.spec.ts` fotografiert die sechs Nicht-Rad-Visualisierungen sowie
+  das Rad selbst, jeweils in beiden Themes. Playwright benennt Snapshots
+  nach dem Betriebssystem, auf dem sie entstanden sind, und die
+  Schriftdarstellung unterscheidet sich zwischen macOS und Linux so stark,
+  dass eine Baseline von der einen Plattform nicht zur anderen passt —
+  deshalb liegen in `tests/e2e/visual.spec.ts-snapshots/` **beide**
+  Varianten im Repo: `*-darwin.png` (von einem lokalen Mac) und
+  `*-linux.png` (aus demselben `mcr.microsoft.com/playwright`-Container,
+  auf dem CIs `e2e`-Job läuft), und `pnpm e2e` nimmt jeweils das passende
+  Suffix. Um eine Baseline nach einer echten visuellen Änderung neu zu
+  erzeugen:
+  * macOS: `pnpm exec playwright test tests/e2e/visual.spec.ts
+    --update-snapshots` direkt ausführen.
+  * Linux: denselben Befehl im passenden Container ausführen, damit die
+    Schriften zu CI passen, z. B.
+    `docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work
+    mcr.microsoft.com/playwright:v1.62.1-noble bash -c "<Node ≥26 und pnpm
+    installieren, dann pnpm install --frozen-lockfile && pnpm exec
+    playwright test tests/e2e/visual.spec.ts --update-snapshots>"` — der
+    Playwright-Versions-Tag muss zu `@playwright/test` in `package.json`
+    passen.
+
+  Beide Plattform-PNGs zusammen committen und im Diff prüfen, dass er
+  wirklich die beabsichtigte Änderung zeigt und kein zufälliges Rauschen.
 
 ## § 2 `pnpm verify`
 

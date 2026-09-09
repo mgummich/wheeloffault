@@ -44,8 +44,30 @@ Deutsch → [contributing.md](../de/contributing.md)
   `base: './'`, so the `/wheeloffault/` subpath is applied only when it's
   served, via `vite preview --base /wheeloffault/` — starts both, and runs
   two projects against them: `server` (`journey.spec.ts`) and `static`
-  (`static.spec.ts`) — the same subpath GitHub Pages deploys to, so a
-  broken base path is caught before it reaches production.
+  (`static.spec.ts` and `visual.spec.ts`) — the same subpath GitHub Pages
+  deploys to, so a broken base path is caught before it reaches production.
+
+  `visual.spec.ts` screenshots the six non-wheel visualizations plus the
+  wheel itself, in both themes. Playwright names snapshots after the OS
+  they were taken on, and font rendering differs enough between macOS and
+  Linux that a baseline from one platform will not match the other — so
+  `tests/e2e/visual.spec.ts-snapshots/` commits **both** `*-darwin.png`
+  (from a local Mac) and `*-linux.png` (from the same
+  `mcr.microsoft.com/playwright` container CI's `e2e` job runs on), and
+  `pnpm e2e` picks whichever suffix matches wherever it runs. To
+  regenerate a baseline after a real visual change:
+  * macOS: `pnpm exec playwright test tests/e2e/visual.spec.ts --update-snapshots`
+    directly.
+  * Linux: run the same command inside the matching container so the
+    fonts match CI's, e.g.
+    `docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work
+    mcr.microsoft.com/playwright:v1.62.1-noble bash -c "<install Node ≥26
+    and pnpm, then pnpm install --frozen-lockfile && pnpm exec playwright
+    test tests/e2e/visual.spec.ts --update-snapshots>"` — match the
+    Playwright version tag to `@playwright/test` in `package.json`.
+
+  Commit both platforms' PNGs together and check the diff actually shows
+  the intended change, not incidental noise.
 
 ## § 2 `pnpm verify`
 
