@@ -60,7 +60,9 @@ function validatePolicy(input: unknown): string | null {
     return 'manual.factors must be an object';
   }
   for (const [id, f] of Object.entries(manual.factors as Record<string, unknown>)) {
-    if (typeof id !== 'string' || !isInt(f, 0, 10000)) return 'manual factors must be 0..10000';
+    if (!isInt(f, 0, 10000)) return 'manual factors must be 0..10000';
+    if (id.length > 64) return 'manual factor keys must be at most 64 characters';
+    if (id.includes('\u0000')) return 'manual factor keys must not contain NUL';
   }
   return null;
 }

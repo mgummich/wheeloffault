@@ -42,8 +42,8 @@ Beide Modi teilen ihre Daten nicht miteinander.
 
 Schuldrad läuft als statische Browser-App und kann direkt über GitHub Pages
 bereitgestellt werden. Der Build liegt in `dist/web`; die mitgelieferte
-GitHub-Actions-Workflowdatei `.github/workflows/pages.yml` baut und deployed
-bei jedem Push auf `main`.
+GitHub-Actions-Workflowdatei `.github/workflows/pages.yml` baut sie und
+deployt bei jedem Push auf `main`.
 
 Die Daten werden ausschließlich im `localStorage` dieses Browsers gespeichert,
 unter dem Schlüssel `schuldrad.sessionEvents.v1` (siehe
@@ -51,8 +51,8 @@ unter dem Schlüssel `schuldrad.sessionEvents.v1` (siehe
 
 * Überlebt Reload, Tab schließen und Browser neu starten: Teams,
   Teilnehmer, Ziehungen und Berichte bleiben in diesem Browser erhalten.
-* Nicht geteilt: andere Browser, Geräte oder Profile haben ihre eigene,
-  unabhängige Sitzung. Private-/Inkognito-Fenster behalten ihren Zustand nur
+* Nicht geteilt: andere Browser, Geräte oder Profile haben ihren eigenen,
+  unabhängigen Zustand. Private-/Inkognito-Fenster behalten ihren Zustand nur
   für die Lebensdauer dieses Fensters und verlieren ihn, sobald es
   geschlossen wird.
 * Es gibt keine Server-Datenbank und (Stand jetzt) keinen Reset-Knopf in der
@@ -85,7 +85,7 @@ Serverbetrieb kann optional ein einzelnes gemeinsames Betriebspasswort über
 Netz nur hinter VPN oder Reverse Proxy mit Auth betreiben — das
 vollständige Bedrohungsmodell steht in [SECURITY.md](SECURITY.md).
 
-Ohne Docker wird das Frontend ausdrücklich für den Server gebaut:
+Ohne Docker muss das Frontend ausdrücklich für den Server gebaut werden:
 
 ```bash
 pnpm build:server

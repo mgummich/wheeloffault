@@ -18,8 +18,9 @@ The winner is fixed by the commit/reveal protocol
 to a seed and weights, then reveals a result, and only *then* does the
 `draw` callback local to `SpinPage` (`src/web/views/SpinPage.tsx`) switch
 the phase to `animating` with that already-known result in hand
-(`src/web/draw.ts` → `performDraw`). Every visualization receives the
-finished `result` as a prop on mount and spends the following seconds
+(`src/web/draw.ts` → `performDraw`). Every visualization mounts with `result={null}` and only receives the
+finished `result` as a prop once the phase switches to `animating`
+(`src/web/views/SpinPage.tsx`), then spends the following seconds
 *performing* it — spinning a wheel to the winning segment, rolling a
 timetable to the winning row, sweeping a needle to the winning position.
 None of them pick anything. If this ordering is ever inverted — if a
@@ -132,17 +133,17 @@ result immediately:
 ## § 7 Reduced motion
 
 `prefers-reduced-motion: reduce` gets an instant result, not a fast one.
-Two layers enforce this (`src/web/styles.css`):
+Two layers enforce this:
 
-1. Every visualization's own RAF loop checks `reduced` up front and calls
-   its `finish()`/`onFinished()` synchronously instead of scheduling
+1. In JS, every visualization's own RAF loop checks `reduced` up front and
+   calls its `finish()`/`onFinished()` synchronously instead of scheduling
    frames — `Wheel.tsx`'s spin effect and `stages.tsx`'s `useNameTicker`
    both do this, so `animating` becomes `false` before a CSS
    transition/animation would ever have a chance to run.
-2. A universal reduced-motion rule collapses any CSS animation or
-   transition that still fires (flap snaps, stamp impact, panel pop-ins,
-   toasts) to effectively zero duration, as a backstop that needs no
-   per-component enumeration.
+2. In CSS (`src/web/styles.css`), a universal reduced-motion rule collapses
+   any CSS animation or transition that still fires (flap snaps, stamp
+   impact, panel pop-ins, toasts) to effectively zero duration, as a
+   backstop that needs no per-component enumeration.
 
 The result is still announced in both cases: the `aria-live="assertive"`
 region in `SpinPage.tsx` is permanently mounted and its text is driven by
@@ -153,7 +154,7 @@ skip the announcement, it just skips the show beforehand.
 
 | Visualization | What it does, in these terms |
 |---|---|
-| **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary crossed after the first (`lastSeg` starts at `-1`, so the initial segment under the pointer never kicks) — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
+| **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary crossing (`lastSeg` starts at `-1`, so the pointer's initial segment — identified on the first animation frame, before any boundary is crossed — never kicks) — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
 | **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of each 16-cell row, then the same 0–84ms cascade repeats for the second 8 — so each row (there are two, the responsibility row and the name row, both built through the same `cell` helper) reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
 | **Signal** (`SignalStage`) | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red. |
 | **Ticket stamp** (`StampStage`) | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`. |

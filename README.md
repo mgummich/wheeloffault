@@ -14,7 +14,7 @@ deliberately over-professional wheel of responsibility.
   anything spins.
 * **Full history** – event sourcing; guilt reports, hall of shame, appeals,
   immunities, pools ("Gleise", tracks).
-* **Seven visualizations** – turntable, train arrival, split-flap display,
+* **Seven visualizations** – wheel, train arrival, split-flap display,
   signal, ticket stamp, timetable roll, weight line.
 * **PWA** – installable, app shell works offline, respects
   `prefers-reduced-motion`.

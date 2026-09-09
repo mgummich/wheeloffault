@@ -18,13 +18,14 @@ Bewegung ist Dekoration. Sie entscheidet nie etwas.
 
 Der Gewinner steht durch das Commit/Reveal-Protokoll
 (`docs/de/fairness.md`) fest, bevor auch nur ein Bild gezeichnet wird: Der
-Server bindet sich an Seed und Gewichte, deckt dann ein Ergebnis auf, und
+Server legt sich auf Seed und Gewichte fest, deckt dann ein Ergebnis auf, und
 erst *danach* schaltet der in `SpinPage` definierte `draw`-Callback
 (`src/web/views/SpinPage.tsx`) die Phase auf `animating` — mit dem bereits
 bekannten Ergebnis in der Hand
-(`src/web/draw.ts` → `performDraw`). Jede Visualisierung erhält das fertige
-`result` als Prop beim Mounten und verbringt die folgenden Sekunden damit,
-es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
+(`src/web/draw.ts` → `performDraw`). Jede Visualisierung wird mit
+`result={null}` gemountet und erhält das fertige `result` als Prop erst,
+wenn die Phase auf `animating` wechselt (`src/web/views/SpinPage.tsx`), und
+verbringt die folgenden Sekunden damit, es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
 zur Gewinnzeile rollen, eine Nadel bis zur Gewinnposition schwenken. Keine
 davon wählt etwas aus. Sollte diese Reihenfolge jemals umgekehrt werden —
 sollte der eigene Zufall oder das Timing einer Visualisierung jemals
@@ -42,7 +43,7 @@ Bewegungsfehler.
 
 Die theatralische Enthüllung ist eine einzige Konstante, die sich alle
 sechs Nicht-Rad-Visualisierungen und die Spin-Dauer des Rades teilen —
-damit fühlen sich alle sieben gleich lang an ("der Zug entscheidet noch"):
+damit fühlen sich alle sieben gleich lang an („der Zug entscheidet noch“):
 ein Wechsel der Visualisierung darf sich nicht auf das Zeitgefühl einer
 Ziehung auswirken.
 
@@ -50,7 +51,7 @@ Ziehung auswirken.
 
 Definiert in `src/web/styles.css` unter `:root`. `--ease-mechanical`
 (`cubic-bezier(.2,.8,.2,1)`) ist das einzige Token: scharfer Antritt,
-gedämpftes Einrasten, der Standard für alles, was "ankommt". Seine drei
+gedämpftes Einrasten, der Standard für alles, was „ankommt“. Seine drei
 Verwendungen sind der Rand-/Transform-Übergang von `StampStage`,
 dessen Aufprall-Animation (die `sr-stamp`-Animation in
 `src/web/wheel/stages.tsx`) und die zugehörige `.reveal-stamp`-Regel in
@@ -65,10 +66,10 @@ Feder-Simulation.
 Die Spin-Easing-Kurven des Rades selbst leben im Code, nicht in CSS, weil
 sie für die SVG-Rotation bei jedem Frame neu berechnet werden müssen:
 `ease(style, t)` in `src/web/wheel/anim.ts`, getestet in `anim.test.ts`.
-Ihre Kurven sind das kanonische "mechanische" Vokabular dieser Verordnung:
+Ihre Kurven sind das kanonische „mechanische“ Vokabular dieser Verordnung:
 
 - `standard` — reine gedämpfte kubische Ease-out-Kurve ohne Überschwingen:
-  die Standardkurve "das Rad dreht sich aus wie ein Rad".
+  die Standardkurve „das Rad dreht sich aus wie ein Rad“.
 - `overshoot` — schießt über das Ziel hinaus und pendelt zurück, siehe § 5.
 - `windup` — schwingt zunächst rückwärts (Antizipation, § 4), dann
   vorwärts.
@@ -123,7 +124,7 @@ zu stoppen:
 
 ## § 6 Abbruch
 
-"Überspringen" (`data-testid="skip-animation"`, `spin.skipButton`) spult
+„Überspringen“ (`data-testid="skip-animation"`, `spin.skipButton`) spult
 eine laufende Animation weder zurück noch pausiert oder beschleunigt es
 sie — es rastet sofort im bereits feststehenden Ergebnis ein:
 
@@ -145,18 +146,19 @@ sie — es rastet sofort im bereits feststehenden Ergebnis ein:
 ## § 7 Reduzierte Bewegung
 
 `prefers-reduced-motion: reduce` erhält ein sofortiges Ergebnis, kein
-schnelles. Zwei Ebenen setzen das durch (`src/web/styles.css`):
+schnelles. Zwei Ebenen setzen das durch:
 
-1. Jede Visualisierung prüft `reduced` zu Beginn ihrer eigenen
+1. In JS prüft jede Visualisierung `reduced` zu Beginn ihrer eigenen
    RAF-Schleife und ruft `finish()`/`onFinished()` synchron statt Frames
    zu planen — sowohl der Spin-Effekt in `Wheel.tsx` als auch
    `useNameTicker` in `stages.tsx` tun das, sodass `animating` bereits
    `false` ist, bevor ein CSS-Übergang/-Animation überhaupt Gelegenheit
    zum Laufen hätte.
-2. Eine universelle Reduced-Motion-Regel kollabiert jede CSS-Animation
-   oder jeden Übergang, der trotzdem feuert (Klapp-Schnappen,
-   Stempelaufprall, Panel-Einblendungen, Toasts), auf praktisch
-   Nulldauer — als Absicherung ohne Aufzählung pro Komponente.
+2. In CSS (`src/web/styles.css`) kollabiert eine universelle
+   Reduced-Motion-Regel jede CSS-Animation oder jeden Übergang, der
+   trotzdem feuert (Klapp-Schnappen, Stempelaufprall, Panel-Einblendungen,
+   Toasts), auf praktisch Nulldauer — als Absicherung ohne Aufzählung pro
+   Komponente.
 
 Die Ansage erfolgt in beiden Fällen weiterhin: Die
 `aria-live="assertive"`-Region in `SpinPage.tsx` ist dauerhaft gemountet,
@@ -167,7 +169,7 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 
 | Visualisierung | Was sie in diesen Begriffen tut |
 |---|---|
-| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein "Kick" des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenze außer der ersten (`lastSeg` startet bei `-1`, das anfängliche Segment unter dem Zeiger kickt also nie) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
+| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein „Kick“ des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenzüberquerung (`lastSeg` startet bei `-1`, sodass das anfängliche, im ersten Animationsframe identifizierte Segment — noch vor jeder Grenzüberquerung — nie kickt) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
 | **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 jeder 16-Zellen-Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
 | **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
 | **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |

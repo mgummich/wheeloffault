@@ -41,7 +41,7 @@ Vor einer Ziehung berechnet der Server:
    | 5 | `manual` | expliziter, von einem Bediener gesetzter Faktor pro Mitglied |
    | 6 | `immunity` | Gewicht `0`, wenn eine Immunität aktiv ist (wird durch diesen Spin verbraucht) |
 
-   Ist das Gewicht jedes Teilnehmers nach allen sechs Modifikatoren `0` —
+   Ist das Gewicht jedes Teilnehmers nach allen Modifikatoren `0` —
    aus beliebigem Grund, nicht nur cooldown (auch immunity, ein manueller
    Faktor `0` oder exhaustion können dorthin führen) — und ist cooldown
    aktiviert, läuft die gesamte Berechnung einmal erneut mit neutralisiertem

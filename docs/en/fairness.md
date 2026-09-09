@@ -35,7 +35,7 @@ Before a draw, the server computes:
    | 5 | `manual` | explicit per-member factor set by an operator |
    | 6 | `immunity` | weight `0` if an immunity is active (consumed by this spin) |
 
-   If every participant's weight is `0` after all six modifiers — for any
+   If every participant's weight is `0` after all modifiers — for any
    reason, not just cooldown (immunity, a manual `0` factor, or exhaustion
    driving it there too) — and cooldown is enabled, the whole calculation
    retries once with cooldown neutralized and logged with factor `1000` for

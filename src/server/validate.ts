@@ -27,7 +27,12 @@ export function optionalStr(obj: Record<string, unknown>, key: string, max = 500
   return str(obj, key, max);
 }
 
-export function strArray(obj: Record<string, unknown>, key: string, maxItems = 500): string[] {
+export function strArray(
+  obj: Record<string, unknown>,
+  key: string,
+  maxItems = 500,
+  maxItemLen = 500,
+): string[] {
   const v = obj[key];
   if (!Array.isArray(v) || v.some((x) => typeof x !== 'string')) {
     throw new DomainError(`${key} must be a list of strings`, 'field_not_string_array');
@@ -37,6 +42,18 @@ export function strArray(obj: Record<string, unknown>, key: string, maxItems = 5
       key,
       max: maxItems,
     });
+  }
+  for (const item of v as string[]) {
+    if (item.length > maxItemLen) {
+      throw new DomainError(`${key} item longer than ${maxItemLen} characters`, 'field_too_long', {
+        key,
+        max: maxItemLen,
+      });
+    }
+    // Postgres jsonb rejects NUL in text; reject here so SQLite and Postgres agree.
+    if (item.includes('\u0000')) {
+      throw new DomainError(`${key} item must not contain NUL`, 'field_not_string');
+    }
   }
   return v as string[];
 }

@@ -66,7 +66,8 @@ eingecheckte `src/web/.env.server`), was den Client vom
 ### Compose-Profile
 
 `docker-compose.yml` definiert zwei Profile. Jeder Dienst deklariert ein
-Profil, ein nacktes `docker compose up` startet also nichts — eines muss
+Profil, ein einfaches `docker compose up` ohne Profilangabe startet also
+nichts — eines muss
 explizit gewählt werden:
 
 * **`sqlite`** — ein einzelner `schuldrad`-Dienst, SQLite in einem
@@ -211,7 +212,7 @@ Die Origin↔Host-Prüfung oben vergleicht den `Origin`-Header des Browsers
 mit dem `Host`-Header, den der Server empfängt. Ein Reverse Proxy, der
 `Host` auf seine eigene Upstream-Adresse umschreibt — nginx' Standard
 `proxy_set_header Host $proxy_host` — lässt dadurch jede
-zustandsänderende Browser-Anfrage mit 403 scheitern. Stattdessen den
+zustandsändernde Browser-Anfrage mit 403 scheitern. Stattdessen den
 ursprünglichen `Host` des Clients weiterreichen:
 
 ```nginx
@@ -219,7 +220,7 @@ proxy_set_header Host $host;
 ```
 
 **SSE braucht ungepuffertes Proxying.** nginx puffert Upstream-Antworten
-standardmäßig, was `/api/teams/:id/events` zurückhält, bis der Puffer voll
+standardmäßig, was `/api/teams/:teamId/events` zurückhält, bis der Puffer voll
 ist — das macht Live-Updates zunichte. Der Server sendet auf dieser Antwort
 bereits `X-Accel-Buffering: no`, was nginx von sich aus respektiert — dafür
 ist keine Konfigurationsänderung nötig. Für andere Proxies (oder als
@@ -230,7 +231,7 @@ proxy_buffering off;
 ```
 
 **SSE-Verbindungen sind pro Team auf 100 begrenzt.** Die Prüfung ist `>=`:
-Hat ein Team bereits 100 gleichzeitige `/api/teams/:id/events`-Verbindungen
+Hat ein Team bereits 100 gleichzeitige `/api/teams/:teamId/events`-Verbindungen
 offen, erhält der 101. Verbindungsversuch `503`; dies ist ein fester, nicht
 konfigurierbarer Grenzwert (`MAX_SSE_CLIENTS_PER_TEAM` in
 `src/server/http.ts`).

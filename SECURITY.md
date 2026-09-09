@@ -64,9 +64,9 @@ that trade-off is deliberate given the deployment target (§ 1).
 **Password mode is single-instance only.** Sessions and the login-attempt
 map (every attempt, not just failures) live in two separate in-memory
 `Map`s (`sessions`, `failures` in `src/server/auth.ts`), per process — there
-is no shared store,
-Redis included (`REDIS_URL` only fans out *domain* events over SSE, it does
-not touch auth state; see [docs/en/deployment.md](docs/en/deployment.md)
+is no shared store, Redis included (`REDIS_URL` only fans out *domain*
+events over SSE, it does not touch auth state; see
+[docs/en/deployment.md](docs/en/deployment.md)
 § 3a). Behind more than one replica without sticky sessions: a session
 created by instance A is unrecognized by instance B (random 401s on the
 same cookie), a logout on A cannot close a stream open on B, and the

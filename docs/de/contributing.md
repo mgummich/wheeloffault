@@ -58,8 +58,8 @@ sechs Schritte einzeln aus statt dieses Skript aufzurufen — `pnpm verify`
 selbst wird dort nicht aufgerufen (dieser Aufruf steckt in
 `.github/workflows/pages.yml`) —, aber Reihenfolge und Bestehens-Kriterium
 sind in beiden Fällen identisch. `audit` läuft parallel dazu; `e2e` und
-`container` laufen danach und setzen ihn voraus. Vor dem Öffnen eines PR
-lokal ausführen — es gibt keine
+`container` laufen danach und setzen ihn voraus, `status` läuft erst nach
+`verify` und `e2e`. Vor dem Öffnen eines PR lokal ausführen — es gibt keine
 schnellere Rückmeldeschleife, als nicht auf CI zu warten, um zu erfahren,
 dass `lint` fehlgeschlagen ist.
 

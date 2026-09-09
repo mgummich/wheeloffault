@@ -42,35 +42,88 @@ describe('assertPolicy bounds', () => {
     expectPolicyInvalid(validPolicy({ percentPerSpin: -1 }));
   });
 
-  it('rejects out-of-range values in every other bounded field', () => {
+  it('rejects out-of-range values on both sides of every other bounded field', () => {
     const cases: Array<[string, unknown]> = [
       [
-        'cooldown.spins',
+        'cooldown.spins below min',
+        normalizePolicy({ ...defaultPolicy, cooldown: { enabled: true, spins: -1 } }),
+      ],
+      [
+        'cooldown.spins above max',
         normalizePolicy({ ...defaultPolicy, cooldown: { enabled: true, spins: 101 } }),
       ],
       [
-        'exhaustion.percentPerSelection',
+        'exhaustion.percentPerSelection below min',
+        normalizePolicy({
+          ...defaultPolicy,
+          exhaustion: { enabled: true, percentPerSelection: -1, window: 5 },
+        }),
+      ],
+      [
+        'exhaustion.percentPerSelection above max',
         normalizePolicy({
           ...defaultPolicy,
           exhaustion: { enabled: true, percentPerSelection: 101, window: 5 },
         }),
       ],
       [
-        'exhaustion.window',
+        'exhaustion.window below min',
         normalizePolicy({
           ...defaultPolicy,
           exhaustion: { enabled: true, percentPerSelection: 30, window: 0 },
         }),
       ],
       [
-        'newcomer.factor',
+        'exhaustion.window above max',
+        normalizePolicy({
+          ...defaultPolicy,
+          exhaustion: { enabled: true, percentPerSelection: 30, window: 101 },
+        }),
+      ],
+      [
+        'newcomer.factor below min',
+        normalizePolicy({
+          ...defaultPolicy,
+          newcomer: { enabled: true, factor: -1, spins: 3 },
+        }),
+      ],
+      [
+        'newcomer.factor above max',
         normalizePolicy({
           ...defaultPolicy,
           newcomer: { enabled: true, factor: 10001, spins: 3 },
         }),
       ],
       [
-        'manual.factors',
+        'newcomer.spins below min',
+        normalizePolicy({
+          ...defaultPolicy,
+          newcomer: { enabled: true, factor: 500, spins: -1 },
+        }),
+      ],
+      [
+        'newcomer.spins above max',
+        normalizePolicy({
+          ...defaultPolicy,
+          newcomer: { enabled: true, factor: 500, spins: 101 },
+        }),
+      ],
+      [
+        'manual.factors value below min',
+        normalizePolicy({
+          ...defaultPolicy,
+          manual: { enabled: true, factors: { m1: -1 } },
+        }),
+      ],
+      [
+        'manual.factors value above max',
+        normalizePolicy({
+          ...defaultPolicy,
+          manual: { enabled: true, factors: { m1: 10001 } },
+        }),
+      ],
+      [
+        'manual.factors value non-integer',
         normalizePolicy({
           ...defaultPolicy,
           manual: { enabled: true, factors: { m1: 2.5 } },
@@ -80,6 +133,21 @@ describe('assertPolicy bounds', () => {
     for (const [, policy] of cases) {
       expectPolicyInvalid(policy);
     }
+  });
+
+  it('rejects manual factor keys that are too long or contain NUL', () => {
+    expectPolicyInvalid(
+      normalizePolicy({
+        ...defaultPolicy,
+        manual: { enabled: true, factors: { ['m'.repeat(65)]: 1 } },
+      }),
+    );
+    expectPolicyInvalid(
+      normalizePolicy({
+        ...defaultPolicy,
+        manual: { enabled: true, factors: { 'm1\u0000': 1 } },
+      }),
+    );
   });
 
   it(

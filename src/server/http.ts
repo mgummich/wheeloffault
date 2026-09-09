@@ -203,7 +203,8 @@ export function createHttpServer(
 
   route('POST', '/api/teams/:teamId/members', async (req, res, p) => {
     const body = asObject(await readJson(req));
-    const names = body.names !== undefined ? strArray(body, 'names') : [str(body, 'name', 100)];
+    const names =
+      body.names !== undefined ? strArray(body, 'names', 500, 100) : [str(body, 'name', 100)];
     json(res, 200, teamView(await commands.addMembers(teamIdOf(p), names)));
   });
 

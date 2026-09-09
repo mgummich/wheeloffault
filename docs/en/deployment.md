@@ -204,7 +204,7 @@ proxy_set_header Host $host;
 ```
 
 **SSE needs unbuffered proxying.** nginx buffers upstream responses by
-default, which holds back `/api/teams/:id/events` until the buffer fills —
+default, which holds back `/api/teams/:teamId/events` until the buffer fills —
 defeating live updates. The server already sends `X-Accel-Buffering: no` on
 that response, which nginx honors on its own — no config change needed there.
 For other proxies (or belt-and-suspenders on nginx), add this to the same
@@ -215,7 +215,7 @@ proxy_buffering off;
 ```
 
 **SSE connections are capped at 100 per team.** The check is `>=`, so once
-a team already has 100 concurrent `/api/teams/:id/events` connections open,
+a team already has 100 concurrent `/api/teams/:teamId/events` connections open,
 the 101st connection attempt gets `503`; this is a fixed, non-configurable
 limit (`MAX_SSE_CLIENTS_PER_TEAM` in `src/server/http.ts`).
 

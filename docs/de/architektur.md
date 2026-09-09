@@ -248,8 +248,7 @@ Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 401
 stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
 (`src/web/apiError.ts`, `src/web/i18n/`); die menschenlesbare `error`-Meldung
 ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
-serverseitig
-explizit validiert (`src/server/validate.ts`; die FairnessPolicy über
+serverseitig explizit validiert (`src/server/validate.ts`; die FairnessPolicy über
 `assertPolicy` in `src/domain/fairness/policy.ts`, das nur von
 `src/server/http.ts` importiert wird). Der Browser importiert aus diesem
 Modul nur den Typ `FairnessPolicy`, nicht die Prüfung; die `min`/`max`-Werte

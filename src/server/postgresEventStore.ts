@@ -82,7 +82,10 @@ export async function openPostgresEventStore(connectionString: string): Promise<
     },
 
     async streamsWithEvent(type: DomainEvent['type']): Promise<string[]> {
-      // Ordered by first occurrence, matching the SQLite adapter's ORDER BY position.
+      // Ordered by first occurrence, matching the SQLite adapter's ORDER BY MIN(position).
+      // GROUP BY + MIN(position) (not SELECT DISTINCT ... ORDER BY position) because
+      // Postgres rejects ORDER BY on a column it didn't select or group by; SQLite is
+      // lenient about it, so both adapters use the form that works on both.
       const result = await pool.query<{ stream_id: string }>(
         'SELECT stream_id FROM events WHERE type = $1 GROUP BY stream_id ORDER BY MIN(position)',
         [type],
