@@ -34,7 +34,10 @@ Deutsch → [contributing.md](../de/contributing.md)
     the real event stores.
 
   Run `pnpm test:unit` / `pnpm test:integration` individually, or `pnpm test`
-  for both.
+  for both. `postgresEventStore.test.ts` and `broadcastRedis.test.ts` run
+  against a real Postgres/Redis and skip themselves (not fail) unless
+  `DATABASE_URL`/`REDIS_URL` are set — see `docker-compose.yml`'s
+  `overengineered` profile for a local pair, or § 2 for CI's.
 * **Playwright** (`playwright.config.ts`) for end-to-end tests
   (`tests/e2e`), run with `pnpm e2e`. It builds the production server and a
   static build — the static build itself uses `vite.config.ts`'s relative
@@ -59,6 +62,11 @@ instead) — but the sequence and the pass/fail bar are identical either way.
 need it to pass, and `status` runs after both `verify` and `e2e` pass. Run
 it locally before opening a PR — there is no faster
 feedback loop than not waiting for CI to tell you `lint` failed.
+
+`verify`'s `test:integration` step also has Postgres and Redis service
+containers (same images as `docker-compose.yml`'s `overengineered` profile,
+health-checked before the step runs) and `DATABASE_URL`/`REDIS_URL` set, so
+the Postgres/Redis-only tests that skip locally actually run in CI.
 
 ## § 2a Documentation build gates
 

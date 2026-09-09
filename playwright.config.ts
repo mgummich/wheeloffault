@@ -25,7 +25,7 @@ export default defineConfig({
     { name: 'server', testMatch: '**/journey.spec.ts', use: { browserName: 'chromium' } },
     {
       name: 'static',
-      testMatch: '**/static.spec.ts',
+      testMatch: ['**/static.spec.ts', '**/visual.spec.ts'],
       use: { browserName: 'chromium', baseURL: 'http://127.0.0.1:3101' },
     },
   ],

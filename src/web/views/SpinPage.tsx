@@ -222,7 +222,7 @@ export function SpinPage({ team, reload }: Props) {
 
       {!online && <p className="notice error">{t('spin.offline')}</p>}
 
-      {visualization}
+      <div data-testid="visualization-stage">{visualization}</div>
 
       {error && (
         <p className="error-text" role="alert">

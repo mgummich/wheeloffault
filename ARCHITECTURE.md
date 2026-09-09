@@ -382,6 +382,13 @@ build. E2E (`pnpm e2e`) with Playwright against the built server. CI
 (`.github/workflows/ci.yml`) additionally runs container build, `pnpm
 audit`, a Trivy scan, SBOM generation, and a `status` job.
 
+CI's `verify` job also runs Postgres and Redis service containers (same
+images as `docker-compose.yml`'s `overengineered` profile, health-checked
+before tests start) with `DATABASE_URL`/`REDIS_URL` set for the
+`test:integration` step, so `postgresEventStore.test.ts` and
+`broadcastRedis.test.ts` — otherwise self-skipping without those env
+vars — actually run against real Postgres/Redis in CI.
+
 `docs/STATUS.json` is a generated snapshot of the last time all eight
 checks above (`pnpm verify`'s six, plus `build:server` and `e2e`) were run
 to green, with pass/fail and a one-line result per check. `pnpm status`

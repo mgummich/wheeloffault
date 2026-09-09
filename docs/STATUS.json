@@ -3,12 +3,12 @@
     {
       "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Checked 98 files."
+      "details": "Checked 102 files."
     },
     {
       "name": "lint (pnpm lint)",
       "status": "pass",
-      "details": "Checked 100 files. Found 5 warnings."
+      "details": "Checked 104 files. Found 0 warnings."
     },
     {
       "name": "typecheck (pnpm typecheck)",
@@ -38,7 +38,7 @@
     {
       "name": "e2e (pnpm e2e)",
       "status": "pass",
-      "details": "3 tests passed."
+      "details": "17 tests passed."
     }
   ]
 }

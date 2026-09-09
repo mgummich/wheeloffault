@@ -11,6 +11,37 @@ permissions:
 jobs:
   verify:
     runs-on: ubuntu-latest
+    # Postgres/Redis service containers, same images as docker-compose.yml's
+    # `overengineered` profile: real coverage for postgresEventStore.ts and
+    # the Redis broadcast hub, which the SQLite-only unit tests can't reach.
+    # Health-checked so `test:integration` never races a container that
+    # hasn't finished starting. Extending `verify` rather than adding a new
+    # job: it already runs `test:integration`, and the new Postgres/Redis
+    # tests skip themselves via DATABASE_URL/REDIS_URL, so nothing but the
+    # service block and two env vars needs to change.
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: schuldrad
+          POSTGRES_USER: schuldrad
+          POSTGRES_PASSWORD: schuldrad
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -24,6 +55,9 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test:unit
       - run: pnpm test:integration
+        env:
+          DATABASE_URL: postgres://schuldrad:schuldrad@localhost:5432/schuldrad
+          REDIS_URL: redis://localhost:6379
       - run: pnpm build
       - uses: actions/upload-artifact@v4
         with:

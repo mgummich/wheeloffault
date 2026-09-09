@@ -37,7 +37,11 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
     echten Event-Stores.
 
   `pnpm test:unit` / `pnpm test:integration` einzeln ausführen oder
-  `pnpm test` für beide.
+  `pnpm test` für beide. `postgresEventStore.test.ts` und
+  `broadcastRedis.test.ts` laufen gegen ein echtes Postgres/Redis und
+  überspringen sich selbst (kein Fehlschlag), solange `DATABASE_URL`/
+  `REDIS_URL` nicht gesetzt sind — siehe das `overengineered`-Profil in
+  `docker-compose.yml` für ein lokales Paar oder § 2 für das von CI.
 * **Playwright** (`playwright.config.ts`) für Ende-zu-Ende-Tests
   (`tests/e2e`), ausgeführt mit `pnpm e2e`. Es baut den Produktionsserver
   und einen statischen Build — der statische Build selbst nutzt das relative
@@ -64,6 +68,12 @@ sind in beiden Fällen identisch. `audit` läuft parallel dazu; `e2e` und
 `verify` und `e2e`. Vor dem Öffnen eines PR lokal ausführen — es gibt keine
 schnellere Rückmeldeschleife, als nicht auf CI zu warten, um zu erfahren,
 dass `lint` fehlgeschlagen ist.
+
+Der `test:integration`-Schritt in `verify` hat außerdem Postgres- und
+Redis-Servicecontainer (dieselben Images wie im `overengineered`-Profil von
+`docker-compose.yml`, mit Health-Check vor dem Schritt) sowie gesetzte
+`DATABASE_URL`/`REDIS_URL` — die Tests, die lokal ohne diese Variablen
+übersprungen werden, laufen in CI also wirklich.
 
 ## § 2a Build-Schranken für die Dokumentation
 

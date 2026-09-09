@@ -734,10 +734,6 @@ legend {
   margin-bottom: 0.4rem;
 }
 
-.policy fieldset .field {
-  max-width: 12rem;
-}
-
 .policy-summary {
   max-width: 60rem;
 }
@@ -920,6 +916,10 @@ legend {
   max-width: none;
   font-size: 13px;
   font-weight: 600;
+}
+
+.policy fieldset .field {
+  max-width: 12rem;
 }
 
 .anim-panel select {
@@ -1466,13 +1466,21 @@ dialog.small-dialog::backdrop {
  * JS `reduced` checks (see docs/en/motion.md §7), but this catches anything
  * still driven by a CSS class (flap snaps, stamp impact, panel pop-ins,
  * toasts) without needing to enumerate every selector. */
+/* Every declaration below uses !important: an accessibility override must
+ * win the cascade over every other declaration (WCAG 2.3.3), regardless of
+ * the specificity of whatever it's overriding. That's the one place
+ * !important is the correct tool, not a lint escape. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
+    /* biome-ignore lint/complexity/noImportantStyles: see comment above @media block */
     animation-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see comment above @media block */
     animation-iteration-count: 1 !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see comment above @media block */
     transition-duration: 0.01ms !important;
+    /* biome-ignore lint/complexity/noImportantStyles: see comment above @media block */
     scroll-behavior: auto !important;
   }
 }
