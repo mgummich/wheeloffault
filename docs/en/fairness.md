@@ -192,9 +192,11 @@ application it is checking.
 The spin detail page renders member names (`nameOf(p.memberId)`), never raw
 member IDs, so the JSON below cannot be hand-copied from what's on screen.
 Use the **"Copy proof"** button on that page instead
-(`src/web/views/SpinDetailPage.tsx`): it copies exactly this shape —
+(`src/web/views/SpinDetailPage.tsx`): it copies
 `{ nonce, commitment, participants, serverSeed, clientSeed, digest,
-selectedMemberId }` — to the clipboard. Paste it straight into a file:
+selectedMemberId, revealedAt }` to the clipboard — the six fields the script
+checks below, plus `revealedAt`, which the script ignores. Paste it straight
+into a file:
 
 ```json
 {
@@ -204,7 +206,8 @@ selectedMemberId }` — to the clipboard. Paste it straight into a file:
   "participants": [{ "memberId": "…", "weight": 1000 }],
   "commitment": "…",
   "digest": "…",
-  "selectedMemberId": "…"
+  "selectedMemberId": "…",
+  "revealedAt": "…"
 }
 ```
 
@@ -219,5 +222,7 @@ The script prints a Prüfprotokoll (verification record) with one ✓/✗ line
 per check — commitment, digest, selection — and exits `0` only if all three
 pass, `1` if any check fails, and `2` for a usage error (an unexpected
 argument, an unknown flag, a flag with no value, a missing `--file`, a
-missing required field, non-array or empty `participants`, or a non-integer
-`nonce`) before any check runs — so it composes with CI or a shell `&&`.
+`--file` path that cannot be read, a file that is not valid JSON, a missing
+required field, non-array or empty `participants`, or a `nonce` that is not
+a non-negative integer, including a negative one) before any check runs —
+so it composes with CI or a shell `&&`.

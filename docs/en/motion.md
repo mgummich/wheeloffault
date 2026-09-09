@@ -154,7 +154,7 @@ skip the announcement, it just skips the show beforehand.
 | Visualization | What it does, in these terms |
 |---|---|
 | **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary crossed after the first (`lastSeg` starts at `-1`, so the initial segment under the pointer never kicks) — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
-| **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of the row's 16 cells, then the same 0–84ms cascade repeats for the second 8 — so the row reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
+| **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of each 16-cell row, then the same 0–84ms cascade repeats for the second 8 — so each row (there are two, the responsibility row and the name row, both built through the same `cell` helper) reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
 | **Signal** (`SignalStage`) | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red. |
 | **Ticket stamp** (`StampStage`) | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`. |
 | **Train arrival** (`TrainStage`) | Approaches on a front-loaded-then-flattening cubic-bezier that reads as braking; the name only resolves after the train has fully stopped. |

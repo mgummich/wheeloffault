@@ -212,10 +212,11 @@ Anwendung stillschweigend erben.
 Die Detailseite zeigt Mitgliedernamen an (`nameOf(p.memberId)`), nie rohe
 Mitglieds-IDs — das JSON unten lässt sich also nicht von Hand aus dem
 Angezeigten abschreiben. Stattdessen den Button **„Nachweis kopieren“** auf
-dieser Seite nutzen (`src/web/views/SpinDetailPage.tsx`): Er kopiert genau
-diese Form — `{ nonce, commitment, participants, serverSeed, clientSeed,
-digest, selectedMemberId }` — in die Zwischenablage. Direkt in eine Datei
-einfügen:
+dieser Seite nutzen (`src/web/views/SpinDetailPage.tsx`): Er kopiert
+`{ nonce, commitment, participants, serverSeed, clientSeed, digest,
+selectedMemberId, revealedAt }` in die Zwischenablage — die sechs Felder,
+die das Skript unten prüft, plus `revealedAt`, das das Skript ignoriert.
+Direkt in eine Datei einfügen:
 
 ```json
 {
@@ -225,7 +226,8 @@ einfügen:
   "participants": [{ "memberId": "…", "weight": 1000 }],
   "commitment": "…",
   "digest": "…",
-  "selectedMemberId": "…"
+  "selectedMemberId": "…",
+  "revealedAt": "…"
 }
 ```
 
@@ -240,6 +242,8 @@ Das Skript gibt ein Prüfprotokoll mit je einer ✓/✗-Zeile pro Prüfung aus �
 Commitment, Digest, Auswahl — und liefert Exit-Code `0` nur, wenn alle drei
 bestehen, `1` wenn eine Prüfung fehlschlägt und `2` bei einem Aufruffehler
 (ein unerwartetes Argument, ein unbekanntes Flag, ein Flag ohne Wert,
-fehlendes `--file`, fehlendes Pflichtfeld, `participants` nicht als Array
-oder leer, oder ein nicht-ganzzahliger `nonce`), bevor überhaupt eine
-Prüfung läuft — lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.
+fehlendes `--file`, ein `--file`-Pfad, der sich nicht lesen lässt, eine
+Datei, die kein gültiges JSON ist, fehlendes Pflichtfeld, `participants`
+nicht als Array oder leer, oder ein `nonce`, der keine nicht-negative
+Ganzzahl ist — auch ein negativer), bevor überhaupt eine Prüfung läuft —
+lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.

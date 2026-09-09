@@ -247,7 +247,9 @@ explizit validiert (`src/server/validate.ts`; die FairnessPolicy über
 `assertPolicy` in `src/domain/fairness/policy.ts`, das nur von
 `src/server/http.ts` importiert wird). Der Browser importiert aus diesem
 Modul nur den Typ `FairnessPolicy`, nicht die Prüfung; die `min`/`max`-Werte
-der Zahlenfelder im Fairness-Formular sind UI-Hinweise, keine Durchsetzung.
+der Zahlenfelder im Fairness-Formular sind UI-Hinweise, keine
+Validierungsgrenze — sie schränken einen programmatischen Schreibzugriff
+nicht ein.
 
 Es gibt standardmäßig keine Authentifizierung: Schuldrad ist für ein
 vertrauenswürdiges Netz (Team-LAN, VPN) gedacht; wer es öffentlich
@@ -344,7 +346,8 @@ share.ts         Ergebniskarte pro Ziehung (Canvas-PNG) + ShareDialog.tsx (nativ
 ```
 
 PWA: `manifest.webmanifest` + handgeschriebener Service Worker
-(App-Shell-Cache; `/api` wird nie angefasst, Historie kommt immer vom Server).
+(App-Shell-Cache nach Network-First plus Cache-First-Laufzeit-Caching von
+`assets/`; `/api` wird nie angefasst, Historie kommt immer vom Server).
 
 `src/web` importiert aus `src/domain/views.ts` Typen (`TeamView`, `SpinView`)
 und die puren View-Funktionen – das ist der HTTP-Vertrag, kein Serverstaat

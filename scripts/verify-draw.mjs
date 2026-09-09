@@ -43,7 +43,20 @@ function parseArgs(argv) {
 const args = parseArgs(process.argv.slice(2));
 
 if (!args.file) usageAndExit('provide --file <draw.json>');
-const record = JSON.parse(readFileSync(args.file, 'utf8'));
+
+let fileContents;
+try {
+  fileContents = readFileSync(args.file, 'utf8');
+} catch (err) {
+  usageAndExit(`cannot read "${args.file}": ${err.message}`);
+}
+
+let record;
+try {
+  record = JSON.parse(fileContents);
+} catch (err) {
+  usageAndExit(`"${args.file}" is not valid JSON: ${err.message}`);
+}
 
 const {
   serverSeed,

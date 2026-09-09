@@ -30,6 +30,20 @@ jobs:
           name: dist
           path: dist
 
+  status:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm status
+      - run: git diff --exit-code docs/STATUS.json
+
   # Separate job: the npm advisory service has outages, and they must not hide
   # the state of the code checks. Still required for a green pipeline.
   audit:

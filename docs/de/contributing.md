@@ -63,6 +63,48 @@ lokal ausführen — es gibt keine
 schnellere Rückmeldeschleife, als nicht auf CI zu warten, um zu erfahren,
 dass `lint` fehlgeschlagen ist.
 
+## § 2a Build-Schranken für die Dokumentation
+
+`pnpm build` (und damit `pnpm verify`, der CI-Job `verify` und GitHub
+Pages) führt `scripts/build-docs.mjs` aus, das den Build bei jedem der
+folgenden Punkte scheitern lässt:
+
+* **Sprachpaarung.** Jedes Dokument in der Registrierung am Anfang von
+  `scripts/build-docs.mjs` braucht sowohl eine `en`- als auch eine
+  `de`-Quelldatei, außer der Eintrag ist mit `enOnly` markiert (derzeit nur
+  `SECURITY.md`, das keine gepflegte Übersetzung hat). Ein neues Dokument
+  hinzuzufügen heißt, es mit beiden Dateien in diese Registrierung
+  einzutragen — oder explizit mit `enOnly` davon abzuweichen.
+* **Link- und Anker-Prüfung.** Ein `.md`-zu-`.md`-Link muss zu einer echten
+  Datei an diesem relativen Pfad auflösen und mit dem richtigen
+  Sprachpräfix gerendert werden, und jedes gerenderte `href="#…"` muss auf
+  eine Überschriften-ID zeigen, die auf der Zielseite tatsächlich existiert.
+  Das findet einen vertippten Pfad, einen Link auf die eigene Seite eines
+  Dokuments in der falschen Sprache und einen Link auf eine Überschrift,
+  die umbenannt oder entfernt wurde.
+* **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
+  ALL_CAPS-Konstante in einem Dokument muss tatsächlich aus `src/`
+  exportiert werden (bei ALL_CAPS alternativ ein `env.NAME`-/
+  `process.env.NAME`-Zugriff sein) — findet ein Dokument, das noch eine API
+  behauptet, die umbenannt oder deexportiert wurde. Geprüft werden nur
+  Aufrufsyntax und ALL_CAPS, keine nackten Bezeichner, weil die ständig
+  mit gewöhnlicher Prosa kollidieren (`memberId`, `packageManager`, …). Er
+  ist ehrlich schmal, nicht erschöpfend: Er parst Codeblöcke nicht als
+  Code, ein gewöhnliches JS-Snippet in einem Codeblock (z. B.
+  `` JSON.parse(text) ``) kann ihn genauso auslösen wie eine echte Aussage
+  über die Codebasis — entweder das Symbol in der Prosa ohne
+  Aufruf-Klammern nennen, oder es mit einer einzeiligen Begründung in
+  SYMBOL_IGNORE in `scripts/build-docs.mjs` eintragen, wie es die
+  bestehenden acht Einträge tun.
+
+`pnpm status` erzeugt `docs/STATUS.json` neu aus der tatsächlichen Ausgabe
+der `verify`-/`build:server`-/`e2e`-Prüfungen (bestanden/fehlgeschlagen
+plus deterministische Zählwerte — keine Zeiten, Daten oder
+Umgebungs-Fingerabdrücke); der CI-Job `status` führt es aus und schlägt
+fehl, wenn `git diff --exit-code docs/STATUS.json` einen Unterschied
+findet — ein veralteter Statusbericht lässt den Build also genauso
+scheitern wie ein kaputter Link.
+
 ## § 3 Tests leben neben dem, was sie dokumentieren
 
 Unit- und Integrationstests sind `*.test.ts`-Dateien neben dem Modul, das

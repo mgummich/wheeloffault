@@ -19,7 +19,7 @@ Bewegung ist Dekoration. Sie entscheidet nie etwas.
 Der Gewinner steht durch das Commit/Reveal-Protokoll
 (`docs/de/fairness.md`) fest, bevor auch nur ein Bild gezeichnet wird: Der
 Server bindet sich an Seed und Gewichte, deckt dann ein Ergebnis auf, und
-erst *danach* schaltet die zu `SpinPage` lokale `draw`-Callback
+erst *danach* schaltet der in `SpinPage` definierte `draw`-Callback
 (`src/web/views/SpinPage.tsx`) die Phase auf `animating` — mit dem bereits
 bekannten Ergebnis in der Hand
 (`src/web/draw.ts` → `performDraw`). Jede Visualisierung erhält das fertige
@@ -127,8 +127,8 @@ zu stoppen:
 eine laufende Animation weder zurück noch pausiert oder beschleunigt es
 sie — es rastet sofort im bereits feststehenden Ergebnis ein:
 
-- Die zu `SpinPage` lokale `finish`-Callback schaltet die Phase direkt auf
-  `announced`.
+- Der in `SpinPage` definierte `finish`-Callback schaltet die Phase direkt
+  auf `announced`.
 - `Wheel.tsx` besitzt einen an `announced` gebundenen Effekt, der die
   `rotation` — falls die Spin-Schleife noch läuft — sofort auf das
   vorab berechnete Ziel setzt und `finished` markiert: Der nächste Frame
@@ -168,7 +168,7 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 | Visualisierung | Was sie in diesen Begriffen tut |
 |---|---|
 | **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein "Kick" des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenze außer der ersten (`lastSeg` startet bei `-1`, das anfängliche Segment unter dem Zeiger kickt also nie) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
-| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 der 16 Zellen der Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass die Zeile wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
+| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 jeder 16-Zellen-Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
 | **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
 | **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |
 | **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bezierkurve, die sich als Bremsen liest; der Name löst sich erst nach dem vollständigen Halt auf. |

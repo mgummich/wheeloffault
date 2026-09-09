@@ -113,6 +113,29 @@ describe('scripts/verify-draw.mjs', () => {
     expect(result.status).toBe(2);
   });
 
+  it('exits 2 (usage error) when the --file path does not exist', () => {
+    dir = mkdtempSync(join(tmpdir(), 'verify-draw-'));
+    const missing = join(dir, 'does-not-exist.json');
+    const result = spawnSync(process.execPath, [scriptPath, '--file', missing], {
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('cannot read');
+    expect(result.stderr.split('\n').filter(Boolean).length).toBeLessThanOrEqual(2);
+  });
+
+  it('exits 2 (usage error) when the file is not valid JSON', () => {
+    dir = mkdtempSync(join(tmpdir(), 'verify-draw-'));
+    const file = join(dir, 'draw.json');
+    writeFileSync(file, '{not valid json');
+    const result = spawnSync(process.execPath, [scriptPath, '--file', file], {
+      encoding: 'utf8',
+    });
+    expect(result.status).toBe(2);
+    expect(result.stderr).toContain('not valid JSON');
+    expect(result.stderr.split('\n').filter(Boolean).length).toBeLessThanOrEqual(2);
+  });
+
   it('accepts a leading bare "--" (what `pnpm verify:draw -- --file draw.json` actually forwards)', () => {
     // pnpm 11 forwards the literal "--" instead of consuming it, so the
     // documented invocation (docs/en+de/fairness.md § 8) passes the script

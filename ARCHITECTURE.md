@@ -241,7 +241,8 @@ input is explicitly validated server-side (`src/server/validate.ts`; the
 FairnessPolicy via `assertPolicy` in `src/domain/fairness/policy.ts`,
 imported only by `src/server/http.ts`). The browser imports just the
 `FairnessPolicy` type from that module, not the check; its `min`/`max` on
-the policy form's number inputs are UI hints, not enforcement.
+the policy form's number inputs are UI hints, not a validation boundary —
+they do not constrain a programmatic write.
 
 There is no authentication by default: Schuldrad is meant for a trusted
 network (team LAN, VPN); anyone running it publicly puts a reverse proxy
@@ -333,8 +334,9 @@ AnimPanel.tsx    animation settings (localStorage via animSettings.ts)
 share.ts         per-spin result card (canvas PNG) + ShareDialog.tsx (native <dialog>)
 ```
 
-PWA: `manifest.webmanifest` + a hand-written service worker (app-shell
-cache; `/api` is never touched, history always comes from the server).
+PWA: `manifest.webmanifest` + a hand-written service worker (network-first
+app-shell cache plus cache-first runtime caching of `assets/`; `/api` is
+never touched, history always comes from the server).
 
 `src/web` imports types (`TeamView`, `SpinView`) and the pure view
 functions from `src/domain/views.ts` — that is the HTTP contract, not

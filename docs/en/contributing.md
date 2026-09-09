@@ -57,6 +57,41 @@ instead) — but the sequence and the pass/fail bar are identical either way.
 need it to pass. Run it locally before opening a PR — there is no faster
 feedback loop than not waiting for CI to tell you `lint` failed.
 
+## § 2a Documentation build gates
+
+`pnpm build` (and therefore `pnpm verify`, CI's `verify` job, and GitHub
+Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
+
+* **Language pairing.** Every doc in the registry at the top of
+  `scripts/build-docs.mjs` needs both an `en` and a `de` source file, unless
+  its entry is marked `enOnly` (currently just `SECURITY.md`, which has no
+  maintained translation). Adding a new doc means adding it to that
+  registry with both files, or explicitly opting out with `enOnly`.
+* **Link and anchor checks.** A `.md`-to-`.md` link must resolve to a real
+  file at that relative path and render with the right language prefix, and
+  every rendered `href="#…"` must point at a heading id that actually
+  exists on its target page. This catches a typo'd path, a link to a doc's
+  own page in the wrong language, and a link into a heading that got
+  renamed or removed.
+* **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
+  constant in a doc must actually be exported from `src/` (or, for
+  ALL_CAPS, be an `env.NAME`/`process.env.NAME` read) — catches a doc
+  still claiming an API that was renamed or un-exported out from under it.
+  It only checks call syntax and ALL_CAPS, not bare identifiers, because
+  those collide constantly with ordinary prose (`memberId`, `packageManager`,
+  …). It is honest about being narrow, not exhaustive: it does not parse
+  code fences as code, so an ordinary JS snippet in a fenced block (e.g.
+  `` JSON.parse(text) ``) can trip it just as easily as a real claim about
+  the codebase — either name the symbol without call-parens in prose, or add
+  it to SYMBOL_IGNORE in `scripts/build-docs.mjs` with a one-line reason,
+  the way the existing eight entries do.
+
+`pnpm status` regenerates `docs/STATUS.json` from the actual output of the
+`verify`/`build:server`/`e2e` checks (pass/fail plus deterministic counts —
+no timings, dates, or environment fingerprints); CI's `status` job runs it
+and fails if `git diff --exit-code docs/STATUS.json` finds a difference, so
+a stale status record fails the build the same way a broken link does.
+
 ## § 3 Tests live next to what they document
 
 Unit and integration tests are `*.test.ts` files next to the module they

@@ -1,16 +1,9 @@
 {
-  "date": "2026-09-09",
-  "branch": "main",
-  "environment": {
-    "node": "v26.8.1",
-    "pnpm": "11.24.0",
-    "os": "darwin (Darwin 25.6.0)"
-  },
   "checks": [
     {
       "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Checked 95 files. No fixes applied."
+      "details": "Checked 95 files."
     },
     {
       "name": "lint (pnpm lint)",
@@ -25,7 +18,7 @@
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "16 test files, 96 tests passed."
+      "details": "16 test files, 98 tests passed."
     },
     {
       "name": "test:integration (pnpm test:integration)",
@@ -35,7 +28,7 @@
     {
       "name": "build (pnpm build)",
       "status": "pass",
-      "details": "60 modules transformed; all docs rendered without a symbol-guard or completeness failure."
+      "details": "60 modules transformed; 15 docs rendered without a symbol-guard or completeness failure."
     },
     {
       "name": "build:server (pnpm build:server)",
