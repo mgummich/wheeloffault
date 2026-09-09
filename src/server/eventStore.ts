@@ -31,7 +31,7 @@ export function openEventStore(path: string): EventStore {
     'SELECT position, stream_id, version, type, payload, at FROM events WHERE stream_id = ? ORDER BY version',
   );
   const selectStreamsByType = db.prepare(
-    'SELECT DISTINCT stream_id FROM events WHERE type = ? ORDER BY position',
+    'SELECT stream_id FROM events WHERE type = ? GROUP BY stream_id ORDER BY MIN(position)',
   );
   const selectVersion = db.prepare(
     'SELECT COALESCE(MAX(version), 0) AS version FROM events WHERE stream_id = ?',

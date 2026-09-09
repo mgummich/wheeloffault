@@ -37,8 +37,9 @@ cookie/session semantics.
 LAN, over a VPN, or through a reverse proxy without its own auth) but does
 not know the deployment password. Login attempts are rate-limited (5 per
 IP per minute, counted from the moment a request arrives — not from the
-moment a wrong password is confirmed — so a burst of concurrent requests
-cannot all slip in under the limit); the password is verified with scrypt
+moment a wrong password is confirmed, and counting every attempt
+including a correct one — so a burst of concurrent requests cannot all
+slip in under the limit); the password is verified with scrypt
 and a constant-time comparison, never logged, never written to disk.
 Sessions slide their expiry on use (12h) but always expire after 7 days
 regardless of activity, and every session tied to a still-open SSE stream

@@ -3,12 +3,12 @@
     {
       "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Checked 95 files."
+      "details": "Checked 98 files."
     },
     {
       "name": "lint (pnpm lint)",
       "status": "pass",
-      "details": "Checked 97 files. Found 5 warnings."
+      "details": "Checked 100 files. Found 5 warnings."
     },
     {
       "name": "typecheck (pnpm typecheck)",
@@ -18,12 +18,12 @@
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "16 test files, 98 tests passed."
+      "details": "17 test files, 104 tests passed."
     },
     {
       "name": "test:integration (pnpm test:integration)",
       "status": "pass",
-      "details": "5 test files, 47 tests passed."
+      "details": "7 test files, 50 tests passed."
     },
     {
       "name": "build (pnpm build)",
