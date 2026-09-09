@@ -70,6 +70,9 @@ jobs:
   # PR that's already broken, instead of racing it in parallel.
   status:
     runs-on: ubuntu-latest
+    # Same Playwright container as `e2e`: `pnpm status` reruns the E2E suite,
+    # visual baselines included, so it needs the same font rendering.
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
     needs: [verify, e2e]
     steps:
       - uses: actions/checkout@v4
@@ -79,7 +82,7 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install chromium
       - run: pnpm status
       - run: git diff --exit-code docs/STATUS.json
 
@@ -100,6 +103,11 @@ jobs:
 
   e2e:
     runs-on: ubuntu-latest
+    # The visual baselines in tests/e2e/visual.spec.ts-snapshots are committed
+    # with no pixel threshold, so the fonts here must match the ones they were
+    # generated with: this image, pinned to the @playwright/test version.
+    # A bare runner renders text a few hundred pixels differently and fails.
+    container: mcr.microsoft.com/playwright:v1.62.1-noble
     needs: verify
     steps:
       - uses: actions/checkout@v4
@@ -113,7 +121,7 @@ jobs:
         with:
           name: dist
           path: dist
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install chromium
       - run: pnpm e2e
       - uses: actions/upload-artifact@v4
         if: failure()
