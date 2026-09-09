@@ -81,12 +81,14 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   `../en/`) prefix silently falls back to the current page's own language
   instead of erroring.
 * **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
-  constant in a doc must actually be exported from `src/` (or, for
-  ALL_CAPS, be an `env.NAME`/`process.env.NAME` read) — catches a doc
-  still claiming an API that was renamed or un-exported out from under it.
-  It only checks call syntax and ALL_CAPS, not bare identifiers, because
-  those collide constantly with ordinary prose (`memberId`, `packageManager`,
-  …). It is honest about being narrow, not exhaustive: it does not parse
+  constant *with an underscore* (`MAX_NAME`, not `PORT`) in a doc must
+  actually be exported from `src/` (or, for ALL_CAPS, be an
+  `env.NAME`/`process.env.NAME` read) — catches a doc still claiming an API
+  that was renamed or un-exported out from under it. It only checks call
+  syntax and underscored ALL_CAPS, not bare identifiers or single-word
+  constants, because those collide constantly with ordinary prose
+  (`memberId`, `packageManager`, `PORT`, `HOST`, …). It is honest about
+  being narrow, not exhaustive: it does not parse
   code fences as code, so an ordinary JS snippet in a fenced block (e.g.
   `` JSON.parse(text) ``) can trip it just as easily as a real claim about
   the codebase — either name the symbol without call-parens in prose, or add

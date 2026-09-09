@@ -421,4 +421,11 @@ describe('auth enabled', () => {
     expect(await fileAuth.verify('from-file')).toBe(true);
     expect(await fileAuth.verify('from-env')).toBe(false);
   });
+
+  it('fails fast instead of silently disabling auth when SCHULDRAD_PASSWORD_FILE is empty', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'schuldrad-secret-'));
+    const file = join(dir, 'password');
+    await writeFile(file, '');
+    expect(() => createAuth({ SCHULDRAD_PASSWORD_FILE: file })).toThrow(/empty/);
+  });
 });

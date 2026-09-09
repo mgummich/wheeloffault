@@ -145,4 +145,34 @@ describe('session api', () => {
     expect(restored.statistics.overturnedSpins).toBe(1);
     expect((await api.memberReport(team.teamId, anna.memberId)).memberId).toBe(anna.memberId);
   });
+
+  it('rejects a malformed policy in static mode and never persists it', async () => {
+    const api = createSessionApi(storage);
+    const team = await api.createTeam('Team Policy');
+
+    await expect(
+      api.changePolicy(team.teamId, {
+        ...team.policy,
+        pity: { ...team.policy.pity, enabled: true, percentPerSpin: 0.5 },
+      }),
+    ).rejects.toMatchObject({ status: 400, body: { code: 'policy_invalid' } });
+
+    const restored = await createSessionApi(storage).getTeam(team.teamId);
+    expect(restored.policy.pity.percentPerSpin).toBe(team.policy.pity.percentPerSpin);
+  });
+
+  it('rejects an over-long or NUL-containing member name in static mode and never persists it', async () => {
+    const api = createSessionApi(storage);
+    const team = await api.createTeam('Team Names');
+
+    await expect(api.addMembers(team.teamId, ['x'.repeat(61)])).rejects.toMatchObject({
+      status: 400,
+    });
+    await expect(api.addMembers(team.teamId, ['Anna\u0000'])).rejects.toMatchObject({
+      status: 400,
+    });
+
+    const restored = await createSessionApi(storage).getTeam(team.teamId);
+    expect(restored.members).toEqual([]);
+  });
 });

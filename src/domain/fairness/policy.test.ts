@@ -135,6 +135,15 @@ describe('assertPolicy bounds', () => {
     }
   });
 
+  it('rejects a non-boolean enabled flag', () => {
+    expectPolicyInvalid({ ...defaultPolicy, pity: { ...defaultPolicy.pity, enabled: 'yes' } });
+  });
+
+  it('rejects a policy missing a section', () => {
+    const { manual: _manual, ...rest } = defaultPolicy;
+    expectPolicyInvalid(rest);
+  });
+
   it('rejects manual factor keys that are too long or contain NUL', () => {
     expectPolicyInvalid(
       normalizePolicy({

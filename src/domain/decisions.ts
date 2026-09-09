@@ -1,6 +1,6 @@
 import { DomainError } from './errors.ts';
 import type { DomainEvent } from './events.ts';
-import { type FairnessPolicy, normalizePolicy } from './fairness/policy.ts';
+import { assertPolicy, type FairnessPolicy, normalizePolicy } from './fairness/policy.ts';
 import { findMember, findSpin, type TeamState } from './team.ts';
 
 /**
@@ -17,6 +17,9 @@ function cleanName(raw: string): string {
     throw new DomainError(`Name longer than ${MAX_NAME} characters`, 'name_too_long', {
       max: MAX_NAME,
     });
+  }
+  if (name.includes('\u0000')) {
+    throw new DomainError('Name must not contain NUL', 'name_invalid');
   }
   return name;
 }
@@ -66,6 +69,7 @@ export function reactivateMember(state: TeamState, memberId: string, now: string
 }
 
 export function changePolicy(state: TeamState, policy: FairnessPolicy, now: string): DomainEvent[] {
+  assertPolicy(policy);
   for (const id of Object.keys(policy.manual.factors)) {
     if (!state.members.some((m) => m.memberId === id)) {
       throw new DomainError(`manual.factors: unknown member ${id}`, 'unknown_policy_member', {

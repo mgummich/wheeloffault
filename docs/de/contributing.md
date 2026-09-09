@@ -43,7 +43,7 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   und einen statischen Build unter dem Unterpfad `/wheeloffault/`, startet
   beide und führt zwei Projekte gegen sie aus: `server`
   (`journey.spec.ts`) und `static` (`static.spec.ts`) — derselbe Unterpfad,
-  auf den GitHub Pages deployed, damit ein kaputter Base-Path vor der
+  auf den GitHub Pages veröffentlicht, damit ein kaputter Base-Path vor der
   Produktion auffällt.
 
 ## § 2 `pnpm verify`
@@ -90,13 +90,15 @@ folgenden Punkte scheitern lässt:
   fällt still auf die Sprache der aktuellen Seite zurück, statt einen
   Fehler auszulösen.
 * **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
-  ALL_CAPS-Konstante in einem Dokument muss tatsächlich aus `src/`
-  exportiert werden (bei ALL_CAPS alternativ ein `env.NAME`-/
-  `process.env.NAME`-Zugriff sein) — findet ein Dokument, das noch eine API
-  behauptet, die umbenannt oder deexportiert wurde. Geprüft werden nur
-  Aufrufsyntax und ALL_CAPS, keine nackten Bezeichner, weil die ständig
-  mit gewöhnlicher Prosa kollidieren (`memberId`, `packageManager`, …). Er
-  ist bewusst eng gefasst, nicht erschöpfend: Er parst Codeblöcke nicht als
+  ALL_CAPS-Konstante *mit Unterstrich* (`MAX_NAME`, nicht `PORT`) in einem
+  Dokument muss tatsächlich aus `src/` exportiert werden (bei ALL_CAPS
+  alternativ ein `env.NAME`- oder `process.env.NAME`-Zugriff sein) — findet
+  ein Dokument, das noch eine API behauptet, die umbenannt oder
+  deexportiert wurde. Geprüft werden nur Aufrufsyntax und ALL_CAPS mit
+  Unterstrich, keine nackten Bezeichner oder einwortigen Konstanten, weil
+  die ständig mit gewöhnlicher Prosa kollidieren (`memberId`,
+  `packageManager`, `PORT`, `HOST`, …). Er ist bewusst eng gefasst, nicht
+  erschöpfend: Er parst Codeblöcke nicht als
   Code, ein gewöhnliches JS-Snippet in einem Codeblock (z. B.
   `` JSON.parse(text) ``) kann ihn genauso auslösen wie eine echte Aussage
   über die Codebasis — entweder das Symbol in der Prosa ohne

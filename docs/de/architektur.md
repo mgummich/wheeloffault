@@ -83,7 +83,7 @@ ImmunityConsumed         { memberId, spinId }
 ImmunityRevoked          { memberId }
 ```
 
-Jedes Event hat zusätzlich `type`, `at` (ISO-Zeit) und – in der Datenbank –
+Jedes Event hat zusätzlich `type`, `at` (ISO-Zeit) und — in der Datenbank —
 `streamId`, `version` (1-basiert, lückenlos pro Stream) und `position`
 (global). Events sind unveränderlich. Ein Event-Typ wird nie umgedeutet;
 neue Bedeutung = neuer Typ. Felder dürfen optional hinzukommen, nie
@@ -142,7 +142,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
    → SpinCommitted { commitment, nonce, participants (mit Gewichten), serverSeed }
    Der serverSeed liegt im Event (sonst überlebt ein offener Spin keinen Neustart),
    wird aber vor dem Reveal nie über HTTP ausgeliefert (`domain/views.ts`). Wer die
-   Datenbank lesen kann, kann das Ergebnis vorhersagen – die Datenbank ist Vertrauensbasis.
+   Datenbank lesen kann, kann das Ergebnis vorhersagen — die Datenbank ist Vertrauensbasis.
 4. Client liefert clientSeed (beliebiger String, Standard: 16 Zufallsbytes hex)
 5. digest = HMAC-SHA-256(key = serverSeed, msg = `${commitment}:${clientSeed}:${nonce}`)
    r = uint64(digest[0..16]) mod Σweights
@@ -171,9 +171,9 @@ Browser-Verifier reproduziert Server
 ```
 
 Jeder Teilnehmer startet mit Gewicht 1000 (`FACTOR_ONE` in
-`src/domain/fairness/modifiers.ts`). Dann
-wenden die aktivierten Modifikatoren (`src/domain/fairness/modifiers.ts`,
-alle `weights + context → weights`) in dieser festen Reihenfolge an:
+`src/domain/fairness/modifiers.ts`). Danach werden die aktivierten
+Modifikatoren (`src/domain/fairness/modifiers.ts`, alle
+`weights + context → weights`) in dieser festen Reihenfolge angewendet:
 
 ```
 pity        +X % pro Ziehung ohne Treffer seit der letzten Schuld
@@ -248,13 +248,17 @@ Fehler: `{ error: string, code: string }` mit 400 (ungültige Eingabe), 401
 stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
 (`src/web/apiError.ts`, `src/web/i18n/`); die menschenlesbare `error`-Meldung
 ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
-serverseitig explizit validiert (`src/server/validate.ts`; die FairnessPolicy über
-`assertPolicy` in `src/domain/fairness/policy.ts`, das nur von
-`src/server/http.ts` importiert wird). Der Browser importiert aus diesem
-Modul nur den Typ `FairnessPolicy`, nicht die Prüfung; die `min`/`max`-Werte
-der Zahlenfelder im Fairness-Formular sind UI-Hinweise, keine
-Validierungsgrenze — sie schränken einen programmatischen Schreibzugriff
-nicht ein.
+explizit validiert: serverseitig an der HTTP-Grenze (`src/server/validate.ts`
+— Name/Grund ≤ 100/200 Zeichen, `clientSeed` ≤ 200, bis zu 500 Namen ≤ 100
+Zeichen je Eintrag, Policy-Faktorschlüssel ≤ 64 Zeichen), und die
+FairnessPolicy zusätzlich über `assertPolicy`
+(`src/domain/fairness/policy.ts`), aufgerufen aus `decide.changePolicy`
+(`src/domain/decisions.ts`) — läuft also in beiden Modi, nicht nur hinter
+`src/server/http.ts`. Der Browser importiert aus diesem Modul den Typ
+`FairnessPolicy`; die `min`/`max`-Werte der Zahlenfelder im
+Fairness-Formular sind UI-Hinweise, nicht die Validierungsgrenze — sie
+schränken einen programmatischen Schreibzugriff nicht ein, aber
+`assertPolicy` läuft bei diesem Schreibzugriff trotzdem.
 
 Es gibt standardmäßig keine Authentifizierung: Schuldrad ist für ein
 vertrauenswürdiges Netz (Team-LAN, VPN) gedacht; wer es öffentlich
@@ -355,7 +359,7 @@ PWA: `manifest.webmanifest` + handgeschriebener Service Worker
 `assets/`; `/api` wird nie angefasst, Historie kommt immer vom Server).
 
 `src/web` importiert aus `src/domain/views.ts` Typen (`TeamView`, `SpinView`)
-und die puren View-Funktionen – das ist der HTTP-Vertrag, kein Serverstaat
+und die puren View-Funktionen — das ist der HTTP-Vertrag, kein Serverstaat
 (siehe Tabelle in Abschnitt 1).
 
 ## 10. Deployment

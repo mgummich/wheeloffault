@@ -211,24 +211,24 @@ None of this is stored. The event history is the sole source of truth;
 ```
 GET  /api/teams                              [{ teamId, name, memberCount, spinCount }]
 POST /api/teams                 { name }     → 201 TeamView
-GET  /api/teams/:id                          TeamView (state + statistics)
-POST /api/teams/:id/members     { name }  |  { names: [...] }   insert a list
-POST /api/teams/:id/members/:mid/deactivate
-POST /api/teams/:id/members/:mid/reactivate
-POST   /api/teams/:id/members/:mid/immunity   { reason }
-DELETE /api/teams/:id/members/:mid/immunity   revokes the oldest immunity
-PUT    /api/teams/:id/policy      FairnessPolicy
-POST   /api/teams/:id/pools       { name, memberIds }
-PUT    /api/teams/:id/pools/:pid  { memberIds }
-POST   /api/teams/:id/pools/:pid/rename  { name }
-DELETE /api/teams/:id/pools/:pid
-POST /api/teams/:id/spins       { spinId, poolId? }        → SpinCommitted data   (409 on open spin)
-POST /api/teams/:id/spins/:sid/reveal { clientSeed }       → SpinRevealed data
-POST /api/teams/:id/spins/:sid/appeal { reason }
-POST /api/teams/:id/spins/:sid/appeal/uphold
-POST /api/teams/:id/spins/:sid/appeal/reject
-GET  /api/teams/:id/members/:mid/report      Guilt report
-GET  /api/teams/:id/events                   SSE: one `event: appended` per new event
+GET  /api/teams/:teamId                          TeamView (state + statistics)
+POST /api/teams/:teamId/members     { name }  |  { names: [...] }   insert a list
+POST /api/teams/:teamId/members/:memberId/deactivate
+POST /api/teams/:teamId/members/:memberId/reactivate
+POST   /api/teams/:teamId/members/:memberId/immunity   { reason }
+DELETE /api/teams/:teamId/members/:memberId/immunity   revokes the oldest immunity
+PUT    /api/teams/:teamId/policy      FairnessPolicy
+POST   /api/teams/:teamId/pools       { name, memberIds }
+PUT    /api/teams/:teamId/pools/:poolId  { memberIds }
+POST   /api/teams/:teamId/pools/:poolId/rename  { name }
+DELETE /api/teams/:teamId/pools/:poolId
+POST /api/teams/:teamId/spins       { spinId, poolId? }        → SpinCommitted data   (409 on open spin)
+POST /api/teams/:teamId/spins/:spinId/reveal { clientSeed }       → SpinRevealed data
+POST /api/teams/:teamId/spins/:spinId/appeal { reason }
+POST /api/teams/:teamId/spins/:spinId/appeal/uphold
+POST /api/teams/:teamId/spins/:spinId/appeal/reject
+GET  /api/teams/:teamId/members/:memberId/report      Guilt report
+GET  /api/teams/:teamId/events                   SSE: one `event: appended` per new event
 GET  /api/health
 POST /api/auth/login             { password } → sets session cookie (only when auth is enabled)
 POST /api/auth/logout            clears the session cookie
@@ -238,16 +238,19 @@ GET  /api/auth/status                        { enabled, authenticated }
 Errors: `{ error: string, code: string }` with 400 (invalid input), 401
 (auth), 403 (CSRF/host checks: `host_not_allowed`, `origin_mismatch`), 404,
 409 (conflict), 415 (unsupported content type), 429 (rate limited), 500/503
-(internal error / overload). `code` is a stable,
-machine-readable identifier that the client localizes (`src/web/apiError.ts`,
-`src/web/i18n/`); the human `error` message is English and only a fallback
-for unknown codes. All
-input is explicitly validated server-side (`src/server/validate.ts`; the
-FairnessPolicy via `assertPolicy` in `src/domain/fairness/policy.ts`,
-imported only by `src/server/http.ts`). The browser imports just the
-`FairnessPolicy` type from that module, not the check; its `min`/`max` on
-the policy form's number inputs are UI hints, not a validation boundary —
-they do not constrain a programmatic write.
+(internal error / overload). `code` is a stable, machine-readable identifier
+that the client localizes (`src/web/apiError.ts`, `src/web/i18n/`); the
+human `error` message is English and only a fallback for unknown codes. All
+input is explicitly validated: server-side at the HTTP boundary
+(`src/server/validate.ts` — name/reason ≤ 100/200 chars, `clientSeed` ≤ 200,
+up to 500 names ≤ 100 chars each, policy factor keys ≤ 64 chars), and the
+FairnessPolicy additionally via `assertPolicy` (`src/domain/fairness/policy.ts`),
+called from `decide.changePolicy` (`src/domain/decisions.ts`) so it runs in
+both server and static mode, not just behind `src/server/http.ts`. The
+browser imports the `FairnessPolicy` type from that module; its `min`/`max`
+on the policy form's number inputs are UI hints, not the validation
+boundary — they do not constrain a programmatic write, but `assertPolicy`
+still runs on that write either way.
 
 There is no authentication by default: Schuldrad is meant for a trusted
 network (team LAN, VPN); anyone running it publicly puts a reverse proxy

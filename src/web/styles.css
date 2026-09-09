@@ -33,7 +33,7 @@
    * timing, not color. */
   --dur-latency: 120ms; /* control acknowledgement, relay interlocking */
   --dur-indicator: 160ms; /* flap/tick snap */
-  --dur-settle: 400ms; /* mechanical settle: stamp impact, panel pop-in */
+  --dur-settle: 400ms; /* mechanical settle: stamp impact */
   --ease-mechanical: cubic-bezier(0.2, 0.8, 0.2, 1); /* sharp attack, damped settle */
 }
 

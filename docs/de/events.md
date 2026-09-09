@@ -65,9 +65,9 @@ Konvention im Domänencode. Daraus folgen die Regeln:
 4. **Das Ergebnis eines Spins wird nie umgeschrieben.** Ein stattgegebener
    Einspruch (`AppealUpheld`) löscht oder ändert nicht `SpinCommitted`/
    `SpinRevealed`; er ist ein neues, darübergelegtes Event, das ändert, wie
-   Projektionen den Spin *zählen* (ausgeschlossen aus Treffer-/
-   Erwartungswert-Statistik — siehe
-   [architektur.md](architektur.md) § 3), nicht was geschehen ist.
+   Projektionen den Spin *zählen* (ausgeschlossen aus
+   Treffer-/Erwartungswert-Statistik — siehe [architektur.md](architektur.md)
+   § 3), nicht was geschehen ist.
 
 ## § 3 Die Upcast-Nahtstelle
 

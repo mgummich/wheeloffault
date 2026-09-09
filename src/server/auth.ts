@@ -47,7 +47,13 @@ function loadPassword(env: NodeJS.ProcessEnv): string | null {
   if (file) {
     // Docker secret: a file wins over the plain env var if both are set.
     const raw = readFileSync(file, 'utf8').replace(/\r?\n$/, '');
-    return raw.length > 0 ? raw : null;
+    if (raw.length === 0) {
+      // An empty secret file almost certainly means "not written yet", not
+      // "auth intentionally disabled" — fail loud instead of silently
+      // running the server unauthenticated.
+      throw new Error(`SCHULDRAD_PASSWORD_FILE (${file}) is empty`);
+    }
+    return raw;
   }
   const pw = env.SCHULDRAD_PASSWORD;
   return pw && pw.length > 0 ? pw : null;

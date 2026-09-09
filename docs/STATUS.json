@@ -18,12 +18,12 @@
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "17 test files, 106 tests passed."
+      "details": "17 test files, 110 tests passed."
     },
     {
       "name": "test:integration (pnpm test:integration)",
       "status": "pass",
-      "details": "7 test files, 55 tests passed."
+      "details": "7 test files, 56 tests passed."
     },
     {
       "name": "build (pnpm build)",

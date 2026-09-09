@@ -21,11 +21,11 @@ Der Gewinner steht durch das Commit/Reveal-Protokoll
 Server legt sich auf Seed und Gewichte fest, deckt dann ein Ergebnis auf, und
 erst *danach* schaltet der in `SpinPage` definierte `draw`-Callback
 (`src/web/views/SpinPage.tsx`) die Phase auf `animating` — mit dem bereits
-bekannten Ergebnis in der Hand
-(`src/web/draw.ts` → `performDraw`). Jede Visualisierung wird mit
-`result={null}` gemountet und erhält das fertige `result` als Prop erst,
-wenn die Phase auf `animating` wechselt (`src/web/views/SpinPage.tsx`), und
-verbringt die folgenden Sekunden damit, es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
+bekannten Ergebnis in der Hand (`src/web/draw.ts` → `performDraw`). Jede
+Visualisierung wird mit `result={null}` gemountet und erhält das fertige
+`result` als Prop erst, wenn die Phase auf `animating` wechselt
+(`src/web/views/SpinPage.tsx`), und verbringt die folgenden Sekunden damit,
+es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
 zur Gewinnzeile rollen, eine Nadel bis zur Gewinnposition schwenken. Keine
 davon wählt etwas aus. Sollte diese Reihenfolge jemals umgekehrt werden —
 sollte der eigene Zufall oder das Timing einer Visualisierung jemals
@@ -68,8 +68,8 @@ sie für die SVG-Rotation bei jedem Frame neu berechnet werden müssen:
 `ease(style, t)` in `src/web/wheel/anim.ts`, getestet in `anim.test.ts`.
 Ihre Kurven sind das kanonische „mechanische“ Vokabular dieser Verordnung:
 
-- `standard` — reine gedämpfte kubische Ease-out-Kurve ohne Überschwingen:
-  die Standardkurve „das Rad dreht sich aus wie ein Rad“.
+- `standard` — reine gedämpfte Ease-out-Kurve (Exponent 3,2) ohne
+  Überschwingen: die Standardkurve „das Rad dreht sich aus wie ein Rad“.
 - `overshoot` — schießt über das Ziel hinaus und pendelt zurück, siehe § 5.
 - `windup` — schwingt zunächst rückwärts (Antizipation, § 4), dann
   vorwärts.
@@ -94,9 +94,10 @@ nicht zwischen Zuständen teleportiert.
 Ein kurzer Vorlauf vor einer großen Enthüllung liest sich physikalisch,
 nicht fehlerhaft:
 
-- Der `windup`-Spin-Stil des Rades schwingt vor dem eigentlichen Vorwärts-
-  Spin um rund 3,5 % der gesamten Spin-Strecke zurück (Fall `windup` in
-  `ease()`) — etwa 63° über die ~1800° Mindeststrecke von `windup` selbst.
+- Der `windup`-Spin-Stil des Rades schwingt vor dem eigentlichen
+  Vorwärts-Spin um rund 3,5 % der gesamten Spin-Strecke zurück (Fall
+  `windup` in `ease()`) — etwa 63° über die ~1800° Mindeststrecke von
+  `windup` selbst.
   Zum Vergleich: dieselben 3,5 % über die ~3600°-Strecke des `lang`-Stils
   wären ~126° (`lang` und `windup` sind eigenständige, nicht kombinierbare
   Spin-Stile; `lang` selbst schwingt nicht zurück).
@@ -173,7 +174,7 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 | **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 jeder 16-Zellen-Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
 | **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
 | **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |
-| **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bezierkurve, die sich als Bremsen liest; der Name löst sich erst nach dem vollständigen Halt auf. |
+| **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bezierkurve, die sich als Bremsen liest; die Zielanzeige läuft während der gesamten Annäherung durch Namen und landet genau mit dem Halt des Zuges auf dem Gewinner, nicht erst danach. |
 | **Fahrplan-Rolle** (`TimetableStage`) | Rollt über mehrere Extra-Umläufe, bevor sie auf der Ergebniszeile landet — gedämpfter Stopp über dieselbe Brems-Kurvenfamilie wie der Zug. |
 | **Gewichtslinie** (`LineStage`) | Die Nadel schwenkt über dieselbe gedämpfte Stopp-Kurve zur Position des Gewinners und hält dort, sobald angesagt wurde. |
 

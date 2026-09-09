@@ -3,6 +3,7 @@
 export type ErrorCode =
   | 'name_empty'
   | 'name_too_long'
+  | 'name_invalid'
   | 'member_name_conflict'
   | 'unknown_policy_member'
   | 'pool_name_conflict'
@@ -42,6 +43,7 @@ type Status = 'invalid' | 'not_found' | 'conflict';
 const STATUS_BY_CODE: Record<ErrorCode, Status> = {
   name_empty: 'invalid',
   name_too_long: 'invalid',
+  name_invalid: 'invalid',
   member_name_conflict: 'conflict',
   unknown_policy_member: 'invalid',
   pool_name_conflict: 'conflict',

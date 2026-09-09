@@ -22,7 +22,7 @@ getrennt und wandern nie automatisch ineinander.
 
 `pnpm build` erzeugt `dist/web`, eine eigenständige statische Seite. Sie
 wird durch `.github/workflows/pages.yml` bei jedem Push auf `main`
-deployed. Es gibt kein Backend: `src/web/sessionApi.ts` führt dieselbe
+veröffentlicht. Es gibt kein Backend: `src/web/sessionApi.ts` führt dieselbe
 Command/Decide/Replay-Domänenlogik wie der Server aus, gegen `localStorage`
 statt SQLite. Die genaue Persistenz-Semantik steht in
 [README.de.md](../../README.de.md) (überlebt Reload/Tab-schließen/Neustart, wird
@@ -39,17 +39,17 @@ docker build -t schuldrad .
 docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 ```
 
-Das `Dockerfile` ist ein zweistufiger Build: eine `node:26-alpine`-Build-
-Stufe führt `pnpm build:server` aus und kürzt auf Produktionsabhängigkeiten;
-die Laufzeitstufe entfernt `npm`/`npx`/`corepack` vollständig (die
-Anwendung selbst braucht nur `node`), läuft als nicht-root-Benutzer `node`
-und liefert den Server als unveränderte TypeScript-Quelle unter Nodes
-nativem Type-Stripping aus — kein Bundler, kein Kompilierschritt zur
-Laufzeit. `HEALTHCHECK` pollt `/api/health` mit BusyBox `wget` — ein per
-Shell direkt aufrufbarer HTTP-Client, leichter als eine Anfrage über `node`
-zu skripten (das weiterhin im Image steckt, aber kein direkt einsetzbarer
-`HEALTHCHECK`-Befehl ist). Daten liegen standardmäßig im `/data`-Volume als `schuldrad.db`
-(SQLite).
+Das `Dockerfile` ist ein zweistufiger Build: eine `node:26-alpine`-Build-Stufe
+führt `pnpm build:server` aus und kürzt auf Produktionsabhängigkeiten; die
+Laufzeitstufe entfernt `npm`/`npx`/`corepack` vollständig (die Anwendung
+selbst braucht nur `node`), läuft als Nicht-root-Benutzer `node` und liefert
+den Server als unveränderte TypeScript-Quelle unter Nodes nativem
+Type-Stripping aus — kein Bundler, kein Kompilierschritt zur Laufzeit.
+`HEALTHCHECK` pollt `/api/health` mit BusyBox `wget` — ein per Shell direkt
+aufrufbarer HTTP-Client, leichter als eine Anfrage über `node` zu skripten
+(das weiterhin im Image steckt, aber kein direkt einsetzbarer
+`HEALTHCHECK`-Befehl ist). Daten liegen standardmäßig im `/data`-Volume als
+`schuldrad.db` (SQLite).
 
 ### Ohne Docker
 
@@ -67,8 +67,7 @@ eingecheckte `src/web/.env.server`), was den Client vom
 
 `docker-compose.yml` definiert zwei Profile. Jeder Dienst deklariert ein
 Profil, ein einfaches `docker compose up` ohne Profilangabe startet also
-nichts — eines muss
-explizit gewählt werden:
+nichts — eines muss explizit gewählt werden:
 
 * **`sqlite`** — ein einzelner `schuldrad`-Dienst, SQLite in einem
   benannten Volume. Das ist der empfohlene Pfad ohne Infrastruktur:
@@ -102,7 +101,7 @@ explizit gewählt werden:
 | `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
 | `SCHULDRAD_PASSWORD` | — | optionales Betriebspasswort — siehe § 3a |
-| `SCHULDRAD_PASSWORD_FILE` | — | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind |
+| `SCHULDRAD_PASSWORD_FILE` | — | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind; eine leere Datei lässt den Start fehlschlagen, statt Auth stillschweigend zu deaktivieren |
 | `SCHULDRAD_SECURE_COOKIES` | — | auf `1` setzen, um das `Secure`-Cookie-Attribut zu erzwingen — siehe § 3a |
 | `SCHULDRAD_TRUST_PROXY` | — | auf `1` setzen hinter einem Reverse Proxy, der `x-forwarded-for`/`x-forwarded-proto` überschreibt (nicht anhängt) — siehe § 3a und § 3b |
 | `SCHULDRAD_ALLOWED_HOSTS` | — | optionale, kommagetrennte `Host`-Allowlist für `/api/*`-Anfragen, schließt DNS-Rebinding — siehe § 3b |
@@ -270,7 +269,7 @@ ausgelegt, direkt im offenen Internet zu stehen.
 
 SQLite- und Postgres-Migrationen (`src/server/migrations.ts`) laufen
 automatisch beim Start, jede in eigener Transaktion, protokolliert in
-`schema_migrations`. Es gibt keinen separaten „Migrationen ausführen“-
-Schritt, an den man sich vor dem Start einer neuen Version erinnern muss —
-den Server zu starten ist der Migrationsschritt. Siehe
-[events.md](events.md) § 4 zum Hinzufügen einer Migration.
+`schema_migrations`. Es gibt keinen separaten „Migrationen ausführen“-Schritt,
+an den man sich vor dem Start einer neuen Version erinnern muss — den Server
+zu starten ist der Migrationsschritt. Siehe [events.md](events.md) § 4 zum
+Hinzufügen einer Migration.

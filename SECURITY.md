@@ -172,9 +172,9 @@ secret and must not be treated as one — for anyone who *can* reach the
 endpoint, knowing a team's UUID grants no more access than not knowing it,
 because they can list all of them anyway. Do not build a workflow that
 relies on a team URL being hard to guess; the enumeration endpoint makes
-that moot. Every write endpoint under `/api/teams/:id/...` is reachable by
-anyone who can reach the server (and, if a password is set, has a session),
-for any `:id` listed by `GET /api/teams`.
+that moot. Every write endpoint under `/api/teams/:teamId/...` is reachable
+by anyone who can reach the server (and, if a password is set, has a
+session), for any `:teamId` listed by `GET /api/teams`.
 
 ## § 3 The static-mode fairness asymmetry
 
@@ -207,14 +207,26 @@ database the operator's browser does not control.
   tamper-evidence, not a hash chain across the whole event history, so it
   only catches tampering with the fields a commitment actually binds.
 * **Input validation.** All HTTP input is validated server-side —
-  `src/server/validate.ts` for most routes, and `assertPolicy`
-  (`src/domain/fairness/policy.ts`) for the fairness-policy body. `assertPolicy`
-  is the actual enforcement and runs only on the server (imported by
-  `src/server/http.ts`); the browser imports only the `FairnessPolicy` type
-  from that module, not the check itself, so its `min`/`max` on the policy
-  form's number inputs are UI hints, not a validation boundary — they do not
-  constrain a programmatic write. Independent of anything the browser sends,
-  a malicious or buggy client cannot inject a malformed event.
+  `src/server/validate.ts` for most routes (see [ARCHITECTURE.md](ARCHITECTURE.md)
+  for the exact length limits), and `assertPolicy`
+  (`src/domain/fairness/policy.ts`) for the fairness-policy body. The
+  `min`/`max` on the policy form's number inputs are UI hints, not the
+  validation boundary — they do not constrain a programmatic write. The
+  actual enforcement is `assertPolicy`, called from
+  `decide.changePolicy` (`src/domain/decisions.ts`), so it runs in both
+  modes: server mode via `src/server/http.ts` before the command layer even
+  sees the body, and static mode via `src/web/sessionApi.ts`, which calls
+  the same domain function directly against `localStorage`. Likewise,
+  member names are length- and NUL-checked in one place —
+  `cleanName` (`src/domain/decisions.ts`) — shared by every path that
+  creates a name in either mode. A malicious or buggy client cannot persist
+  a malformed policy or name in server mode, where the server is a trust
+  boundary the client cannot bypass; in static mode there is no such
+  boundary; a client with page access can still write directly to its own
+  `localStorage`, but the shared domain validation is the same code either
+  way and behaves identically, and that write is confined to the
+  attacker's own browser and cannot lie to anyone else about a signed
+  commitment (see [docs/en/fairness.md](docs/en/fairness.md) § 6).
 
 **Not protected**, beyond what §§ 1–3 already say:
 

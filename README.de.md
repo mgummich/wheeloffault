@@ -42,8 +42,8 @@ Beide Modi teilen ihre Daten nicht miteinander.
 
 Schuldrad läuft als statische Browser-App und kann direkt über GitHub Pages
 bereitgestellt werden. Der Build liegt in `dist/web`; die mitgelieferte
-GitHub-Actions-Workflowdatei `.github/workflows/pages.yml` baut sie und
-deployt bei jedem Push auf `main`.
+GitHub-Actions-Workflowdatei `.github/workflows/pages.yml` baut ihn und
+veröffentlicht ihn bei jedem Push auf `main`.
 
 Die Daten werden ausschließlich im `localStorage` dieses Browsers gespeichert,
 unter dem Schlüssel `schuldrad.sessionEvents.v1` (siehe
@@ -55,11 +55,11 @@ unter dem Schlüssel `schuldrad.sessionEvents.v1` (siehe
   unabhängigen Zustand. Private-/Inkognito-Fenster behalten ihren Zustand nur
   für die Lebensdauer dieses Fensters und verlieren ihn, sobald es
   geschlossen wird.
-* Es gibt keine Server-Datenbank und (Stand jetzt) keinen Reset-Knopf in der
-  App. Die Daten werden nur gelöscht, wenn die Website-Daten für diesen
-  Ursprung im Browser gelöscht werden (Website-Einstellungen → Speicher
-  löschen, bzw. Cookies/Website-Daten löschen) — das bloße Schließen des Tabs
-  genügt nicht.
+* Es gibt keine Server-Datenbank und derzeit keinen Reset-Knopf in der App.
+  Die Daten werden nur gelöscht, wenn die Website-Daten für diese Website im
+  Browser gelöscht werden (Website-Einstellungen → Speicher löschen, bzw.
+  Cookies/Website-Daten löschen) — das bloße Schließen des Tabs genügt
+  nicht.
 
 Lokal testen:
 
@@ -97,7 +97,7 @@ pnpm start
 Der Docker-Build nutzt denselben Modus; `pnpm build` bleibt der statische
 GitHub-Pages-Build mit browser-lokalen Daten.
 
-### Optional über-engineered: Postgres + Redis
+### Optional over-engineered: Postgres + Redis
 
 SQLite bleibt der Standard. Wer trotzdem Postgres als Event-Store will:
 

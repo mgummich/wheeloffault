@@ -151,7 +151,7 @@ total weight introduces a small bias toward low remainders when the total
 weight does not evenly divide 2⁶⁴: outcomes just above the last full
 multiple of the total weight are unreachable, so the participants whose
 intervals sit lowest on the cumulative-weight line are fractionally more
-likely to be picked. The bound is exactly `total weight ÷ 2⁶⁴` — at
+likely to be picked. The bias is bounded above by `total weight ÷ 2⁶⁴` — at
 realistic weight magnitudes (weights on the order of `1000` per
 participant, teams of single-digit-to-dozens of members, so totals rarely
 exceeding a few hundred thousand) that is on the order of one part in

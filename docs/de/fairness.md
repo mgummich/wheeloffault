@@ -138,8 +138,8 @@ veröffentlichte Ergebnis tatsächlich aus den veröffentlichten Seeds
 berechnet wurde und nicht nachträglich ausgetauscht wurde; und weil Events
 unveränderlich sind (siehe [events.md](events.md) § 2), kann ein
 gespeicherter Commit oder Reveal im Nachhinein nicht unbemerkt editiert
-werden — eine Änderung an `serverSeed`, `nonce` oder einem Teilnehmer-
-Gewicht bricht die Commitment-Prüfung *dieses einen Spins*. Das ist
+werden — eine Änderung an `serverSeed`, `nonce` oder einem
+Teilnehmer-Gewicht bricht die Commitment-Prüfung *dieses einen Spins*. Das ist
 Manipulationssicherheit pro Datensatz, keine Hash-Kette über die gesamte
 Event-Historie: Jedes Commitment bindet nur seinen eigenen Spin, nicht den
 vorangegangenen.
@@ -170,14 +170,14 @@ niedriger Reste, wenn die Gewichtssumme 2⁶⁴ nicht glatt teilt: Ergebnisse
 knapp oberhalb des letzten vollen Vielfachen der Gewichtssumme sind
 unerreichbar, sodass die Teilnehmer mit den am niedrigsten liegenden
 Intervallen auf der kumulativen Gewichtslinie geringfügig häufiger gezogen
-werden. Die Schranke ist genau `Gewichtssumme ÷ 2⁶⁴` — bei realistischen
-Gewichtsgrößen (Gewichte in der Größenordnung von `1000` pro Teilnehmer,
-Teams von einstelliger bis niedriger zweistelliger Mitgliederzahl, Summen
-also selten über wenigen hunderttausend) liegt das in der Größenordnung
-eines Teils in 10¹³–10¹⁴ — vernachlässigbar gegenüber der
-Rundungsungenauigkeit jeder von Hand berechneten Statistik und um
-Größenordnungen kleiner als die absichtliche Verzerrung, die § 2s
-Modifikatoren bewusst einführen. Das ist eine Formel, keine feste
+werden. Die Verzerrung ist nach oben durch `Gewichtssumme ÷ 2⁶⁴` beschränkt
+— bei realistischen Gewichtsgrößen (Gewichte in der Größenordnung von
+`1000` pro Teilnehmer, Teams von einstelliger bis niedriger zweistelliger
+Mitgliederzahl, Summen also selten über wenigen hunderttausend) liegt das
+in der Größenordnung eines Teils in 10¹³–10¹⁴ — vernachlässigbar gegenüber
+der Rundungsungenauigkeit jeder von Hand berechneten Statistik und um
+Größenordnungen kleiner als die absichtliche Verzerrung, die die
+Modifikatoren aus § 2 bewusst einführen. Das ist eine Formel, keine feste
 Obergrenze: Modifikatoren können einzelne Gewichte weit über `1000` treiben
 (z. B. `newcomer.factor` bis `10000`, oder `pity`, das sich über viele
 verpasste Ziehungen aufsummiert), sodass ein Team, das Gewichte absichtlich
@@ -209,7 +209,7 @@ Browser-Verifier reproduziert Server
 Wer die veröffentlichten Werte einer Ziehung besitzt — `nonce`,
 `commitment`, `participants`, `serverSeed`, `clientSeed`, `digest`,
 `selectedMemberId`, alle über die Detailseite dieses Spins erreichbar
-(`src/web/views/SpinDetailPage.tsx`, siehe unten wie) — kann die gesamte
+(`src/web/views/SpinDetailPage.tsx`, siehe unten, wie) — kann die gesamte
 Ziehung nachrechnen, ohne Schuldrad überhaupt zu betreiben, mit
 `scripts/verify-draw.mjs`. Es ist ein abhängigkeitsfreies Node-Skript, das
 § 3–§ 4 dieser Verordnung eigenständig nachbildet; es importiert
@@ -247,7 +247,7 @@ node scripts/verify-draw.mjs --file draw.json
 
 Das Skript gibt ein Prüfprotokoll mit je einer ✓/✗-Zeile pro Prüfung aus —
 Commitment, Digest, Auswahl — und liefert Exit-Code `0` nur, wenn alle drei
-bestehen, `1` wenn eine Prüfung fehlschlägt und `2` bei einem Aufruffehler
+bestehen, `1`, wenn eine Prüfung fehlschlägt, und `2` bei einem Aufruffehler
 (ein unerwartetes Argument, ein unbekanntes Flag, ein Flag ohne Wert,
 fehlendes `--file`, ein `--file`-Pfad, der sich nicht lesen lässt, eine
 Datei, die kein gültiges JSON ist, fehlendes Pflichtfeld, `participants`

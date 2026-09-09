@@ -60,8 +60,8 @@ sampled every frame to place the SVG rotation: `ease(style, t)` in
 `src/web/wheel/anim.ts`, unit-tested in `anim.test.ts`. Its curves are the
 canonical "mechanical" vocabulary this document describes in prose:
 
-- `standard` — pure damped cubic ease-out, no overshoot: the default "wheel
-  spins down like a wheel" curve.
+- `standard` — pure damped ease-out (exponent 3.2), no overshoot: the
+  default "wheel spins down like a wheel" curve.
 - `overshoot` — passes the target and eases back, for the settle behavior
   in § 5.
 - `windup` — dips backward first (anticipation, § 4), then eases forward.
@@ -158,7 +158,7 @@ skip the announcement, it just skips the show beforehand.
 | **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of each 16-cell row, then the same 0–84ms cascade repeats for the second 8 — so each row (there are two, the responsibility row and the name row, both built through the same `cell` helper) reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
 | **Signal** (`SignalStage`) | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red. |
 | **Ticket stamp** (`StampStage`) | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`. |
-| **Train arrival** (`TrainStage`) | Approaches on a front-loaded-then-flattening cubic-bezier that reads as braking; the name only resolves after the train has fully stopped. |
+| **Train arrival** (`TrainStage`) | Approaches on a front-loaded-then-flattening cubic-bezier that reads as braking; the destination sign ticks through names for the whole approach and lands on the winner exactly as the train stops, not after. |
 | **Timetable roll** (`TimetableStage`) | Rolls through several extra loops before landing on the result row, damped stop via the same braking-family bezier as the train. |
 | **Weight line** (`LineStage`) | Needle sweeps to the winner's position on the same damped-stop curve, holding there once announced. |
 

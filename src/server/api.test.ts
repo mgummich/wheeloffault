@@ -317,6 +317,21 @@ describe('API', () => {
     expect(
       (await call('POST', `/api/teams/${team.teamId}/members`, { name: 'x'.repeat(101) })).status,
     ).toBe(400);
+    expect(
+      (await call('POST', `/api/teams/${team.teamId}/members`, { names: ['x'.repeat(101)] }))
+        .status,
+    ).toBe(400);
+    expect(
+      (await call('POST', `/api/teams/${team.teamId}/members`, { names: ['Anna\u0000'] })).status,
+    ).toBe(400);
+    expect(
+      (
+        await call('POST', `/api/teams/${team.teamId}/members`, {
+          names: Array.from({ length: 501 }, (_, i) => `n${i}`),
+        })
+      ).status,
+    ).toBe(400);
+    expect((await call('GET', `/api/teams/${'x'.repeat(65)}`)).status).toBe(400);
     expect((await call('POST', `/api/teams/${team.teamId}/spins`, { spinId: '../x' })).status).toBe(
       400,
     );

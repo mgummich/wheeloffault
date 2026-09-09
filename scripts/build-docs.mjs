@@ -135,6 +135,42 @@ async function checkCompleteness() {
   }
 }
 
+// GERMAN HYPHEN-WRAP GUARD: a source line ending in a bare hyphen right
+// after a letter (e.g. "...node:26-alpine-Build-\nStufe...") is almost
+// always a hard-wrapped compound word, not intentional punctuation. Marked
+// renders a soft line break as a space (`breaks: false` still does this per
+// CommonMark), so it ships as "Build- Stufe" on the site. This has recurred
+// three times across separate docs/de/*.md files, so it gets a cheap,
+// narrow build-time check rather than relying on review to catch every
+// sibling file. Only checks German docs — the English sources don't wrap
+// compounds with hyphens — and skips fenced code blocks.
+async function checkGermanHyphenWraps() {
+  const problems = [];
+  const hyphenWrap = /[A-Za-zÄÖÜäöüß]-$/;
+  const files = [
+    'README.de.md',
+    ...(await readdir(join(root, 'docs/de'))).map((f) => `docs/de/${f}`),
+  ];
+  for (const rel of files) {
+    if (!rel.endsWith('.md')) continue;
+    const text = await readFile(join(root, rel), 'utf8');
+    let inFence = false;
+    text.split('\n').forEach((line, i) => {
+      if (line.trimStart().startsWith('```')) inFence = !inFence;
+      else if (!inFence && hyphenWrap.test(line.trimEnd())) {
+        problems.push(`${rel}:${i + 1}: line ends mid-word with a hyphen: ${line.trim()}`);
+      }
+    });
+  }
+  if (problems.length > 0) {
+    console.error(
+      'docs: German line-final hyphen wraps found (renders as "word- word" on the site):',
+    );
+    for (const p of problems) console.error(`  - ${p}`);
+    process.exit(1);
+  }
+}
+
 // SYMBOL GUARD: a backticked identifier that looks like a code symbol —
 // call syntax (`foo()`, `spinHistory(state)`) or an ALL_CAPS_CONSTANT — must
 // actually be exported somewhere in src/ (ALL_CAPS names may also be an env
@@ -385,6 +421,7 @@ ${body}
 };
 
 await checkCompleteness();
+await checkGermanHyphenWraps();
 await checkSymbolGuard();
 
 await mkdir(join(outDir, 'en'), { recursive: true });

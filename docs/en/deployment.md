@@ -95,7 +95,7 @@ profile, so a bare `docker compose up` starts nothing — you must pick one:
 | `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |
 | `REDIS_URL` | — | optional; enables cross-instance SSE fanout |
 | `SCHULDRAD_PASSWORD` | — | optional deployment password — see § 3a |
-| `SCHULDRAD_PASSWORD_FILE` | — | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set |
+| `SCHULDRAD_PASSWORD_FILE` | — | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set; an empty file fails startup rather than silently disabling auth |
 | `SCHULDRAD_SECURE_COOKIES` | — | set to `1` to force the `Secure` cookie attribute — see § 3a |
 | `SCHULDRAD_TRUST_PROXY` | — | set to `1` behind a reverse proxy that overwrites (not appends to) `x-forwarded-for`/`x-forwarded-proto` — see § 3a and § 3b |
 | `SCHULDRAD_ALLOWED_HOSTS` | — | optional comma-separated `Host` allowlist for `/api/*` requests, closes DNS rebinding — see § 3b |
