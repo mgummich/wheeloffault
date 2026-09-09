@@ -84,6 +84,11 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install chromium
       - run: pnpm status
+      # The checkout runs as the runner user but the container's steps run as
+      # root, so git rejects the workspace as dubiously owned and reports it
+      # as "not a git repository" — checkout's own safe.directory entry lives
+      # in a temporary HOME that is gone by now.
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - run: git diff --exit-code docs/STATUS.json
 
   # Separate job: the npm advisory service has outages, and they must not hide
