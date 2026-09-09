@@ -70,9 +70,15 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
 * **Link and anchor checks.** A `.md`-to-`.md` link must resolve to a real
   file at that relative path and render with the right language prefix, and
   every rendered `href="#…"` must point at a heading id that actually
-  exists on its target page. This catches a typo'd path, a link to a doc's
-  own page in the wrong language, and a link into a heading that got
-  renamed or removed.
+  exists on its target page. This catches a typo'd path and a link into a
+  heading that got renamed or removed. It also catches an unmarked link
+  that resolves to the wrong language's file — but only for the doc pairs
+  whose English and German source files have different basenames
+  (`README.md`/`README.de.md`, `ARCHITECTURE.md`/`architektur.md`). Doc
+  pairs that share a basename (`fairness.md`, `contributing.md`, …) can't be
+  told apart this way: a language-switcher link with a dropped `../de/` (or
+  `../en/`) prefix silently falls back to the current page's own language
+  instead of erroring.
 * **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
   constant in a doc must actually be exported from `src/` (or, for
   ALL_CAPS, be an `env.NAME`/`process.env.NAME` read) — catches a doc
@@ -133,5 +139,6 @@ that survives review here.
 
 Run `pnpm verify` before opening a PR. CI additionally runs `pnpm audit`,
 an E2E pass, a container build with a health-check smoke test, a Trivy
-vulnerability scan, and SBOM generation (`.github/workflows/ci.yml`) — a PR
-is not mergeable green until all of that passes, not just `verify`.
+vulnerability scan, SBOM generation, and the `status` job that regenerates
+and checks `docs/STATUS.json` (`.github/workflows/ci.yml`) — a PR is not
+mergeable green until all of that passes, not just `verify`.

@@ -177,13 +177,19 @@ alle `weights + context → weights`) in dieser festen Reihenfolge an:
 
 ```
 pity        +X % pro Ziehung ohne Treffer seit der letzten Schuld
-cooldown    Gewicht 0 für N Ziehungen nach einer Schuld (würde er alle ausschließen,
-            wird er für diese Ziehung übersprungen und mit Faktor 1,000 protokolliert)
+cooldown    Gewicht 0 für N Ziehungen nach einer Schuld
 exhaustion  −X % pro Schuld in den letzten N Ziehungen
 newcomer    ×Faktor für Mitglieder mit weniger als N Teilnahmen
 manual      expliziter Faktor pro Mitglied
 immunity    Gewicht 0, wenn eine Immunität vorliegt (wird durch den Spin verbraucht)
 ```
+
+Ist das Gewicht jedes Teilnehmers nach allen Modifikatoren 0 — aus
+beliebigem Grund (cooldown, immunity, ein manueller Faktor 0 oder
+exhaustion, das dorthin führt), nicht nur cooldown — und ist cooldown
+aktiviert, läuft die gesamte Berechnung einmal erneut mit neutralisiertem
+cooldown und wird mit Faktor 1,000 für jedes Mitglied protokolliert; die
+Ziehung schlägt nur fehl, wenn danach immer noch alle Gewichte 0 sind.
 
 Gamification ändert nie Gewichte. Jede Gewichtsänderung ist über die aktive
 `FairnessPolicy` sichtbar und im `SpinCommitted`-Event pro Teilnehmer
@@ -367,12 +373,13 @@ sonst nur auf `127.0.0.1` bindet. Kein Reverse Proxy nötig.
 `pnpm verify` = format → lint → typecheck → unit/property → integration →
 build. E2E (`pnpm e2e`) mit Playwright gegen den gebauten Server. CI
 (`.github/workflows/ci.yml`) führt zusätzlich Container-Build, `pnpm audit`,
-Trivy-Scan und SBOM aus.
+Trivy-Scan, SBOM und einen `status`-Job aus.
 
-`docs/STATUS.json` ist eine handgepflegte Momentaufnahme
-vom letzten Mal, als alle acht oben genannten Prüfungen (die sechs aus
-`pnpm verify`, plus `build:server` und `e2e`) grün liefen, mit
-Bestanden/Fehlgeschlagen und einer Ergebniszeile je Prüfung. Nichts
-regeneriert oder erzwingt sie — von Hand aktualisieren, wenn die
-vollständige Schleife durchläuft; sie ist ein Vermerk für einen schnellen
-Blick, kein Gate.
+`docs/STATUS.json` ist eine generierte Momentaufnahme vom letzten Mal, als
+alle acht oben genannten Prüfungen (die sechs aus `pnpm verify`, plus
+`build:server` und `e2e`) grün liefen, mit Bestanden/Fehlgeschlagen und
+einer Ergebniszeile je Prüfung. `pnpm status` (`scripts/status.mjs`)
+erzeugt sie neu aus der tatsächlichen Ausgabe der Befehle, und der CI-Job
+`status` führt dieses Skript aus und danach `git diff --exit-code
+docs/STATUS.json` — ein veralteter Bericht lässt den Build scheitern, sie
+ist also ein Gate, kein handgepflegter Höflichkeitsvermerk.

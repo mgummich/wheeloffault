@@ -1,6 +1,12 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import * as eventsModule from '../domain/events.ts';
 import type { SpinView } from '../domain/views.ts';
 import { createSessionApi } from './sessionApi.ts';
+
+vi.mock('../domain/events.ts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../domain/events.ts')>();
+  return { ...actual, upcast: vi.fn(actual.upcast) };
+});
 
 function memoryStorage(): Storage {
   const data = new Map<string, string>();
@@ -40,6 +46,24 @@ describe('session api', () => {
         memberCount: 2,
         spinCount: 0,
       },
+    ]);
+  });
+
+  it('runs every stored event through upcast when reading a team back', async () => {
+    const api = createSessionApi(storage);
+    const team = await api.createTeam('Team Upcast');
+    await api.addMembers(team.teamId, ['Anna']);
+
+    const upcastSpy = vi.mocked(eventsModule.upcast);
+    upcastSpy.mockClear();
+
+    await createSessionApi(storage).getTeam(team.teamId);
+
+    // TeamCreated + MemberJoined must each pass through the upcast seam on load,
+    // the same as the server-side event stores (eventStore.ts / postgresEventStore.ts).
+    expect(upcastSpy.mock.calls.map(([event]) => event.type)).toEqual([
+      'TeamCreated',
+      'MemberJoined',
     ]);
   });
 

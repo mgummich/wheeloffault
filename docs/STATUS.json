@@ -18,7 +18,7 @@
     {
       "name": "test:unit (pnpm test:unit)",
       "status": "pass",
-      "details": "17 test files, 104 tests passed."
+      "details": "17 test files, 105 tests passed."
     },
     {
       "name": "test:integration (pnpm test:integration)",
@@ -28,12 +28,12 @@
     {
       "name": "build (pnpm build)",
       "status": "pass",
-      "details": "60 modules transformed; 15 docs rendered without a symbol-guard or completeness failure."
+      "details": "61 modules transformed; 15 docs rendered without a symbol-guard or completeness failure."
     },
     {
       "name": "build:server (pnpm build:server)",
       "status": "pass",
-      "details": "60 modules transformed."
+      "details": "61 modules transformed."
     },
     {
       "name": "e2e (pnpm e2e)",

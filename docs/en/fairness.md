@@ -29,11 +29,17 @@ Before a draw, the server computes:
    | Order | Modifier | Effect |
    |---|---|---|
    | 1 | `pity` | `+X %` per draw without a hit since this member's last guilt |
-   | 2 | `cooldown` | weight `0` for `N` draws after a hit. If this would exclude everyone, cooldown is skipped for this draw only and logged with factor `1000` for every member, not just the ones it would have excluded |
+   | 2 | `cooldown` | weight `0` for `N` draws after a hit |
    | 3 | `exhaustion` | `−X %` per hit within the last `N` draws |
    | 4 | `newcomer` | `×factor` for members with fewer than `N` participations |
    | 5 | `manual` | explicit per-member factor set by an operator |
    | 6 | `immunity` | weight `0` if an immunity is active (consumed by this spin) |
+
+   If every participant's weight is `0` after all six modifiers — for any
+   reason, not just cooldown (immunity, a manual `0` factor, or exhaustion
+   driving it there too) — and cooldown is enabled, the whole calculation
+   retries once with cooldown neutralized and logged with factor `1000` for
+   every member; the draw fails only if weights are still all `0` after that.
 
    Modifier order is part of the fairness contract: it is fixed in code
    (`modifierOrder` in `modifiers.ts`), not configurable per team, and every
@@ -194,7 +200,7 @@ member IDs, so the JSON below cannot be hand-copied from what's on screen.
 Use the **"Copy proof"** button on that page instead
 (`src/web/views/SpinDetailPage.tsx`): it copies
 `{ nonce, commitment, participants, serverSeed, clientSeed, digest,
-selectedMemberId, revealedAt }` to the clipboard — the six fields the script
+selectedMemberId, revealedAt }` to the clipboard — the seven fields the script
 checks below, plus `revealedAt`, which the script ignores. Paste it straight
 into a file:
 

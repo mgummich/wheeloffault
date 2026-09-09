@@ -69,19 +69,26 @@ dass `lint` fehlgeschlagen ist.
 Pages) führt `scripts/build-docs.mjs` aus, das den Build bei jedem der
 folgenden Punkte scheitern lässt:
 
-* **Sprachpaarung.** Jedes Dokument in der Registrierung am Anfang von
+* **Sprachpaarung.** Jedes Dokument in der Registry am Anfang von
   `scripts/build-docs.mjs` braucht sowohl eine `en`- als auch eine
   `de`-Quelldatei, außer der Eintrag ist mit `enOnly` markiert (derzeit nur
   `SECURITY.md`, das keine gepflegte Übersetzung hat). Ein neues Dokument
-  hinzuzufügen heißt, es mit beiden Dateien in diese Registrierung
+  hinzuzufügen heißt, es mit beiden Dateien in diese Registry
   einzutragen — oder explizit mit `enOnly` davon abzuweichen.
 * **Link- und Anker-Prüfung.** Ein `.md`-zu-`.md`-Link muss zu einer echten
   Datei an diesem relativen Pfad auflösen und mit dem richtigen
   Sprachpräfix gerendert werden, und jedes gerenderte `href="#…"` muss auf
   eine Überschriften-ID zeigen, die auf der Zielseite tatsächlich existiert.
-  Das findet einen vertippten Pfad, einen Link auf die eigene Seite eines
-  Dokuments in der falschen Sprache und einen Link auf eine Überschrift,
-  die umbenannt oder entfernt wurde.
+  Das findet einen vertippten Pfad und einen Link auf eine Überschrift, die
+  umbenannt oder entfernt wurde. Es findet auch einen unmarkierten Link,
+  der auf die Datei der falschen Sprache auflöst — aber nur bei den
+  Dokumentpaaren, deren englische und deutsche Quelldatei unterschiedliche
+  Basisnamen haben (`README.md`/`README.de.md`,
+  `ARCHITECTURE.md`/`architektur.md`). Paare mit gleichem Basisnamen
+  (`fairness.md`, `contributing.md`, …) lassen sich so nicht unterscheiden:
+  Ein Sprachwechsel-Link mit fehlendem `../de/`- (oder `../en/`-) Präfix
+  fällt still auf die Sprache der aktuellen Seite zurück, statt einen
+  Fehler auszulösen.
 * **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
   ALL_CAPS-Konstante in einem Dokument muss tatsächlich aus `src/`
   exportiert werden (bei ALL_CAPS alternativ ein `env.NAME`-/
@@ -89,7 +96,7 @@ folgenden Punkte scheitern lässt:
   behauptet, die umbenannt oder deexportiert wurde. Geprüft werden nur
   Aufrufsyntax und ALL_CAPS, keine nackten Bezeichner, weil die ständig
   mit gewöhnlicher Prosa kollidieren (`memberId`, `packageManager`, …). Er
-  ist ehrlich schmal, nicht erschöpfend: Er parst Codeblöcke nicht als
+  ist bewusst eng gefasst, nicht erschöpfend: Er parst Codeblöcke nicht als
   Code, ein gewöhnliches JS-Snippet in einem Codeblock (z. B.
   `` JSON.parse(text) ``) kann ihn genauso auslösen wie eine echte Aussage
   über die Codebasis — entweder das Symbol in der Prosa ohne
@@ -147,6 +154,7 @@ PR-Beschreibung — „ging schneller so“ ist hier kein Grund, der die Review
 
 `pnpm verify` vor dem Öffnen eines PR ausführen. CI führt zusätzlich
 `pnpm audit`, einen E2E-Durchlauf, einen Container-Build mit
-Health-Check-Rauchtest, einen Trivy-Sicherheitsscan und eine
-SBOM-Erzeugung aus (`.github/workflows/ci.yml`) — ein PR ist erst grün und
-mergebar, wenn all das besteht, nicht nur `verify`.
+Health-Check-Rauchtest, einen Trivy-Sicherheitsscan, eine
+SBOM-Erzeugung sowie den `status`-Job aus, der `docs/STATUS.json`
+neu erzeugt und prüft (`.github/workflows/ci.yml`) — ein PR ist erst grün
+und mergebar, wenn all das besteht, nicht nur `verify`.

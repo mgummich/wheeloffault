@@ -1,6 +1,6 @@
 import * as decide from '../domain/decisions.ts';
 import { DomainError } from '../domain/errors.ts';
-import type { DomainEvent, StoredEvent } from '../domain/events.ts';
+import { type DomainEvent, type StoredEvent, upcast } from '../domain/events.ts';
 import { randomHex } from '../domain/fairness/draw.ts';
 import type { FairnessPolicy } from '../domain/fairness/policy.ts';
 import {
@@ -48,7 +48,13 @@ export function createSessionApi(storage: Storage = localStorage): Api {
   const stream = (teamId: string): StoredEvent[] =>
     read()
       .events.filter((event) => event.streamId === teamId)
-      .sort((a, b) => a.version - b.version);
+      .sort((a, b) => a.version - b.version)
+      .map((event) => ({
+        ...upcast(event),
+        streamId: event.streamId,
+        version: event.version,
+        position: event.position,
+      }));
 
   const loadTeam = (teamId: string): TeamState => {
     const events = stream(teamId);

@@ -173,13 +173,18 @@ the enabled modifiers (`src/domain/fairness/modifiers.ts`), all
 
 ```
 pity        +X % per draw without a hit since the member's last guilt
-cooldown    weight 0 for N draws after a guilt (if this would exclude
-            everyone, it is skipped for this draw and logged with factor 1.000)
+cooldown    weight 0 for N draws after a guilt
 exhaustion  −X % per guilt within the last N draws
 newcomer    ×factor for members with fewer than N participations
 manual      explicit factor per member
 immunity    weight 0 if an immunity applies (consumed by the spin)
 ```
+
+If every participant's weight is 0 after all modifiers — for any reason
+(cooldown, immunity, a manual 0 factor, or exhaustion driving it there),
+not just cooldown — and cooldown is enabled, the whole calculation retries
+once with cooldown neutralized and logged with factor 1.000 for every
+member; it fails the draw only if weights are still all 0 after that.
 
 Gamification never changes weights. Every weight change is visible via the
 active `FairnessPolicy` and documented per participant in the
@@ -357,10 +362,12 @@ proxy required.
 `pnpm verify` = format → lint → typecheck → unit/property → integration →
 build. E2E (`pnpm e2e`) with Playwright against the built server. CI
 (`.github/workflows/ci.yml`) additionally runs container build, `pnpm
-audit`, a Trivy scan, and SBOM generation.
+audit`, a Trivy scan, SBOM generation, and a `status` job.
 
-`docs/STATUS.json` is a hand-maintained snapshot of the
-last time all eight checks above (`pnpm verify`'s six, plus `build:server`
-and `e2e`) were run to green, with pass/fail and a one-line result per
-check. Nothing regenerates or enforces it — update it by hand when you run
-the full loop, it is a record for a reviewer to glance at, not a gate.
+`docs/STATUS.json` is a generated snapshot of the last time all eight
+checks above (`pnpm verify`'s six, plus `build:server` and `e2e`) were run
+to green, with pass/fail and a one-line result per check. `pnpm status`
+(`scripts/status.mjs`) regenerates it from the actual command output, and
+CI's `status` job runs that script and then `git diff --exit-code
+docs/STATUS.json` — a stale record fails the build, so it is a gate, not a
+hand-maintained courtesy.

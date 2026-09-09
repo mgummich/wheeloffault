@@ -30,8 +30,13 @@ jobs:
           name: dist
           path: dist
 
+  # Needs verify+e2e rather than running standalone: pnpm status reruns every
+  # check from scratch (by design — see scripts/status.mjs), so gating it on
+  # the real verify/e2e jobs first avoids paying for that duplicate work on a
+  # PR that's already broken, instead of racing it in parallel.
   status:
     runs-on: ubuntu-latest
+    needs: [verify, e2e]
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

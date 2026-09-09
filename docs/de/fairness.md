@@ -35,11 +35,18 @@ Vor einer Ziehung berechnet der Server:
    | Reihenfolge | Modifikator | Wirkung |
    |---|---|---|
    | 1 | `pity` | `+X %` pro Ziehung ohne Treffer seit der letzten Schuld dieses Mitglieds |
-   | 2 | `cooldown` | Gewicht `0` für `N` Ziehungen nach einem Treffer. Würde dies alle ausschließen, wird cooldown nur für diese eine Ziehung übersprungen und für alle Mitglieder mit Faktor `1000` protokolliert, nicht nur die, die es ausgeschlossen hätte |
+   | 2 | `cooldown` | Gewicht `0` für `N` Ziehungen nach einem Treffer |
    | 3 | `exhaustion` | `−X %` pro Treffer innerhalb der letzten `N` Ziehungen |
    | 4 | `newcomer` | `×Faktor` für Mitglieder mit weniger als `N` Teilnahmen |
    | 5 | `manual` | expliziter, von einem Bediener gesetzter Faktor pro Mitglied |
    | 6 | `immunity` | Gewicht `0`, wenn eine Immunität aktiv ist (wird durch diesen Spin verbraucht) |
+
+   Ist das Gewicht jedes Teilnehmers nach allen sechs Modifikatoren `0` —
+   aus beliebigem Grund, nicht nur cooldown (auch immunity, ein manueller
+   Faktor `0` oder exhaustion können dorthin führen) — und ist cooldown
+   aktiviert, läuft die gesamte Berechnung einmal erneut mit neutralisiertem
+   cooldown und wird mit Faktor `1000` für jedes Mitglied protokolliert; die
+   Ziehung schlägt nur fehl, wenn danach immer noch alle Gewichte `0` sind.
 
    Die Modifikator-Reihenfolge ist Teil des Fairness-Vertrags: sie ist im
    Code fest verdrahtet (`modifierOrder` in `modifiers.ts`), nicht pro Team
@@ -214,7 +221,7 @@ Mitglieds-IDs — das JSON unten lässt sich also nicht von Hand aus dem
 Angezeigten abschreiben. Stattdessen den Button **„Nachweis kopieren“** auf
 dieser Seite nutzen (`src/web/views/SpinDetailPage.tsx`): Er kopiert
 `{ nonce, commitment, participants, serverSeed, clientSeed, digest,
-selectedMemberId, revealedAt }` in die Zwischenablage — die sechs Felder,
+selectedMemberId, revealedAt }` in die Zwischenablage — die sieben Felder,
 die das Skript unten prüft, plus `revealedAt`, das das Skript ignoriert.
 Direkt in eine Datei einfügen:
 

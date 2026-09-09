@@ -19,9 +19,18 @@ function run(cmd) {
   }
 }
 
-function firstMatch(out, re, fallback = 'unknown') {
+// No silent 'unknown' fallback: a record this script writes is a CI gate
+// (see the file header), so if a command's output no longer matches the
+// pattern we expect (a biome/vitest/vite wording change), that must fail
+// the script loudly rather than let a meaningless "unknown" get committed
+// and stay green forever. `fallback` is only for cases where a missing
+// match is itself meaningful, not a broken extraction (e.g. lint printing
+// no "Found N warnings" line when there are zero).
+function firstMatch(out, re, fallback) {
   const m = out.match(re);
-  return m ? m[1] : fallback;
+  if (m) return m[1];
+  if (fallback !== undefined) return fallback;
+  throw new Error(`status.mjs: pattern ${re} did not match output:\n${out.slice(0, 2000)}`);
 }
 
 const checks = [
@@ -74,9 +83,17 @@ const checks = [
   },
 ];
 
+// Only extract counts from output we expect to have the normal shape
+// (a passing run). A failing run's output isn't worth pattern-matching —
+// details() would either throw on it via firstMatch or, worse, "succeed"
+// with a number that doesn't mean what it usually means.
 const results = checks.map(({ name, cmd, details }) => {
   const { ok, out } = run(cmd);
-  return { name: `${name} (${cmd})`, status: ok ? 'pass' : 'fail', details: details(out) };
+  return {
+    name: `${name} (${cmd})`,
+    status: ok ? 'pass' : 'fail',
+    details: ok ? details(out) : 'Failed.',
+  };
 });
 
 const status = { checks: results };
