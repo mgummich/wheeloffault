@@ -7,8 +7,8 @@ English → [motion.md](../en/motion.md) (kanonisch)
 
 *Schuldrad-Betriebsamt — Direktion für Signal- und Fahrzeugwesen*
 
-Diese Verordnung regelt, wie das bereits feststehende Ergebnis einer
-Ziehung der Plattform *gezeigt* wird. Sie bindet jede Visualisierung
+Diese Verordnung regelt, wie die Plattform das bereits feststehende
+Ergebnis einer Ziehung *zeigt*. Sie bindet jede Visualisierung
 (`src/web/wheel/Wheel.tsx`, `src/web/wheel/stages.tsx`) und die
 anschließende Ansage (`src/web/RevealName.tsx`).
 
@@ -17,7 +17,7 @@ anschließende Ansage (`src/web/RevealName.tsx`).
 Bewegung ist Dekoration. Sie entscheidet nie etwas.
 
 Der Gewinner steht durch das Commit/Reveal-Protokoll
-(`docs/de/fairness.md`) fest, bevor auch nur ein Bild gezeichnet wird: Der
+([fairness.md](fairness.md)) fest, bevor auch nur ein Bild gezeichnet wird: Der
 Server legt sich auf Seed und Gewichte fest, deckt dann ein Ergebnis auf, und
 erst *danach* schaltet der in `SpinPage` definierte `draw`-Callback
 (`src/web/views/SpinPage.tsx`) die Phase auf `animating` — mit dem bereits
@@ -28,7 +28,7 @@ Visualisierung wird mit `result={null}` gemountet und erhält das fertige
 es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
 zur Gewinnzeile rollen, eine Nadel bis zur Gewinnposition schwenken. Keine
 davon wählt etwas aus. Sollte diese Reihenfolge jemals umgekehrt werden —
-sollte der eigene Zufall oder das Timing einer Visualisierung jemals
+sollte der Zufall oder das Timing einer Visualisierung selbst jemals
 beeinflussen, wer gewinnt — ist das ein Fairness-Vorfall, kein
 Bewegungsfehler.
 
@@ -36,13 +36,13 @@ Bewegungsfehler.
 
 | Stufe | Token | Bereich | Verwendung |
 |---|---|---|---|
-| Indikator | `--dur-indicator` | 160ms | Klapp-Schnappen (`sr-flap`, `BoardStage` und `TrainStage`) |
-| Mechanische Latenz | `--dur-latency` | 120ms | Steuerungsquittung (Arm-/Licht-Übergänge in `SignalStage`, Rand/Transform in `StampStage`) |
-| Mechanisches Einrasten | `--dur-settle` | 400ms | Stempelaufprall (`sr-stamp`/`sr-stampin`) |
-| Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5s | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage |
+| Indikator | `--dur-indicator` | 160 ms | Klapp-Schnappen (`sr-flap`, `BoardStage` und `TrainStage`) |
+| Mechanische Latenz | `--dur-latency` | 120 ms | Steuerungsquittung (Arm-/Licht-Übergänge in `SignalStage`, Rand/Transform in `StampStage`) |
+| Mechanisches Einrasten | `--dur-settle` | 400 ms | Stempelaufprall (`sr-stamp`/`sr-stampin`) |
+| Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5 s | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage |
 
 Die theatralische Enthüllung ist eine einzige Konstante, die sich alle
-sechs Nicht-Rad-Visualisierungen und die Spin-Dauer des Rades teilen —
+sechs Nicht-Rad-Visualisierungen und die Ziehungsdauer des Rades teilen —
 damit fühlen sich alle sieben gleich lang an („der Zug entscheidet noch“):
 ein Wechsel der Visualisierung darf sich nicht auf das Zeitgefühl einer
 Ziehung auswirken.
@@ -57,13 +57,13 @@ dessen Aufprall-Animation (die `sr-stamp`-Animation in
 `src/web/wheel/stages.tsx`) und die zugehörige `.reveal-stamp`-Regel in
 `src/web/styles.css`.
 
-Keines davon ist eine Feder-/Bounce-Kurve. Ein Bahnrelais schwingt nicht
+Keine davon ist eine Feder-/Bounce-Kurve. Ein Bahnrelais schwingt nicht
 nach, bevor es einrastet — es klackt in Position und bleibt dort. Wo
 Überschwingen verwendet wird (§ 5), geschieht das über eine explizite
 Zweiphasenkurve (über das Ziel hinaus, dann zurück), nie als physikalische
 Feder-Simulation.
 
-Die Spin-Easing-Kurven des Rades selbst leben im Code, nicht in CSS, weil
+Die Ziehungs-Easing-Kurven des Rades selbst leben im Code, nicht in CSS, weil
 sie für die SVG-Rotation bei jedem Frame neu berechnet werden müssen:
 `ease(style, t)` in `src/web/wheel/anim.ts`, getestet in `anim.test.ts`.
 Ihre Kurven sind das kanonische „mechanische“ Vokabular dieser Verordnung:
@@ -85,7 +85,7 @@ Ihre Kurven sind das kanonische „mechanische“ Vokabular dieser Verordnung:
 
 Ein echtes Relais-Stellwerk schaltet ein Signal nicht in dem Moment um, in
 dem der Hebel gezogen wird — es gibt einen Takt, bis der Mechanismus
-nachzieht. `--dur-latency` (120ms) ist dieser Takt: Der
+nachzieht. `--dur-latency` (120 ms) ist dieser Takt: Der
 Arm-/Licht-Hintergrundübergang in `SignalStage` nutzt ihn, damit das Licht
 nicht zwischen Zuständen teleportiert.
 
@@ -94,13 +94,13 @@ nicht zwischen Zuständen teleportiert.
 Ein kurzer Vorlauf vor einer großen Enthüllung liest sich physikalisch,
 nicht fehlerhaft:
 
-- Der `windup`-Spin-Stil des Rades schwingt vor dem eigentlichen
-  Vorwärts-Spin um rund 3,5 % der gesamten Spin-Strecke zurück (Fall
+- Der `windup`-Ziehungsstil des Rades schwingt vor dem eigentlichen
+  Vorwärts-Spin um rund 3,5 % der gesamten Ziehungsstrecke zurück (Fall
   `windup` in `ease()`) — etwa 63° über die ~1800°-Mindeststrecke von
   `windup` selbst.
   Zum Vergleich: dieselben 3,5 % über die ~3600°-Strecke des `lang`-Stils
   wären ~126° (`lang` und `windup` sind eigenständige, nicht kombinierbare
-  Spin-Stile; `lang` selbst schwingt nicht zurück).
+  Ziehungsstile; `lang` selbst schwingt nicht zurück).
 - `SignalStage` lässt den heißen Indikator blinken (nutzt das bestehende
   `.blink`-Keyframe), solange ein Name noch durchläuft, bevor der finale
   Stopp-Zustand einrastet — ein Warnblinken vor dem soliden Rot.
@@ -114,7 +114,7 @@ Wo eine Visualisierung ein physisches, zur Ruhe kommendes Objekt
 modelliert, schwingt sie über und pendelt gedämpft zurück, statt abrupt
 zu stoppen:
 
-- Der `overshoot`-Spin-Stil des Rades überfährt das Gewinnsegment und
+- Der `overshoot`-Ziehungsstil des Rades überfährt das Gewinnsegment und
   schwingt zurück (kubische Überschwing-Formel in `ease()`).
 - Der Ticketstempel (`sr-stamp`/`sr-stampin`-Keyframes) landet überdimensioniert,
   staucht sich unter 1× und rastet dann ein — Tintengewicht, das aufs
@@ -133,10 +133,10 @@ auch nicht — es rastet sofort im bereits feststehenden Ergebnis ein:
 - Der in `SpinPage` definierte `finish`-Callback schaltet die Phase direkt
   auf `announced`.
 - `Wheel.tsx` besitzt einen an `announced` gebundenen Effekt, der die
-  `rotation` — falls die Spin-Schleife noch läuft — sofort auf das
+  `rotation` — falls die Ziehungsschleife noch läuft — sofort auf das
   vorab berechnete Ziel setzt und `finished` markiert: Der nächste Frame
   zeigt die finale Pose, keine interpolierte.
-- Jede andere Bühne leitet `currentId` in ihrem `useNameTicker` zuerst aus
+- Jede andere Visualisierung leitet `currentId` in ihrem `useNameTicker` zuerst aus
   `announced` ab: Sobald angesagt wurde, *ist* der angezeigte Name
   `result.reveal.selectedMemberId`, unabhängig davon, welchen Tick die
   RAF-Schleife erreicht hatte. (`LineStage` liest `currentId` gar nicht —
@@ -152,15 +152,15 @@ schnelles. Zwei Ebenen setzen das durch:
 
 1. In JS prüft jede Visualisierung `reduced` zu Beginn ihrer eigenen
    RAF-Schleife und ruft `finish()`/`onFinished()` synchron auf, statt
-   Frames zu planen — sowohl der Spin-Effekt in `Wheel.tsx` als auch
+   Frames zu planen — sowohl der Ziehungseffekt in `Wheel.tsx` als auch
    `useNameTicker` in `stages.tsx` tun das, sodass `animating` bereits
    `false` ist, bevor ein CSS-Übergang oder eine CSS-Animation überhaupt
    Gelegenheit zum Laufen hätte.
 2. In CSS (`src/web/styles.css`) verkürzt eine universelle
    Reduced-Motion-Regel jede CSS-Animation oder jeden Übergang, der
-   trotzdem feuert (Klapp-Schnappen, Stempelaufprall, Panel-Einblendungen,
-   Toasts), auf praktisch Nulldauer — als Absicherung ohne Aufzählung pro
-   Komponente.
+   trotzdem ausgelöst wird (Klapp-Schnappen, Stempelaufprall,
+   Panel-Einblendungen, Toasts), auf praktisch Nulldauer — als
+   Absicherung ohne Aufzählung pro Komponente.
 
 Die Ansage erfolgt in beiden Fällen weiterhin: Die
 `aria-live="assertive"`-Region in `SpinPage.tsx` ist dauerhaft gemountet,
@@ -171,11 +171,11 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 
 | Visualisierung | Was sie in diesen Begriffen tut |
 |---|---|
-| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein „Kick“ des Zeigers (22°-Impuls, klingt über 140ms ab) feuert bei jeder Segmentgrenzüberquerung (`lastSeg` startet bei `-1`, sodass das anfängliche, im ersten Animationsframe identifizierte Segment — noch vor jeder Grenzüberquerung — nie kickt) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
-| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84ms über die ersten 8 jeder 16-Zellen-Zeile, danach wiederholt sich dieselbe 0–84ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
+| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein „Kick” des Zeigers (22°-Impuls, klingt über 140 ms ab) wird bei jeder Segmentgrenzüberquerung ausgelöst (`lastSeg` startet bei `-1`, sodass das anfängliche, im ersten Animationsframe identifizierte Segment — noch vor jeder Grenzüberquerung — nie kickt) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
+| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84 ms über die ersten 8 jeder 16-Zellen-Zeile hinweg, danach wiederholt sich dieselbe 0–84-ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
 | **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
 | **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |
-| **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bezierkurve, die sich als Bremsen liest; die Zielanzeige läuft während der gesamten Annäherung durch Namen und landet genau mit dem Halt des Zuges auf dem Gewinner, nicht erst danach. |
+| **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bézier-Kurve, die sich als Bremsen liest; die Zielanzeige läuft während der gesamten Annäherung durch Namen und landet genau mit dem Halt des Zuges auf dem Gewinner, nicht erst danach. |
 | **Fahrplan-Rolle** (`TimetableStage`) | Rollt über mehrere Extra-Umläufe, bevor sie auf der Ergebniszeile landet — gedämpfter Stopp über dieselbe Brems-Kurvenfamilie wie der Zug. |
 | **Gewichtslinie** (`LineStage`) | Die Nadel schwenkt über dieselbe gedämpfte Stopp-Kurve zur Position des Gewinners und hält dort, sobald angesagt wurde. |
 

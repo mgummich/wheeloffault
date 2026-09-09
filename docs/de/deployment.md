@@ -40,7 +40,7 @@ docker run -d -p 127.0.0.1:3000:3000 -v schuldrad-data:/data schuldrad
 ```
 
 Das `Dockerfile` ist ein zweistufiger Build: eine `node:26-alpine`-Build-Stufe
-führt `pnpm build:server` aus und kürzt auf Produktionsabhängigkeiten; die
+führt `pnpm build:server` aus und reduziert auf die Produktionsabhängigkeiten; die
 Laufzeitstufe entfernt `npm`/`npx`/`corepack` vollständig (die Anwendung
 selbst braucht nur `node`), läuft als Nicht-root-Benutzer `node` und liefert
 den Server als unveränderte TypeScript-Quelle unter Nodes nativem
@@ -136,9 +136,9 @@ secrets:
 ```
 
 Das Passwort wird von Schuldrad selbst nie auf Platte geschrieben und nie
-geloggt. Beim Start leitet der Server mit scrypt gegen ein zufälliges,
-nur im Speicher gehaltenes Salt einen Prüfwert ab; Logins werden
-zeitkonstant verglichen. Sitzungen liegen in einer In-Memory-`Map` (12h
+geloggt. Beim Start leitet der Server mit scrypt und einem zufälligen,
+nur im Speicher gehaltenen Salt einen Prüfwert ab; Logins werden
+zeitkonstant verglichen. Sitzungen liegen in einer In-Memory-`Map` (12 h
 gleitende TTL, bei Nutzung verlängert) — **ein Neustart des Servers
 meldet alle ab**, mit Absicht; es gibt keine Sitzungs-Persistenz, die
 verloren gehen könnte.
@@ -150,8 +150,8 @@ ankommt **und** `SCHULDRAD_TRUST_PROXY=1` gesetzt ist — der
 `x-forwarded-proto`-Header ist sonst von jedem fälschbar, der den Server
 direkt erreicht, daher wird er erst berücksichtigt, wenn bestätigt ist,
 dass ein Proxy davor steht und ihn kontrolliert. Wird TLS an einem Proxy
-terminiert, sowohl `SCHULDRAD_TRUST_PROXY=1` setzen als auch, falls der
-Proxy diesen Header nicht selbst setzt, `SCHULDRAD_SECURE_COOKIES=1`.
+terminiert, ist sowohl `SCHULDRAD_TRUST_PROXY=1` zu setzen als auch,
+falls der Proxy diesen Header nicht selbst setzt, `SCHULDRAD_SECURE_COOKIES=1`.
 
 `SCHULDRAD_TRUST_PROXY=1` stellt außerdem das Login-Rate-Limiting auf den
 ersten Eintrag von `x-forwarded-for` statt auf die Socket-IP um — nur
@@ -159,7 +159,7 @@ hinter einem Reverse Proxy setzen, der diesen Header überschreibt (nicht
 anhängt), sonst kann ein Client sich einen eigenen Wert einschleusen und
 das Limit umgehen.
 
-Sitzungen verlängern sich bei Nutzung gleitend (12h), laufen aber
+Sitzungen verlängern sich bei Nutzung gleitend (12 h), laufen aber
 unabhängig von der Aktivität nach 7 Tagen endgültig ab.
 
 **Nur für eine einzelne Instanz.** Sitzungen und die Zähler für das
@@ -173,7 +173,7 @@ der Server hinter mehr als einer Replica ohne Sticky Sessions, ergibt
 sich: eine auf Instanz A erzeugte Sitzung wird von Instanz B als nicht
 authentifiziert abgelehnt (zufällige 401 bei gültigem Cookie), ein
 Logout auf A kann einen auf B noch offenen Stream nicht schließen, und das
-effektive Rate-Limit liegt bei 5×Replicas statt 5. Entweder Clients per
+effektive Rate-Limit liegt bei 5 × Replicas statt 5. Entweder Clients per
 Sticky Sessions am Load Balancer an eine Instanz binden, oder nur eine
 einzelne Instanz betreiben, wenn `SCHULDRAD_PASSWORD` gebraucht wird.
 
@@ -192,7 +192,8 @@ keine Konfiguration.
 
 DNS-Rebinding — eine von einem Angreifer kontrollierte Domain, die auf die
 Adresse des Servers zeigt, sodass ein Browser eine Angreiferseite als
-Same-Origin damit behandelt — wird nur geschlossen, indem
+gleichursprünglich (same-origin) mit ihm behandelt — wird nur
+ausgeschlossen, indem
 `SCHULDRAD_ALLOWED_HOSTS` auf eine kommagetrennte Liste der Hostnamen
 (mit Port, falls nicht Standard) gesetzt wird, unter denen die Instanz
 legitim erreichbar ist, z. B.:
@@ -242,7 +243,7 @@ anderen Netzwerk-Interface als Loopback, sofern nicht ausdrücklich anders
 konfiguriert. Das ist ein bewusster Standard, kein Versehen: Schuldrad
 kommt standardmäßig ohne Authentifizierung (siehe [SECURITY.md](../../SECURITY.md)), also
 wäre ein Server, der ohne weiteres Zutun aus dem Netz erreichbar wäre,
-einer, den jeder in diesem Netz lesen und verändern könnte.
+einer, dessen Daten jeder in diesem Netz lesen und verändern könnte.
 
 Um den Server freizugeben:
 
@@ -261,9 +262,9 @@ Um den Server freizugeben:
   bereits vertraulichen VPN-Tunnel erreicht wird.
 
 Schuldrads eigene Annahme, einmal festgehalten und überall vorausgesetzt:
-Es wird in einem vertrauenswürdigen Netz (Team-LAN, VPN) oder hinter einem
-Reverse Proxy mit Authentifizierung betrieben. Es ist nicht dafür
-ausgelegt, direkt im offenen Internet zu stehen.
+Schuldrad wird in einem vertrauenswürdigen Netz (Team-LAN, VPN) oder
+hinter einem Reverse Proxy mit Authentifizierung betrieben. Es ist nicht
+dafür ausgelegt, direkt im offenen Internet zu stehen.
 
 ## § 5 Migrationen zum Deploy-Zeitpunkt
 

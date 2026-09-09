@@ -9,7 +9,7 @@ English → [events.md](../en/events.md) (kanonisch)
 
 `src/domain/events.ts` definiert den persistierten Vertrag für Schuldrads
 Event-Store. Dieses Dokument ist das Betriebsreglement zu diesem Vertrag:
-was sich ändern darf, was sich nie ändern darf, und wie eine Migration
+was sich ändern darf, was sich nie ändern darf und wie eine Migration
 hinzugefügt wird, ohne bereits gespeicherte Historie zu beschädigen.
 
 ## § 1 Die 17 Event-Typen
@@ -46,7 +46,7 @@ eine Gruppierung, keinen Datensatz.
 
 ## § 2 Unveränderlichkeitsregeln
 
-Einmal angehängte Events sind historische Tatsache und werden nie editiert
+Einmal angehängte Events sind historische Tatsachen und werden nie editiert
 oder gelöscht. Dies wird durch die Speicherschicht durchgesetzt
 (`UNIQUE (stream_id, version)` plus reiner Append-Zugriff) sowie per
 Konvention im Domänencode. Daraus folgen die Regeln:
@@ -62,10 +62,10 @@ Konvention im Domänencode. Daraus folgen die Regeln:
    zu streichen ändert die Bedeutung alter, bereits persistierter Events,
    ohne deren Bytes zu ändern — das ist stille Korruption der Historie,
    schlimmer als ein Editierfehler, weil nichts einen Fehler wirft.
-4. **Das Ergebnis eines Spins wird nie umgeschrieben.** Ein stattgegebener
+4. **Das Ergebnis einer Ziehung wird nie umgeschrieben.** Ein erfolgreicher
    Einspruch (`AppealUpheld`) löscht oder ändert nicht `SpinCommitted`/
    `SpinRevealed`; er ist ein neues, darübergelegtes Event, das ändert, wie
-   Projektionen den Spin *zählen* (ausgeschlossen aus
+   Projektionen die Ziehung *zählen* (ausgeschlossen aus
    Treffer-/Erwartungswert-Statistik — siehe [architektur.md](architektur.md)
    § 3), nicht was geschehen ist.
 
@@ -85,11 +85,11 @@ Was in `upcast` gehört und was nicht:
 * **Gehört hinein:** einem alten Event einen Standardwert für ein Feld
   geben, das zur Zeit seiner Erstellung noch nicht existierte (z. B. ein
   neues optionales Feld, das Projektionen jetzt bedingungslos lesen —
-  upcast füllt es, damit Projektionen nicht an jeder Aufrufstelle ein
+  `upcast` füllt es, damit Projektionen nicht an jeder Aufrufstelle ein
   `?? default` brauchen).
-* **Gehört nicht hinein:** Geschäftslogik, Validierung oder alles, was von
-  anderen Events im Stream abhängt. `upcast` sieht ein einzelnes Event
-  isoliert.
+* **Gehört nicht hinein:** Geschäftslogik, Validierung oder überhaupt
+  etwas, das von anderen Events im Stream abhängt. `upcast` sieht ein
+  einzelnes Event isoliert.
 
 ## § 4 Eine Migration hinzufügen
 
@@ -115,7 +115,7 @@ Dialekt, unten). Die meisten Änderungen brauchen nur eine davon.
 Jeder Eintrag ist `{ id, sql, pgSql }` — `sql` läuft gegen SQLite, `pgSql`
 gegen Postgres —, wird einmal in eigener Transaktion angewendet und in
 `schema_migrations` protokolliert, damit er nie zweimal läuft. Jeder Dialekt
-wird wörtlich ausgeschrieben; es gibt keine Umschreibung zwischen ihnen. Zum
+wird wörtlich ausgeschrieben; es wird nicht zwischen ihnen übersetzt. Zum
 Hinzufügen:
 
 ```ts
@@ -130,15 +130,16 @@ Einen neuen Eintrag mit der nächsten Nummer anhängen. **Eine bereits
 ausgelieferte Migration wird nie editiert** — eine Migration, die auf
 verschiedenen Deployments unterschiedlich gelaufen ist, ist schlimmer als
 eine, die nie gelaufen ist. War eine ausgelieferte Migration falsch, wird
-eine korrigierende Migration ausgeliefert. Siehe `EVENT_STORE=postgres` in
-[deployment.md](deployment.md) dazu, wie der Dialekt zur Laufzeit gewählt
-wird.
+eine korrigierende Migration ausgeliefert. Wie der Dialekt zur Laufzeit
+gewählt wird, steht unter `EVENT_STORE=postgres` in
+[deployment.md](deployment.md).
 
 ## § 5 Warum kein Snapshotting?
 
 Ein Team sammelt über seine Lebensdauer einige tausend Events an; SQLite
-liest und faltet (`replay()`) das in Millisekunden. Es gibt kein
+liest das und faltet es (`replay()`) in Millisekunden. Es gibt kein
 Snapshotting, also auch kein Snapshot-Invalidierungsproblem und keinen
-Zustand „Projektion ist veraltet, neu aufbauen“ zu verwalten — eine
-Projektion ist immer nur die pure Faltung des vollständigen Event-Streams.
+Zustand „Projektion ist veraltet, neu aufbauen“, der verwaltet werden
+müsste — eine Projektion ist immer nur die pure Faltung des vollständigen
+Event-Streams.
 „Projektion neu aufbauen“ heißt: Seite neu laden.
