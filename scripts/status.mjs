@@ -10,12 +10,21 @@
 
 import { execSync } from 'node:child_process';
 import { writeFileSync } from 'node:fs';
+import { stripVTControlCharacters } from 'node:util';
 
+// Colour is stripped because the patterns below match across the whitespace
+// in lines like "Test Files  24 passed": when a tool decides to colourise
+// (vitest does inside CI's Playwright container, but not on a bare runner)
+// the escape sequences land in the middle of those matches and every
+// extraction throws.
 function run(cmd) {
   try {
-    return { ok: true, out: execSync(cmd, { encoding: 'utf8', stdio: 'pipe' }) };
+    return {
+      ok: true,
+      out: stripVTControlCharacters(execSync(cmd, { encoding: 'utf8', stdio: 'pipe' })),
+    };
   } catch (err) {
-    return { ok: false, out: `${err.stdout ?? ''}${err.stderr ?? ''}` };
+    return { ok: false, out: stripVTControlCharacters(`${err.stdout ?? ''}${err.stderr ?? ''}`) };
   }
 }
 
