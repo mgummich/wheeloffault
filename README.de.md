@@ -1,4 +1,4 @@
-English → [README.md](README.md#en) (kanonisch)
+English → [README.md](README.md) (kanonisch)
 
 > Diese Übersetzung wird separat gepflegt und kann der kanonischen
 > englischen Fassung hinterherhinken.
@@ -21,7 +21,7 @@ Selbst gehostetes, installierbares Schuldrad für das Scrum-Ritual
   Signal, Fahrkartenstempel, Fahrplan-Rolle, Gewichtslinie.
 * **PWA** – installierbar, App-Shell offline, `prefers-reduced-motion` respektiert.
 
-Architektur: [ARCHITECTURE.md](ARCHITECTURE.md#en) (Englisch, kanonisch) ·
+Architektur: [ARCHITECTURE.md](ARCHITECTURE.md) (Englisch, kanonisch) ·
 [docs/de/architektur.md](docs/de/architektur.md) ·
 [Fairness-Protokoll](docs/de/fairness.md) ·
 [Event-Vertrag](docs/de/events.md) ·

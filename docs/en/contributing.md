@@ -94,6 +94,15 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   the codebase — either name the symbol without call-parens in prose, or add
   it to SYMBOL_IGNORE in `scripts/build-docs.mjs` with a one-line reason,
   the way the existing eight entries do.
+* **German line-final hyphen wraps.** `checkGermanHyphenWraps` scans every
+  file in `docs/de/` plus `README.de.md` for a line outside a fenced code
+  block that ends mid-word with a hyphen (e.g. a German compound broken
+  across a hard line wrap) — that renders on the site as a visible stray
+  "word- word" instead of the intended unbroken word. It exempts a
+  line-final Ergänzungsstrich (a hyphen standing in for a shared word part,
+  as in "Vor-" before a following line that starts with "und"/"oder"/"bzw."),
+  and it does not flag either fence style (` ``` ` or `~~~`) or a
+  4-space-indented code block.
 
 `pnpm status` regenerates `docs/STATUS.json` from the actual output of the
 `verify`/`build:server`/`e2e` checks (pass/fail plus deterministic counts —

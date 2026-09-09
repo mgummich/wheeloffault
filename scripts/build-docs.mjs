@@ -147,6 +147,11 @@ async function checkCompleteness() {
 async function checkGermanHyphenWraps() {
   const problems = [];
   const hyphenWrap = /[A-Za-zÄÖÜäöüß]-$/;
+  // Ergänzungsstrich exemption: a line-final hyphen standing in for a
+  // shared word part ("Vor-" before a line continuing "und Nachteile") is
+  // legitimate German, not a wrapped word — exempt it when the next
+  // non-blank line opens with the coordinating word it's short for.
+  const continuationExempt = /^\s*(und|oder|bzw\.)\b/;
   const files = [
     'README.de.md',
     ...(await readdir(join(root, 'docs/de'))).map((f) => `docs/de/${f}`),
@@ -154,13 +159,23 @@ async function checkGermanHyphenWraps() {
   for (const rel of files) {
     if (!rel.endsWith('.md')) continue;
     const text = await readFile(join(root, rel), 'utf8');
-    let inFence = false;
-    text.split('\n').forEach((line, i) => {
-      if (line.trimStart().startsWith('```')) inFence = !inFence;
-      else if (!inFence && hyphenWrap.test(line.trimEnd())) {
-        problems.push(`${rel}:${i + 1}: line ends mid-word with a hyphen: ${line.trim()}`);
+    const lines = text.split('\n');
+    let fenceChar = null; // '`' or '~' while inside a fenced code block opened by that marker
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const fenceMatch = line.trimStart().match(/^(`{3,}|~{3,})/);
+      if (fenceMatch) {
+        const ch = fenceMatch[1][0];
+        fenceChar = fenceChar === ch ? null : (fenceChar ?? ch);
+        continue;
       }
-    });
+      if (fenceChar !== null) continue; // inside a fenced code block
+      if (/^( {4}|\t)/.test(line)) continue; // 4-space/tab-indented code block
+      if (!hyphenWrap.test(line.trimEnd())) continue;
+      const next = lines.slice(i + 1).find((l) => l.trim() !== '');
+      if (next && continuationExempt.test(next)) continue; // Ergänzungsstrich
+      problems.push(`${rel}:${i + 1}: line ends mid-word with a hyphen: ${line.trim()}`);
+    }
   }
   if (problems.length > 0) {
     console.error(
@@ -289,11 +304,11 @@ function markedFor(lang) {
         if (/^(https?:)?\/\//.test(href) || href.startsWith('#')) {
           return `<a href="${href}">${text}</a>`;
         }
-        // A trailing #en/#de is a language marker, not a real anchor: some
-        // links can't carry a directory/filename marker (e.g. README.de.md
-        // linking to sibling README.md) so they mark language this way
-        // instead. Any other fragment (a real deep link into another doc's
-        // section) is kept on the rendered href, just not marker-stripped.
+        // A trailing #en/#de is a language marker, not a real anchor, kept
+        // as a fallback for a link that can carry neither a directory nor a
+        // filename marker. Any other fragment (a real deep link into
+        // another doc's section) is kept on the rendered href, just not
+        // marker-stripped.
         const hashIdx = href.indexOf('#');
         const hrefPath = hashIdx === -1 ? href : href.slice(0, hashIdx);
         const frag = hashIdx === -1 ? null : href.slice(hashIdx + 1);
@@ -303,19 +318,33 @@ function markedFor(lang) {
         );
         if (target) {
           // The href's own language marker wins: a directory segment
-          // (../de/, docs/de/, ../en/, docs/en/), a filename marker
-          // (README.de.md), or a #en/#de fragment marker. A bare basename
-          // shared by both languages (deployment.md, fairness.md, ...)
-          // carries no marker, so it falls back to the CURRENT page's
-          // language — keeping in-page links in-language instead of
-          // defaulting to `en`.
+          // (../de/, docs/de/, ../en/, docs/en/), a filename marker (the
+          // href's basename literally names one language's source file,
+          // e.g. README.de.md or ARCHITECTURE.md — only meaningful when the
+          // two languages' basenames actually differ), or a #en/#de
+          // fragment marker as a last resort for a link that can carry
+          // neither (kept for symmetry/back-compat, but no longer needed by
+          // any doc in the repo — a plain filename link works and stays a
+          // real, non-dead link on GitHub too). A bare basename shared by
+          // both languages (deployment.md, fairness.md, ...) carries no
+          // marker, so it falls back to the CURRENT page's language —
+          // keeping in-page links in-language instead of defaulting to `en`.
           const fragMarker = frag === 'en' || frag === 'de' ? frag : null;
           const dirMarker = /(^|\/)de\//.test(hrefPath)
             ? 'de'
             : /(^|\/)en\//.test(hrefPath)
               ? 'en'
               : null;
-          const fileMarker = /\.de\.md$/.test(hrefBase) ? 'de' : null;
+          const enBase = target.src.en.split('/').pop();
+          const deBase = target.src.de?.split('/').pop();
+          const fileMarker =
+            deBase && enBase !== deBase
+              ? hrefBase === deBase
+                ? 'de'
+                : hrefBase === enBase
+                  ? 'en'
+                  : null
+              : null;
           // ponytail: this marker logic is hand-duplicated in expectedTarget()
           // below (deliberately — see that function's comment) — keep both in sync.
           const wantLang = fragMarker || dirMarker || fileMarker || lang;
@@ -488,14 +517,24 @@ function expectedTarget(hrefPath, frag, pageLang) {
     (d) => d.src.en.split('/').pop() === hrefBase || d.src.de?.split('/').pop() === hrefBase,
   );
   if (!target) return null;
+  const enBase = target.src.en.split('/').pop();
+  const deBase = target.src.de?.split('/').pop();
+  const fileMarker =
+    deBase && enBase !== deBase
+      ? hrefBase === deBase
+        ? 'de'
+        : hrefBase === enBase
+          ? 'en'
+          : null
+      : null;
   const marker =
     frag === 'en' || frag === 'de'
       ? frag
-      : /(^|\/)de\//.test(hrefPath) || /\.de\.md$/.test(hrefBase)
+      : /(^|\/)de\//.test(hrefPath)
         ? 'de'
         : /(^|\/)en\//.test(hrefPath)
           ? 'en'
-          : null;
+          : fileMarker;
   const lang = target.src[marker || pageLang] ? marker || pageLang : 'en';
   return { target, marker, lang };
 }

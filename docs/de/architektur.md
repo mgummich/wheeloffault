@@ -1,4 +1,4 @@
-English → [ARCHITECTURE.md](../../ARCHITECTURE.md#en) (kanonisch)
+English → [ARCHITECTURE.md](../../ARCHITECTURE.md) (kanonisch)
 
 > Diese Übersetzung wird separat gepflegt und kann der kanonischen englischen
 > Fassung hinterherhinken. Bei Widerspruch gilt `ARCHITECTURE.md` im
@@ -142,7 +142,7 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
    → SpinCommitted { commitment, nonce, participants (mit Gewichten), serverSeed }
    Der serverSeed liegt im Event (sonst überlebt ein offener Spin keinen Neustart),
    wird aber vor dem Reveal nie über HTTP ausgeliefert (`domain/views.ts`). Wer die
-   Datenbank lesen kann, kann das Ergebnis vorhersagen — die Datenbank ist Vertrauensbasis.
+   Datenbank lesen kann, kann das Ergebnis vorhersagen — die Datenbank ist die Vertrauensgrenze.
 4. Client liefert clientSeed (beliebiger String, Standard: 16 Zufallsbytes hex)
 5. digest = HMAC-SHA-256(key = serverSeed, msg = `${commitment}:${clientSeed}:${nonce}`)
    r = uint64(digest[0..16]) mod Σweights
@@ -209,7 +209,7 @@ teamStatistics(state)           Hall of Shame (Rangliste), maximale Fairness-Abw
                                 kein eigener Export)
 ```
 
-Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
+Nichts davon wird gespeichert. Die Event-Historie ist die einzige Quelle der Wahrheit;
 „Projektion neu aufbauen“ heißt: Seite neu laden.
 
 ## 6. HTTP-Vertrag
@@ -217,24 +217,24 @@ Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
 ```
 GET  /api/teams                              [{ teamId, name, memberCount, spinCount }]
 POST /api/teams                 { name }     → 201 TeamView
-GET  /api/teams/:id                          TeamView (state + statistics)
-POST /api/teams/:id/members     { name }  |  { names: [...] }   Liste einfügen
-POST /api/teams/:id/members/:mid/deactivate
-POST /api/teams/:id/members/:mid/reactivate
-POST   /api/teams/:id/members/:mid/immunity   { reason }
-DELETE /api/teams/:id/members/:mid/immunity   widerruft die älteste Immunität
-PUT    /api/teams/:id/policy      FairnessPolicy
-POST   /api/teams/:id/pools       { name, memberIds }
-PUT    /api/teams/:id/pools/:pid  { memberIds }
-POST   /api/teams/:id/pools/:pid/rename  { name }
-DELETE /api/teams/:id/pools/:pid
-POST /api/teams/:id/spins       { spinId, poolId? }        → SpinCommitted-Daten   (409 bei offenem Spin)
-POST /api/teams/:id/spins/:sid/reveal { clientSeed }       → SpinRevealed-Daten
-POST /api/teams/:id/spins/:sid/appeal { reason }
-POST /api/teams/:id/spins/:sid/appeal/uphold
-POST /api/teams/:id/spins/:sid/appeal/reject
-GET  /api/teams/:id/members/:mid/report      Schuldbericht
-GET  /api/teams/:id/events                   SSE: ein `event: appended` pro neuem Event
+GET  /api/teams/:teamId                          TeamView (state + statistics)
+POST /api/teams/:teamId/members     { name }  |  { names: [...] }   Liste einfügen
+POST /api/teams/:teamId/members/:memberId/deactivate
+POST /api/teams/:teamId/members/:memberId/reactivate
+POST   /api/teams/:teamId/members/:memberId/immunity   { reason }
+DELETE /api/teams/:teamId/members/:memberId/immunity   widerruft die älteste Immunität
+PUT    /api/teams/:teamId/policy      FairnessPolicy
+POST   /api/teams/:teamId/pools       { name, memberIds }
+PUT    /api/teams/:teamId/pools/:poolId  { memberIds }
+POST   /api/teams/:teamId/pools/:poolId/rename  { name }
+DELETE /api/teams/:teamId/pools/:poolId
+POST /api/teams/:teamId/spins       { spinId, poolId? }        → SpinCommitted-Daten   (409 bei offenem Spin)
+POST /api/teams/:teamId/spins/:spinId/reveal { clientSeed }       → SpinRevealed-Daten
+POST /api/teams/:teamId/spins/:spinId/appeal { reason }
+POST /api/teams/:teamId/spins/:spinId/appeal/uphold
+POST /api/teams/:teamId/spins/:spinId/appeal/reject
+GET  /api/teams/:teamId/members/:memberId/report      Schuldbericht
+GET  /api/teams/:teamId/events                   SSE: ein `event: appended` pro neuem Event
 GET  /api/health
 POST /api/auth/login             { password } → setzt Session-Cookie (nur wenn Auth aktiv ist)
 POST /api/auth/logout            löscht das Session-Cookie
@@ -249,10 +249,16 @@ stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
 (`src/web/apiError.ts`, `src/web/i18n/`); die menschenlesbare `error`-Meldung
 ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
 explizit validiert: serverseitig an der HTTP-Grenze (`src/server/validate.ts`
-— Name/Grund ≤ 100/200 Zeichen, `clientSeed` ≤ 200, bis zu 500 Namen ≤ 100
-Zeichen je Eintrag, Policy-Faktorschlüssel ≤ 64 Zeichen), und die
-FairnessPolicy zusätzlich über `assertPolicy`
-(`src/domain/fairness/policy.ts`), aufgerufen aus `decide.changePolicy`
+— `clientSeed` ≤ 200 Zeichen, Immunitätsgrund ≤ 200 Zeichen, Einspruchsgrund
+≤ 500 Zeichen, bis zu 500 Namen je Sammel-Anlage, dort je ≤ 100 Zeichen).
+Die tatsächliche Grenze für einen Namen liegt niedriger: Die Domänenschicht
+weist zusätzlich alles über `MAX_NAME` = 60 Zeichen zurück
+(`src/domain/decisions.ts`, Fehlercode `name_too_long`), sodass die
+100-Zeichen-Prüfung der HTTP-Schicht pro Name nie wirklich greift — die
+Domänenprüfung läuft danach und lehnt zuerst ab, bei 60. Policy-Faktorschlüssel
+sind über `assertPolicy` (`src/domain/fairness/policy.ts`) auf ≤ 64 Zeichen
+begrenzt, nicht über `validate.ts`; die FairnessPolicy wird zusätzlich über
+eben dieses `assertPolicy` validiert, aufgerufen aus `decide.changePolicy`
 (`src/domain/decisions.ts`) — läuft also in beiden Modi, nicht nur hinter
 `src/server/http.ts`. Der Browser importiert aus diesem Modul den Typ
 `FairnessPolicy`; die `min`/`max`-Werte der Zahlenfelder im
@@ -273,10 +279,10 @@ was geschützt wird und was nicht, steht in [SECURITY.md](../../SECURITY.md)
 
 Der Client hält keinen eigenen Domänenzustand. Die meisten Mutationen
 liefern den frischen `TeamView` zurück, den der Client direkt übernimmt; die
-beiden Spin-Routen (`POST /api/teams/:id/spins` und `.../reveal`, siehe
+beiden Spin-Routen (`POST /api/teams/:teamId/spins` und `.../reveal`, siehe
 Routentabelle oben) liefern stattdessen nur den schmaleren `SpinView`. In
 jedem Fall lädt der Client zusätzlich bei jeder SSE-Nachricht
-`GET /api/teams/:id` neu (das Echo des eigenen Appends ist ein harmloser
+`GET /api/teams/:teamId` neu (das Echo des eigenen Appends ist ein harmloser
 Doppel-Fetch).
 
 ## 7. Persistenz
@@ -326,7 +332,7 @@ Optional kann Redis als reines Broadcast-Fanout aktiviert werden:
 REDIS_URL=redis://localhost:6379 pnpm start
 ```
 
-Redis ist kein Cache und keine zweite Wahrheit. Ein Server publiziert nach
+Redis ist kein Cache und keine zweite Quelle der Wahrheit. Ein Server publiziert nach
 persistierten Appends die Event-Metadaten, andere Instanzen liefern sie an
 ihre lokalen SSE-Clients aus.
 

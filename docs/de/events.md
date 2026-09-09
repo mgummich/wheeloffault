@@ -77,7 +77,7 @@ den aktuellen In-Memory-Vertrag angepasst werden dürfen. Sie läuft einmal
 pro Event beim Lesen aus dem Speicher, bevor `replay()` es in den Zustand
 faltet. Zum jetzigen Zeitpunkt ist sie die Identitätsfunktion — seit v1 hat
 sich nichts an der Form geändert —, existiert aber, damit eine künftige
-Änderung genau eine Nahtstelle hat statt über jeden Leser verstreut zu
+Änderung genau eine Nahtstelle hat, statt über jeden Leser verstreut zu
 sein.
 
 Was in `upcast` gehört und was nicht:

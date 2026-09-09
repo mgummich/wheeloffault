@@ -101,11 +101,12 @@ nicht fehlerhaft:
   Zum Vergleich: dieselben 3,5 % über die ~3600°-Strecke des `lang`-Stils
   wären ~126° (`lang` und `windup` sind eigenständige, nicht kombinierbare
   Spin-Stile; `lang` selbst schwingt nicht zurück).
-- `SignalStage` blinkt den heißen Indikator (nutzt das bestehende
+- `SignalStage` lässt den heißen Indikator blinken (nutzt das bestehende
   `.blink`-Keyframe), solange ein Name noch durchläuft, bevor der finale
   Stopp-Zustand einrastet — ein Warnblinken vor dem soliden Rot.
 - `StampStage` hebt das heiße Ticket kurz an, bevor der Stempel fällt — ein
-  expliziter Vorlauf statt einer Transform, die nur beim Aufprall animiert.
+  expliziter Vorlauf statt einer Transform, die nur beim Aufprall animiert
+  wird.
 
 ## § 5 Einrasten (Überschwingen + gedämpfte Rückkehr)
 
@@ -150,12 +151,12 @@ sie — es rastet sofort im bereits feststehenden Ergebnis ein:
 schnelles. Zwei Ebenen setzen das durch:
 
 1. In JS prüft jede Visualisierung `reduced` zu Beginn ihrer eigenen
-   RAF-Schleife und ruft `finish()`/`onFinished()` synchron statt Frames
-   zu planen — sowohl der Spin-Effekt in `Wheel.tsx` als auch
+   RAF-Schleife und ruft `finish()`/`onFinished()` synchron auf, statt
+   Frames zu planen — sowohl der Spin-Effekt in `Wheel.tsx` als auch
    `useNameTicker` in `stages.tsx` tun das, sodass `animating` bereits
-   `false` ist, bevor ein CSS-Übergang/-Animation überhaupt Gelegenheit
-   zum Laufen hätte.
-2. In CSS (`src/web/styles.css`) kollabiert eine universelle
+   `false` ist, bevor ein CSS-Übergang oder eine CSS-Animation überhaupt
+   Gelegenheit zum Laufen hätte.
+2. In CSS (`src/web/styles.css`) verkürzt eine universelle
    Reduced-Motion-Regel jede CSS-Animation oder jeden Übergang, der
    trotzdem feuert (Klapp-Schnappen, Stempelaufprall, Panel-Einblendungen,
    Toasts), auf praktisch Nulldauer — als Absicherung ohne Aufzählung pro

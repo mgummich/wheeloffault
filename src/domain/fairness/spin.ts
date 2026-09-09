@@ -61,9 +61,16 @@ export type RevealInput = { spinId: string; clientSeed: string; now: string };
 
 /** Reveal step. Idempotent for the same clientSeed; conflicting reveal is rejected. */
 export async function revealSpin(state: TeamState, input: RevealInput): Promise<DomainEvent[]> {
+  // Same clientSeed hygiene the HTTP boundary applies via `str()` (NUL check,
+  // 200-char cap) — closed here too so static mode's direct localStorage
+  // writes can't bypass it.
+  if (input.clientSeed.includes('\u0000')) {
+    throw new DomainError('clientSeed must not contain NUL', 'field_not_string');
+  }
+  const clientSeed = input.clientSeed.slice(0, 200);
   const spin = findSpin(state, input.spinId);
   if (spin.reveal) {
-    if (spin.reveal.clientSeed === input.clientSeed) return [];
+    if (spin.reveal.clientSeed === clientSeed) return [];
     throw new DomainError(
       'Draw was already revealed with a different client seed',
       'spin_already_revealed',
@@ -76,7 +83,7 @@ export async function revealSpin(state: TeamState, input: RevealInput): Promise<
   }
   const digest = await hmacSha256Hex(
     spin.serverSeed,
-    drawMessage(spin.commitment, input.clientSeed, spin.nonce),
+    drawMessage(spin.commitment, clientSeed, spin.nonce),
   );
   const selectedMemberId = selectParticipant(digest, spin.participants);
   return [
@@ -84,7 +91,7 @@ export async function revealSpin(state: TeamState, input: RevealInput): Promise<
       type: 'SpinRevealed',
       spinId: spin.spinId,
       serverSeed: spin.serverSeed,
-      clientSeed: input.clientSeed,
+      clientSeed,
       digest,
       selectedMemberId,
       at: input.now,

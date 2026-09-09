@@ -20,9 +20,9 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   das Laufzeit-Image `npm`/`npx`/`corepack` danach entfernt. `.npmrc` setzt
   `auto-install-peers=true`. Die übrige pnpm-Konfiguration steht in
   `pnpm-workspace.yaml` — `allowBuilds: esbuild: true` (erlaubt esbuilds
-  Postinstall-Skript zu laufen) und eine `minimumReleaseAgeExclude`-Liste
-  von pnpms Mindest-Release-Alter-Prüfung ausgenommenen Paketen —
-  und ist so tragend, dass das Dockerfile sie neben `package.json` und dem
+  Postinstall-Skript, zu laufen) und eine `minimumReleaseAgeExclude`-Liste
+  mit Paketen, die von pnpms Mindest-Release-Alter-Prüfung ausgenommen sind
+  — und ist so tragend, dass das Dockerfile sie neben `package.json` und dem
   Lockfile ins Build-Image kopiert.
 * **Biome** für Formatierung und Linting (`biome.json`) — ein Werkzeug
   statt ESLint + Prettier. `pnpm format` schreibt, `pnpm format:check` und
@@ -43,8 +43,8 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   und einen statischen Build unter dem Unterpfad `/wheeloffault/`, startet
   beide und führt zwei Projekte gegen sie aus: `server`
   (`journey.spec.ts`) und `static` (`static.spec.ts`) — derselbe Unterpfad,
-  auf den GitHub Pages veröffentlicht, damit ein kaputter Base-Path vor der
-  Produktion auffällt.
+  unter dem GitHub Pages den Build veröffentlicht, damit ein kaputter
+  Base-Path vor der Produktion auffällt.
 
 ## § 2 `pnpm verify`
 
@@ -54,7 +54,7 @@ format:check → lint → typecheck → test:unit → test:integration → build
 
 Das ist der eine Befehl, der bestehen muss, bevor irgendetwas als fertig
 gilt. Der CI-Job `verify` (`.github/workflows/ci.yml`) führt dieselben
-sechs Schritte einzeln aus statt dieses Skript aufzurufen — `pnpm verify`
+sechs Schritte einzeln aus, statt dieses Skript aufzurufen — `pnpm verify`
 selbst wird dort nicht aufgerufen (dieser Aufruf steckt in
 `.github/workflows/pages.yml`) —, aber Reihenfolge und Bestehens-Kriterium
 sind in beiden Fällen identisch. `audit` läuft parallel dazu; `e2e` und
@@ -75,13 +75,13 @@ folgenden Punkte scheitern lässt:
   `SECURITY.md`, das keine gepflegte Übersetzung hat). Ein neues Dokument
   hinzuzufügen heißt, es mit beiden Dateien in diese Registry
   einzutragen — oder explizit mit `enOnly` davon abzuweichen.
-* **Link- und Anker-Prüfung.** Ein `.md`-zu-`.md`-Link muss zu einer echten
-  Datei an diesem relativen Pfad auflösen und mit dem richtigen
+* **Link- und Anker-Prüfung.** Ein `.md`-zu-`.md`-Link muss auf eine echte
+  Datei an diesem relativen Pfad verweisen und mit dem richtigen
   Sprachpräfix gerendert werden, und jedes gerenderte `href="#…"` muss auf
   eine Überschriften-ID zeigen, die auf der Zielseite tatsächlich existiert.
   Das findet einen vertippten Pfad und einen Link auf eine Überschrift, die
   umbenannt oder entfernt wurde. Es findet auch einen unmarkierten Link,
-  der auf die Datei der falschen Sprache auflöst — aber nur bei den
+  der auf die Datei der falschen Sprache verweist — aber nur bei den
   Dokumentpaaren, deren englische und deutsche Quelldatei unterschiedliche
   Basisnamen haben (`README.md`/`README.de.md`,
   `ARCHITECTURE.md`/`architektur.md`). Paare mit gleichem Basisnamen
@@ -105,6 +105,16 @@ folgenden Punkte scheitern lässt:
   Aufruf-Klammern nennen, oder es mit einer einzeiligen Begründung in
   SYMBOL_IGNORE in `scripts/build-docs.mjs` eintragen, wie es die
   bestehenden acht Einträge tun.
+* **Deutsche Zeilenend-Trennstriche.** `checkGermanHyphenWraps` durchsucht
+  jede Datei in `docs/de/` sowie `README.de.md` nach einer Zeile außerhalb
+  eines Codeblocks, die mitten im Wort mit einem Bindestrich endet (z. B.
+  ein deutsches Kompositum, das an einem harten Zeilenumbruch getrennt
+  wurde) — das rendert auf der Website als sichtbares, verirrtes
+  „Wort- Wort“ statt des gemeinten zusammenhängenden Worts. Ausgenommen ist
+  ein zeilenendständiger Ergänzungsstrich (ein Bindestrich, der für einen
+  gemeinsamen Wortteil steht, wie bei „Vor-“ vor einer Folgezeile, die mit
+  „und“/„oder“/„bzw.“ beginnt), ebenso beide Zäunungsstile (` ``` ` und
+  `~~~`) sowie ein mit 4 Leerzeichen eingerückter Codeblock.
 
 `pnpm status` erzeugt `docs/STATUS.json` neu aus der tatsächlichen Ausgabe
 der `verify`-/`build:server`-/`e2e`-Prüfungen (bestanden/fehlgeschlagen

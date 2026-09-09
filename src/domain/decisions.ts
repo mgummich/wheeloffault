@@ -24,6 +24,21 @@ function cleanName(raw: string): string {
   return name;
 }
 
+/**
+ * Shared reason-field hygiene for immunity/appeal reasons: reject NUL (same
+ * rule as `cleanName`, so static mode's direct localStorage writes get the
+ * same check the HTTP boundary applies via `str()`/`optionalStr()`), then
+ * truncate to `max` the way this domain has always silently capped these
+ * fields.
+ */
+function cleanReason(raw: string, max: number): string {
+  const reason = raw.trim();
+  if (reason.includes('\u0000')) {
+    throw new DomainError('Reason must not contain NUL', 'field_not_string');
+  }
+  return reason.slice(0, max);
+}
+
 export function createTeam(teamId: string, name: string, now: string): DomainEvent[] {
   return [{ type: 'TeamCreated', teamId, name: cleanName(name), at: now }];
 }
@@ -148,7 +163,7 @@ export function grantImmunity(
   now: string,
 ): DomainEvent[] {
   findMember(state, memberId);
-  return [{ type: 'ImmunityGranted', memberId, reason: reason.trim().slice(0, 200), at: now }];
+  return [{ type: 'ImmunityGranted', memberId, reason: cleanReason(reason, 200), at: now }];
 }
 
 export function revokeImmunity(state: TeamState, memberId: string, now: string): DomainEvent[] {
@@ -169,7 +184,7 @@ export function appealGuilt(
   if (!spin.reveal) throw new DomainError('Draw not yet completed', 'spin_not_revealed');
   if (spin.appeal)
     throw new DomainError('An appeal has already been filed', 'appeal_already_filed');
-  return [{ type: 'GuiltAppealed', spinId, reason: reason.trim().slice(0, 500), at: now }];
+  return [{ type: 'GuiltAppealed', spinId, reason: cleanReason(reason, 500), at: now }];
 }
 
 export function decideAppeal(

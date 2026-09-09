@@ -174,8 +174,8 @@ werden. Die Verzerrung ist nach oben durch `Gewichtssumme ÷ 2⁶⁴` beschränk
 — bei realistischen Gewichtsgrößen (Gewichte in der Größenordnung von
 `1000` pro Teilnehmer, Teams von einstelliger bis niedriger zweistelliger
 Mitgliederzahl, Summen also selten über wenigen hunderttausend) liegt das
-in der Größenordnung eines Teils in 10¹³–10¹⁴ — vernachlässigbar gegenüber
-der Rundungsungenauigkeit jeder von Hand berechneten Statistik und um
+in der Größenordnung von 10⁻¹³ bis 10⁻¹⁴ — vernachlässigbar gegenüber
+der Gleitkomma-Ungenauigkeit jeder von Hand berechneten Statistik und um
 Größenordnungen kleiner als die absichtliche Verzerrung, die die
 Modifikatoren aus § 2 bewusst einführen. Das ist eine Formel, keine feste
 Obergrenze: Modifikatoren können einzelne Gewichte weit über `1000` treiben

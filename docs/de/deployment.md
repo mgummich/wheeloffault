@@ -46,7 +46,7 @@ selbst braucht nur `node`), läuft als Nicht-root-Benutzer `node` und liefert
 den Server als unveränderte TypeScript-Quelle unter Nodes nativem
 Type-Stripping aus — kein Bundler, kein Kompilierschritt zur Laufzeit.
 `HEALTHCHECK` pollt `/api/health` mit BusyBox `wget` — ein per Shell direkt
-aufrufbarer HTTP-Client, leichter als eine Anfrage über `node` zu skripten
+aufrufbarer HTTP-Client, leichter, als eine Anfrage über `node` zu skripten
 (das weiterhin im Image steckt, aber kein direkt einsetzbarer
 `HEALTHCHECK`-Befehl ist). Daten liegen standardmäßig im `/data`-Volume als
 `schuldrad.db` (SQLite).
@@ -168,9 +168,10 @@ getrennten In-Memory-`Map`s (`sessions`, `failures` in `src/server/auth.ts`),
 pro Prozess — nichts teilt diesen Zustand über Replicas hinweg, auch
 `REDIS_URL` nicht
 (das fächert nur Domain-Events per SSE instanzübergreifend auf, siehe die
-Umgebungsvariablen-Tabelle in § 3 — es berührt keinen Auth-Zustand). Läuft
-`SCHULDRAD_PASSWORD` hinter mehr als einer Replica ohne Sticky Sessions,
-ergibt sich: eine auf Instanz A erzeugte Sitzung wird von Instanz B als
+Umgebungsvariablen-Tabelle in § 3 — es berührt keinen Auth-Zustand). Ist
+`SCHULDRAD_PASSWORD` gesetzt und läuft der Server hinter mehr als einer
+Replica ohne Sticky Sessions, ergibt sich: eine auf Instanz A erzeugte
+Sitzung wird von Instanz B als
 nicht authentifiziert abgelehnt (zufällige 401 bei gültigem Cookie), ein
 Logout auf A kann einen auf B noch offenen Stream nicht schließen, und das
 effektive Rate-Limit liegt bei 5×Replicas statt 5. Entweder Clients per
@@ -191,7 +192,7 @@ unterliegt keiner der beiden Prüfungen. Beides ist immer aktiv und braucht
 keine Konfiguration.
 
 DNS-Rebinding — eine von einem Angreifer kontrollierte Domain, die auf die
-Adresse des Servers auflöst, sodass ein Browser eine Angreiferseite als
+Adresse des Servers zeigt, sodass ein Browser eine Angreiferseite als
 Same-Origin damit behandelt — wird nur geschlossen, indem
 `SCHULDRAD_ALLOWED_HOSTS` auf eine kommagetrennte Liste der Hostnamen
 (mit Port, falls nicht Standard) gesetzt wird, unter denen die Instanz

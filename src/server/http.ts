@@ -24,7 +24,7 @@ type Res = ServerResponse;
 type Handler = (req: Req, res: Res, params: Record<string, string>) => Promise<void> | void;
 type Route = { method: string; pattern: RegExp; keys: string[]; handler: Handler };
 
-const MAX_BODY = 64 * 1024;
+export const MAX_BODY = 64 * 1024;
 export const MAX_SSE_CLIENTS_PER_TEAM = 100;
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'DELETE', 'PATCH']);
 

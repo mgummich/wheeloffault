@@ -242,10 +242,16 @@ Errors: `{ error: string, code: string }` with 400 (invalid input), 401
 that the client localizes (`src/web/apiError.ts`, `src/web/i18n/`); the
 human `error` message is English and only a fallback for unknown codes. All
 input is explicitly validated: server-side at the HTTP boundary
-(`src/server/validate.ts` — name/reason ≤ 100/200 chars, `clientSeed` ≤ 200,
-up to 500 names ≤ 100 chars each, policy factor keys ≤ 64 chars), and the
-FairnessPolicy additionally via `assertPolicy` (`src/domain/fairness/policy.ts`),
-called from `decide.changePolicy` (`src/domain/decisions.ts`) so it runs in
+(`src/server/validate.ts` — `clientSeed` ≤ 200 chars, immunity reason ≤ 200
+chars, appeal reason ≤ 500 chars, up to 500 names per bulk-add call, each
+≤ 100 chars at this layer). A name's *effective* limit is lower: the domain
+layer separately rejects anything over `MAX_NAME` = 60 characters
+(`src/domain/decisions.ts`, error code `name_too_long`), so the HTTP
+layer's own 100-char per-name check never actually binds — the domain
+check runs afterward and rejects first, at 60. Policy factor keys are
+capped at ≤ 64 chars by `assertPolicy` (`src/domain/fairness/policy.ts`),
+not by `validate.ts`; the FairnessPolicy is additionally validated via that
+same `assertPolicy`, called from `decide.changePolicy` (`src/domain/decisions.ts`) so it runs in
 both server and static mode, not just behind `src/server/http.ts`. The
 browser imports the `FairnessPolicy` type from that module; its `min`/`max`
 on the policy form's number inputs are UI hints, not the validation
@@ -263,9 +269,9 @@ model, what it protects against, and what it does not.
 
 The client holds no domain state of its own. Most mutations return the
 fresh `TeamView`, which the client adopts directly; the two spin routes
-(`POST /api/teams/:id/spins` and `.../reveal`, see the route table above)
+(`POST /api/teams/:teamId/spins` and `.../reveal`, see the route table above)
 return only the narrower `SpinView` instead. Either way the client also
-reloads `GET /api/teams/:id` on every SSE message (the echo of its own
+reloads `GET /api/teams/:teamId` on every SSE message (the echo of its own
 append is a harmless double fetch).
 
 ## 7. Persistence
