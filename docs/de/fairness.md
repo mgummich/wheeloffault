@@ -139,7 +139,7 @@ berechnet wurde und nicht nachträglich ausgetauscht wurde; und weil Events
 unveränderlich sind (siehe [events.md](events.md) § 2), kann ein
 gespeicherter Commit oder Reveal im Nachhinein nicht unbemerkt editiert
 werden — eine Änderung an `serverSeed`, `nonce` oder einem
-Teilnehmer-Gewicht bricht die Commitment-Prüfung *dieses einen Spins*. Das ist
+Teilnehmer-Gewicht lässt die Commitment-Prüfung *dieses einen Spins* fehlschlagen. Das ist
 Manipulationssicherheit pro Datensatz, keine Hash-Kette über die gesamte
 Event-Historie: Jedes Commitment bindet nur seinen eigenen Spin, nicht den
 vorangegangenen.
@@ -251,6 +251,6 @@ bestehen, `1`, wenn eine Prüfung fehlschlägt, und `2` bei einem Aufruffehler
 (ein unerwartetes Argument, ein unbekanntes Flag, ein Flag ohne Wert,
 fehlendes `--file`, ein `--file`-Pfad, der sich nicht lesen lässt, eine
 Datei, die kein gültiges JSON ist, fehlendes Pflichtfeld, `participants`
-nicht als Array oder leer, oder die Nonce, wenn sie keine nicht-negative
-Ganzzahl ist — auch eine negative), bevor überhaupt eine Prüfung läuft —
+nicht als Array oder leer, oder eine ungültige `nonce` (keine nicht-negative
+Ganzzahl, auch eine negative), bevor überhaupt eine Prüfung läuft —
 lässt sich also in CI oder eine Shell-`&&`-Kette einbinden.

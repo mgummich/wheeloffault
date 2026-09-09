@@ -40,8 +40,10 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   `pnpm test` für beide.
 * **Playwright** (`playwright.config.ts`) für Ende-zu-Ende-Tests
   (`tests/e2e`), ausgeführt mit `pnpm e2e`. Es baut den Produktionsserver
-  und einen statischen Build unter dem Unterpfad `/wheeloffault/`, startet
-  beide und führt zwei Projekte gegen sie aus: `server`
+  und einen statischen Build — der statische Build selbst nutzt das relative
+  `base: './'` aus `vite.config.ts`, der Unterpfad `/wheeloffault/` wird
+  erst beim Ausliefern über `vite preview --base /wheeloffault/` angewendet
+  —, startet beide und führt zwei Projekte gegen sie aus: `server`
   (`journey.spec.ts`) und `static` (`static.spec.ts`) — derselbe Unterpfad,
   unter dem GitHub Pages den Build veröffentlicht, damit ein kaputter
   Base-Path vor der Produktion auffällt.
@@ -82,18 +84,32 @@ folgenden Punkte scheitern lässt:
   Das findet einen vertippten Pfad und einen Link auf eine Überschrift, die
   umbenannt oder entfernt wurde. Es findet auch einen Link, dessen sichtbarer
   TEXT eine Datei nennt (z. B. `[README.md]`), während sein Href tatsächlich
-  auf eine andere verweist — der relevante Fall ist ein Sprachwechsel-Link,
-  dessen Beschriftung einen Sprachwechsel verspricht, den der Href nicht
-  einlöst (z. B. `English → [README.md](README.de.md)`, dessen Href still
-  wieder auf die deutsche Datei zeigt). Das funktioniert nur bei den
-  Dokumentpaaren, deren englische und deutsche Quelldatei unterschiedliche
-  Basisnamen haben (`README.md`/`README.de.md`,
-  `ARCHITECTURE.md`/`architektur.md`) — nur bei diesen Paaren können Linktext
-  und Href-Basisname überhaupt zwei verschiedene reale Dateien benennen.
-  Paare mit gleichem Basisnamen (`fairness.md`, `contributing.md`, …) lassen
-  sich so nicht unterscheiden: Ein Sprachwechsel-Link mit fehlendem
-  `../de/`- (oder `../en/`-) Präfix fällt still auf die Sprache der
-  aktuellen Seite zurück, statt einen Fehler auszulösen.
+  auf eine andere verweist. Der Text wird gegen den Basisnamen jedes
+  registrierten Dokuments geprüft — nicht nur gegen den Basisnamen der
+  Href-Zieldatei —, nachdem umschließende `` ` ``-/`*`-/`_`-Auszeichnung
+  entfernt und beide Seiten kleingeschrieben wurden; so fallen ein
+  backtickter oder fett gesetzter Dateiname in der Beschriftung (diese
+  Dokumente backticken Dateinamen ständig), eine dritte, unbeteiligte
+  registrierte Datei oder eine falsche Groß-/Kleinschreibung
+  (`README.DE.md`) ebenfalls auf, nicht nur ein exakter String-Treffer
+  gegen das eigentliche Ziel des Links. Die Prüfung kann nur eine
+  Beschriftung beurteilen, die sich auf einen echten Basisnamen reduzieren
+  lässt — eine Beschriftung wie `[die deutsche Fassung]` nennt keine Datei
+  und bleibt ungeprüft —, weshalb speziell der Sprachwechsel-Link in
+  Zeile 1 (`English → [...]` / `Deutsch → [...]`) als Text genau den
+  Zieldateinamen tragen muss (z. B.
+  `English → [README.md](README.de.md)`, nicht
+  `English → [die deutsche Fassung]`); der Build scheitert, wenn die
+  Beschriftung dieses ersten Links keinen erkannten Dateinamen trägt. Das
+  erkennt eine echte Sprachwechsel-Lüge nur bei den Dokumentpaaren, deren
+  englische und deutsche Quelldatei unterschiedliche Basisnamen haben
+  (`README.md`/`README.de.md`, `ARCHITECTURE.md`/`architektur.md`) — nur bei
+  diesen Paaren können Linktext und Href-Basisname überhaupt zwei
+  verschiedene reale Dateien benennen. Paare mit gleichem Basisnamen
+  (`fairness.md`, `contributing.md`, …) lassen sich so nicht unterscheiden:
+  Ein Sprachwechsel-Link mit fehlendem `../de/`- (oder `../en/`-) Präfix
+  fällt still auf die Sprache der aktuellen Seite zurück, statt einen
+  Fehler auszulösen.
 * **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
   ALL_CAPS-Konstante *mit Unterstrich* (`MAX_NAME`, nicht `PORT`) in einem
   Dokument muss tatsächlich aus `src/` exportiert werden (bei ALL_CAPS
@@ -115,11 +131,12 @@ folgenden Punkte scheitern lässt:
   eines Codeblocks, die mitten im Wort mit einem Bindestrich endet (z. B.
   ein deutsches Kompositum, das an einem harten Zeilenumbruch getrennt
   wurde) — das rendert auf der Website als sichtbares, verirrtes
-  „Wort- Wort“ statt des gemeinten zusammenhängenden Worts. Ausgenommen ist
+  „Wort- Wort“ statt des gemeinten zusammenhängenden Worts. Ausgenommen sind
   ein zeilenendständiger Ergänzungsstrich (ein Bindestrich, der für einen
   gemeinsamen Wortteil steht, wie bei „Vor-“ vor einer Folgezeile, die mit
-  „und“/„oder“/„bzw.“ beginnt), ebenso beide Auszeichnungsformen für Codeblöcke (` ``` ` und
-  `~~~`) sowie ein mit 4 Leerzeichen oder einem Tab eingerückter Codeblock.
+  „und“/„oder“/„bzw.“ beginnt), beide Auszeichnungsformen für Codeblöcke
+  (` ``` ` und `~~~`) sowie ein mit 4 Leerzeichen oder einem Tab
+  eingerückter Codeblock.
 
 `pnpm status` erzeugt `docs/STATUS.json` neu aus der tatsächlichen Ausgabe
 der `verify`-/`build:server`-/`e2e`-Prüfungen (bestanden/fehlgeschlagen

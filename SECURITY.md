@@ -262,8 +262,8 @@ database the operator's browser does not control.
     not run the `id()` shape check (`^[A-Za-z0-9_-]{1,64}$`) that
     server mode applies to every path parameter *and* to ID-shaped body
     fields (`memberIds` in `POST /api/teams/:teamId/pools` and `PUT
-    .../pools/:poolId`, `spinId` in `POST /api/teams/:teamId/spins`;
-    `src/server/http.ts`). Every ID a normal UI action generates is
+    .../pools/:poolId`, `spinId` and the optional `poolId` in `POST
+    /api/teams/:teamId/spins`; `src/server/http.ts`). Every ID a normal UI action generates is
     already a `crypto.randomUUID` value created in the browser
     (`src/web/sessionApi.ts`, `src/web/draw.ts`), the same as server
     mode's own `randomUUID` calls (`src/server/commands.ts`), so the

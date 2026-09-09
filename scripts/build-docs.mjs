@@ -558,6 +558,19 @@ function expectedTarget(hrefPath, frag, pageLang) {
 // rather than silently falling back to whichever language the marker-less
 // default happens to produce (the pairing is a property of the doc, not of
 // the href being checked — so this isn't tautological).
+// Lowercase basename -> canonical basename, across every registered doc's
+// EN and DE source files. Used below to catch a switch link's visible text
+// naming the wrong file, wrapped in markup, or spelled with the wrong case.
+const allBasenames = new Map();
+for (const d of docs) {
+  for (const lang of LANGS) {
+    const src = d.src[lang];
+    if (!src) continue;
+    const base = src.split('/').pop();
+    allBasenames.set(base.toLowerCase(), base);
+  }
+}
+
 async function checkContentLanguage() {
   const problems = [];
   for (const lang of LANGS) {
@@ -566,7 +579,10 @@ async function checkContentLanguage() {
       const md = await readFile(join(root, doc.src[lang]), 'utf8');
       const body = renderedBodies.get(`${lang}/${doc.slug}`) ?? '';
 
+      let linkIndex = 0;
       for (const { href, text } of collectLinks(md)) {
+        const isFirstLink = linkIndex === 0;
+        linkIndex++;
         const hashIdx = href.indexOf('#');
         const hrefPath = hashIdx === -1 ? href : href.slice(0, hashIdx);
         if (!hrefPath.endsWith('.md')) continue; // not a doc-to-doc link
@@ -605,8 +621,7 @@ async function checkContentLanguage() {
           );
         }
 
-        // Real crossover check: for a target whose EN and DE sources have
-        // different basenames, the top-of-file language-switch links spell
+        // Real crossover check: the top-of-file language-switch links spell
         // the destination filename out as the link's visible TEXT (e.g.
         // "Deutsch → [architektur.md](docs/de/architektur.md)"). If that
         // named file differs from the file the href actually resolves to,
@@ -621,16 +636,36 @@ async function checkContentLanguage() {
         // itself can never disagree — checking the link's own claimed text
         // is what makes this non-tautological, and it isn't short-circuited
         // by a self-link the way a `hrefBase !== pageLangBase` guard would be.
+        //
+        // The text is compared against EVERY registered doc's basenames,
+        // not just this href's own target, so a label naming a completely
+        // different registered file (not just the target's other-language
+        // sibling) is also caught. Backticks/`**`/`_` wrapping the label are
+        // stripped and the match is case-insensitive first — these docs
+        // backtick filenames constantly, and a bare-text exact match let
+        // `` [`architektur.md`](ARCHITECTURE.md) ``, `[**architektur.md**]`
+        // and `[README.DE.md]` (wrong case) all ship as clean crossovers.
+        // ponytail: known ceiling — this can only judge a label that IS a
+        // filename; a label like "[die deutsche Fassung]" names no
+        // registered basename, so `namedBase` is undefined and it passes
+        // unchecked. That's why the switch link on line 1 of every doc is
+        // required below to literally name a file — see docs/en/contributing.md
+        // § 2a and docs/de/contributing.md § 2a for the documented convention.
         const hrefBase = hrefPath.split('/').pop();
-        const enBase = info.target.src.en.split('/').pop();
-        const deBase = info.target.src.de?.split('/').pop();
-        if (deBase && enBase !== deBase) {
-          const textBase = text.trim();
-          if ((textBase === enBase || textBase === deBase) && textBase !== hrefBase) {
-            problems.push(
-              `${doc.src[lang]}: link text "${text}" names ${textBase}, but href "${href}" resolves to ${hrefBase} — the link doesn't go where it says it does.`,
-            );
-          }
+        const cleanedText = text
+          .trim()
+          .replace(/^[`*_]+|[`*_]+$/g, '')
+          .split('/')
+          .pop();
+        const namedBase = allBasenames.get(cleanedText.toLowerCase());
+        if (namedBase && namedBase !== hrefBase) {
+          problems.push(
+            `${doc.src[lang]}: link text "${text}" names ${namedBase}, but href "${href}" resolves to ${hrefBase} — the link doesn't go where it says it does.`,
+          );
+        } else if (isFirstLink && !namedBase) {
+          problems.push(
+            `${doc.src[lang]}: the line-1 language-switch link's text "${text}" must literally be the destination filename (e.g. "architektur.md"), not a description — that's what lets this check verify it.`,
+          );
         }
       }
     }

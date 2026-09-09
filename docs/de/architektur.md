@@ -7,7 +7,7 @@ English → [ARCHITECTURE.md](../../ARCHITECTURE.md) (kanonisch)
 # Schuldrad — Architektur
 
 Schuldrad ist ein selbst gehostetes, installierbares PWA-Werkzeug für das
-Scrum-Ritual „Wer ist diesmal schuldig?“. Es ersetzt wheelofnames.com durch ein
+Scrum-Ritual „Wer ist diesmal schuldig?“ Es ersetzt wheelofnames.com durch ein
 absichtlich über-professionelles Verantwortungsrad mit nachvollziehbarer
 Fairness, vollständiger Historie und Schuldberichten.
 
@@ -122,8 +122,10 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
 * Pro Team ist höchstens ein Spin „committed, aber nicht revealed“. Ein
   weiterer Commit wird mit `409` und der offenen Spin-ID abgelehnt; der
   Client setzt den offenen Spin fort.
-* `revealSpin` mit identischem `clientSeed` ist idempotent; abweichender
-  `clientSeed` nach erfolgtem Reveal → `409`.
+* `revealSpin` mit identischem `clientSeed` ist idempotent; ein nach
+  erfolgtem Reveal abweichender `clientSeed` → `409` — der Vergleich läuft
+  aber auf dem auf 200 Zeichen gekürzten Seed (`spin.ts`); zwei Seeds mit
+  identischem 200-Zeichen-Präfix gelten also als gleich.
 * Absturz zwischen Commit und Reveal: Der Commit ist persistiert, das Team
   sieht nach Reload „Ziehung läuft“ und kann sie abschließen. Kein
   Gewinner ohne persistiertes `SpinRevealed`. Ein zweiter Browser, der den
@@ -209,7 +211,7 @@ teamStatistics(state)           Hall of Shame (Rangliste), maximale Fairness-Abw
                                 kein eigener Export)
 ```
 
-Nichts davon wird gespeichert. Die Event-Historie ist die einzige Wahrheit;
+Nichts davon wird gespeichert. Die Event-Historie ist die einzige Quelle der Wahrheit;
 „Projektion neu aufbauen“ heißt: Seite neu laden.
 
 ## 6. HTTP-Vertrag
@@ -250,16 +252,20 @@ stabiler, maschinenlesbarer Bezeichner, den der Client lokalisiert
 ist Englisch und nur ein Fallback für unbekannte Codes. Alle Eingaben werden
 explizit validiert: serverseitig an der HTTP-Grenze (`src/server/validate.ts`
 — `clientSeed` ≤ 200 Zeichen, Immunitätsgrund ≤ 200 Zeichen, Einspruchsgrund
-≤ 500 Zeichen, bis zu 500 Namen je Sammel-Anlage, dort je ≤ 100 Zeichen).
+≤ 500 Zeichen, bis zu 500 Namen je Sammel-Aufruf, dort je ≤ 100 Zeichen).
 Ein Name durchläuft zwei Schichten mit zwei Grenzen: Die HTTP-Schicht lehnt
 alles über 100 Zeichen zuerst ab (`field_too_long`, z. B. `str(body, 'name',
-100)` in `src/server/http.ts`, ausgewertet bevor der Befehl aufgerufen wird,
+100)` in `src/server/http.ts`, ausgewertet, bevor der Befehl aufgerufen wird,
 dessen Argument es ist), und die Domänenschicht weist zusätzlich alles über
 `MAX_NAME` = 60 Zeichen zurück (`src/domain/decisions.ts`, Fehlercode
 `name_too_long`) — für alles, was sie erreicht. Ein Name mit 101+ Zeichen
 wird also bereits von der HTTP-Schicht abgelehnt und erreicht die
-Domänenprüfung nie, während ein Name mit 61–100 Zeichen die HTTP-Schicht
-passiert und dann von der Domäne bei 60 abgelehnt wird. Policy-Faktorschlüssel
+Domänenprüfung nie, während ein Name mit 61–100 Zeichen die HTTP-Schicht in
+der Regel passiert und dann von der Domäne bei 60 abgelehnt wird. Nicht
+immer: `cleanName` in der Domänenschicht fasst mehrere aufeinanderfolgende
+Leerzeichen vor der Längenprüfung zu einem zusammen — ein 100 Zeichen langer
+Name mit 41 inneren Leerzeichen fällt nach der Normalisierung also unter 60
+Zeichen und wird angenommen. Policy-Faktorschlüssel
 sind über `assertPolicy` (`src/domain/fairness/policy.ts`) auf ≤ 64 Zeichen
 begrenzt, nicht über `validate.ts`; die FairnessPolicy wird zusätzlich über
 eben dieses `assertPolicy` validiert, aufgerufen aus `decide.changePolicy`
@@ -273,7 +279,7 @@ schränken einen programmatischen Schreibzugriff nicht ein, aber
 Es gibt standardmäßig keine Authentifizierung: Schuldrad ist für ein
 vertrauenswürdiges Netz (Team-LAN, VPN) gedacht; wer es öffentlich
 betreibt, setzt einen Reverse Proxy mit Auth davor. Der Server-Modus kann
-optional ein einzelnes gemeinsames Deployment-Passwort verlangen
+optional ein einzelnes gemeinsames Betriebspasswort verlangen
 (`SCHULDRAD_PASSWORD`/`SCHULDRAD_PASSWORD_FILE`), das jede `/api/*`-Route
 außer `/api/health` und `/api/auth/*` hinter einem serverseitigen
 Session-Cookie absichert (`src/server/auth.ts`). Das ist ein Türschloss,
@@ -336,7 +342,7 @@ Optional kann Redis als reines Broadcast-Fanout aktiviert werden:
 REDIS_URL=redis://localhost:6379 pnpm start
 ```
 
-Redis ist kein Cache und keine zweite Wahrheit. Ein Server publiziert nach
+Redis ist kein Cache und keine zweite Quelle der Wahrheit. Ein Server publiziert nach
 persistierten Appends die Event-Metadaten, andere Instanzen liefern sie an
 ihre lokalen SSE-Clients aus.
 

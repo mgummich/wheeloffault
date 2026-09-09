@@ -15,7 +15,7 @@ Guiding principle: **The system may be over-engineered, the code may not.**
 Browser (PWA, React)                       Server (Node 26, no framework)
 ┌──────────────────────────┐   HTTP/JSON   ┌────────────────────────────────┐
 │ Views                    │ ────────────▶ │ Command handlers               │
-│ Wheel animation          │               │  loads stream → domain function│
+│ Wheel animation          │               │   load stream → domain function│
 │ Guilt report/statistics  │ ◀──────────── │   → events → event store       │
 │ Verifier (Web Crypto)    │   SSE         │ Projections (pure functions)   │
 └──────────────────────────┘               │ SQLite (node:sqlite, 1 file)   │
@@ -117,8 +117,10 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
 * At most one spin per team is "committed but not revealed". A further
   commit is rejected with `409` and the open spin's ID; the client resumes
   the open spin.
-* `revealSpin` with an identical `clientSeed` is idempotent; a differing
-  `clientSeed` after a successful reveal → `409`.
+* `revealSpin` with an identical `clientSeed` is idempotent; a `clientSeed`
+  differing after a successful reveal → `409` — but the comparison runs on
+  the seed truncated to 200 chars (`spin.ts`), so two seeds sharing the same
+  200-char prefix compare equal and are treated as the same reveal.
 * Crash between commit and reveal: the commit is persisted, the team sees
   "draw in progress" after reload and can finish it. No winner without a
   persisted `SpinRevealed`. A second browser that wants to finish the open
@@ -251,8 +253,11 @@ evaluated before the command it's an argument to), and the domain layer
 separately rejects anything over `MAX_NAME` = 60 characters
 (`src/domain/decisions.ts`, error code `name_too_long`) for whatever
 reaches it — so a 101+ char name is rejected at the HTTP layer and never
-reaches the domain check, while a 61–100 char name passes the HTTP layer
-and is rejected by the domain at 60. Policy factor keys are
+reaches the domain check, while a 61–100 char name usually passes the HTTP
+layer and is rejected by the domain at 60. Not universal, though: the domain
+layer's `cleanName` collapses runs of whitespace to a single space before
+counting length, so e.g. a 100-char name with 41 inner spaces normalizes
+under 60 and is accepted. Policy factor keys are
 capped at ≤ 64 chars by `assertPolicy` (`src/domain/fairness/policy.ts`),
 not by `validate.ts`; the FairnessPolicy is additionally validated via that
 same `assertPolicy`, called from `decide.changePolicy` (`src/domain/decisions.ts`) so it runs in

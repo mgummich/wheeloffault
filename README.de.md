@@ -6,7 +6,7 @@ English → [README.md](README.md) (kanonisch)
 # Schuldrad
 
 Selbst gehostetes, installierbares Schuldrad für das Scrum-Ritual
-„Wer ist diesmal schuldig?“. Ersetzt wheelofnames.com durch ein absichtlich
+„Wer ist diesmal schuldig?“ Ersetzt wheelofnames.com durch ein absichtlich
 über-professionelles Verantwortungsrad.
 
 **▶ App ausprobieren: <https://mgummich.github.io/wheeloffault/>** ·
@@ -49,7 +49,7 @@ Die Daten werden ausschließlich im `localStorage` dieses Browsers gespeichert,
 unter dem Schlüssel `schuldrad.sessionEvents.v1` (siehe
 `src/web/sessionApi.ts`):
 
-* Überlebt Reload, Tab schließen und Browser neu starten: Teams,
+* Überlebt Reload, Tab-Schließen und Browser-Neustart: Teams,
   Teilnehmer, Ziehungen und Berichte bleiben in diesem Browser erhalten.
 * Nicht geteilt: andere Browser, Geräte oder Profile haben ihren eigenen,
   unabhängigen Zustand. Private-/Inkognito-Fenster behalten ihren Zustand nur

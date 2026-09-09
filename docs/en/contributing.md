@@ -37,7 +37,9 @@ Deutsch → [contributing.md](../de/contributing.md)
   for both.
 * **Playwright** (`playwright.config.ts`) for end-to-end tests
   (`tests/e2e`), run with `pnpm e2e`. It builds the production server and a
-  static build under the `/wheeloffault/` subpath, starts both, and runs
+  static build — the static build itself uses `vite.config.ts`'s relative
+  `base: './'`, so the `/wheeloffault/` subpath is applied only when it's
+  served, via `vite preview --base /wheeloffault/` — starts both, and runs
   two projects against them: `server` (`journey.spec.ts`) and `static`
   (`static.spec.ts`) — the same subpath GitHub Pages deploys to, so a
   broken base path is caught before it reaches production.
@@ -74,17 +76,28 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   exists on its target page. This catches a typo'd path and a link into a
   heading that got renamed or removed. It also catches a link whose visible
   TEXT names one file (e.g. `[README.md]`) while its href actually resolves
-  to a different one — the case that matters is a language-switch link
-  whose label promises a language crossover the href doesn't deliver (e.g.
-  `English → [README.md](README.de.md)`, where the href quietly points back
-  at the German file). This only works for the doc pairs whose English and
-  German source files have different basenames (`README.md`/`README.de.md`,
-  `ARCHITECTURE.md`/`architektur.md`) — those are the only pairs where a
-  link's text and its href basename can name two distinct real files in the
-  first place. Doc pairs that share a basename (`fairness.md`,
-  `contributing.md`, …) can't be told apart this way: a language-switcher
-  link with a dropped `../de/` (or `../en/`) prefix silently falls back to
-  the current page's own language instead of erroring.
+  to a different one. The text is matched against every registered doc's
+  basename — not just the basename of the file the href resolves to — after
+  stripping any wrapping `` ` ``/`*`/`_` markup and lowercasing both sides,
+  so backticking or bolding a filename in the label (these docs backtick
+  filenames constantly), naming a third, unrelated registered file, or
+  getting the case wrong (`README.DE.md`) all still get caught, not just an
+  exact-string match against the label's own target. The check can only
+  judge a label that reduces to a real basename — a label like `[die
+  deutsche Fassung]` names no file and passes unchecked — which is why the
+  line-1 language-switch link specifically (`English → [...]` /
+  `Deutsch → [...]`) is required to have text that literally IS the
+  destination filename (e.g. `English → [README.md](README.de.md)`, not
+  `English → [the German version]`); the build fails if that first link's
+  label isn't a recognized filename. This only flags a genuine crossover
+  lie for doc pairs whose English and German source files have different
+  basenames (`README.md`/`README.de.md`, `ARCHITECTURE.md`/`architektur.md`)
+  — those are the only pairs where a link's text and its href basename can
+  name two distinct real files in the first place. Doc pairs that share a
+  basename (`fairness.md`, `contributing.md`, …) can't be told apart this
+  way: a language-switcher link with a dropped `../de/` (or `../en/`)
+  prefix silently falls back to the current page's own language instead of
+  erroring.
 * **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
   constant *with an underscore* (`MAX_NAME`, not `PORT`) in a doc must
   actually be exported from `src/` (or, for ALL_CAPS, be an
