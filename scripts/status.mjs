@@ -58,7 +58,8 @@ const checks = [
   {
     name: 'typecheck',
     cmd: 'pnpm typecheck',
-    details: (out) => (out.trim() ? 'Errors found.' : 'No errors.'),
+    // details() only runs on exit 0, which tsc gives only without errors.
+    details: () => 'No errors.',
   },
   {
     name: 'test:unit',
