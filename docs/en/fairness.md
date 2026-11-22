@@ -2,7 +2,7 @@ Deutsch → [fairness.md](../de/fairness.md)
 
 # Fairness Regulation (Commit/Reveal)
 
-*Schuldrad Operations Bureau — Directorate of Random Selection*
+_Schuldrad Operations Bureau — Directorate of Random Selection_
 
 This regulation governs the drawing procedure by which responsibility is
 assigned. It is binding for the server, the browser verifier, and any
@@ -10,7 +10,7 @@ inspector who wishes to recompute a draw by hand.
 
 ## § 1 Purpose
 
-A draw ("Spin") must have a result that is fixed *before* the wheel turns,
+A draw ("Spin") must have a result that is fixed _before_ the wheel turns,
 and that can be independently recomputed afterward by anyone holding the
 published proof. This is achieved with a two-phase commit/reveal protocol,
 not with a "trust me" wheel.
@@ -26,14 +26,14 @@ Before a draw, the server computes:
    Every participant starts at `1000`; enabled modifiers apply in this fixed
    order, each rounding to an integer before the next runs:
 
-   | Order | Modifier | Effect |
-   |---|---|---|
-   | 1 | `pity` | `+X %` per draw without a hit since this member's last guilt |
-   | 2 | `cooldown` | weight `0` for `N` draws after a hit |
-   | 3 | `exhaustion` | `−X %` per hit within the last `N` draws |
-   | 4 | `newcomer` | `×factor` for members with fewer than `N` participations |
-   | 5 | `manual` | explicit per-member factor set by an operator |
-   | 6 | `immunity` | weight `0` if an immunity is active (consumed by this spin) |
+   | Order | Modifier     | Effect                                                       |
+   | ----- | ------------ | ------------------------------------------------------------ |
+   | 1     | `pity`       | `+X %` per draw without a hit since this member's last guilt |
+   | 2     | `cooldown`   | weight `0` for `N` draws after a hit                         |
+   | 3     | `exhaustion` | `−X %` per hit within the last `N` draws                     |
+   | 4     | `newcomer`   | `×factor` for members with fewer than `N` participations     |
+   | 5     | `manual`     | explicit per-member factor set by an operator                |
+   | 6     | `immunity`   | weight `0` if an immunity is active (consumed by this spin)  |
 
    If every participant's weight is `0` after all modifiers — for any
    reason, not just cooldown (immunity, a manual `0` factor, or exhaustion
@@ -108,12 +108,12 @@ via `commands.ts`) — the server itself re-derives rather than calling
 implementation: both sides run the same commit/digest/selection logic.
 Three checks, all must pass:
 
-* `commitmentMatches` — the published `serverSeed`, `nonce`, and
+- `commitmentMatches` — the published `serverSeed`, `nonce`, and
   `participants` hash to the published `commitment`.
-* `digestMatches` — HMAC of the published `commitment`, `clientSeed`, and
+- `digestMatches` — HMAC of the published `commitment`, `clientSeed`, and
   `nonce`, keyed with the published `serverSeed`, equals the published
   `digest`.
-* `selectionMatches` — applying § 4's selection rule to the published
+- `selectionMatches` — applying § 4's selection rule to the published
   `digest` and `participants` yields the published `selectedMemberId`.
 
 ## § 6 What this protocol proves, and what it does not
@@ -124,7 +124,7 @@ commitment was fixed first. It also proves the published result is the one
 actually computed from the published seeds, not a substituted one; and
 because events are immutable (see [events.md](events.md) § 2), a stored
 commit or reveal cannot be silently edited after the fact — changing a
-`serverSeed`, `nonce`, or participant weight breaks *that spin's own*
+`serverSeed`, `nonce`, or participant weight breaks _that spin's own_
 commitment check. This is per-record tamper-evidence, not a hash chain
 across the event history: each commitment binds only its own spin, not
 the spin before it.
@@ -142,7 +142,7 @@ seed that was chosen before they looked — but it does not protect anyone
 from the person running the browser. If you are the operator and you also
 control the browser that ran the commit, you could, in principle, inspect or
 discard an unfavorable `serverSeed` before revealing. Static mode is fair
-*against onlookers*, not against its own operator. Server mode closes this
+_against onlookers_, not against its own operator. Server mode closes this
 gap: the seed lives in a database the participants do not control (see
 [deployment.md](deployment.md) and [SECURITY.md](../../SECURITY.md)).
 

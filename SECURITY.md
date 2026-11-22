@@ -1,6 +1,6 @@
 # Security Regulation
 
-*Schuldrad Operations Bureau — Directorate of Security*
+_Schuldrad Operations Bureau — Directorate of Security_
 
 Deutsch: no maintained translation exists for this document; the English
 text is the sole authority for security matters regardless of which README
@@ -43,7 +43,7 @@ slip in under the limit); the password is verified with scrypt
 and a constant-time comparison, never logged, never written to disk.
 Sessions slide their expiry on use (12h) but always expire after 7 days
 regardless of activity, and every session tied to a still-open SSE stream
-on the *same process* is closed the moment it ends — immediately on
+on the _same process_ is closed the moment it ends — immediately on
 logout, or on the next request made against an already-expired session;
 a session that simply goes idle past its expiry is only reaped by the
 periodic sweep (every 60s), so its SSE stream can stay open up to that
@@ -64,7 +64,7 @@ that trade-off is deliberate given the deployment target (§ 1).
 **Password mode is single-instance only.** Sessions and the login-attempt
 map (every attempt, not just failures) live in two separate in-memory
 `Map`s (`sessions`, `failures` in `src/server/auth.ts`), per process — there
-is no shared store, Redis included (`REDIS_URL` only fans out *domain*
+is no shared store, Redis included (`REDIS_URL` only fans out _domain_
 events over SSE, it does not touch auth state; see
 [docs/en/deployment.md](docs/en/deployment.md)
 § 3a). Behind more than one replica without sticky sessions: a session
@@ -77,21 +77,21 @@ instance of server mode.
 
 **What it does not protect against, and is not trying to:**
 
-* **A single shared secret, not multi-user auth.** There are no
+- **A single shared secret, not multi-user auth.** There are no
   per-user accounts, no roles, no audit trail of who did what — everyone
   who knows the password is equally privileged, same as everyone reachable
   on the network was before. This is a door lock, not a badge system.
-* **Anyone who already has the password**, including a departed team
+- **Anyone who already has the password**, including a departed team
   member nobody thought to tell. Rotate the password (and restart the
   server, which also revokes every existing session) if that matters to
   you.
-* **Network-level eavesdropping without TLS.** The cookie is `HttpOnly` and
-  carries `Secure` when a proxy terminates TLS in front of it *and*
+- **Network-level eavesdropping without TLS.** The cookie is `HttpOnly` and
+  carries `Secure` when a proxy terminates TLS in front of it _and_
   `SCHULDRAD_TRUST_PROXY=1` is set (or `SCHULDRAD_SECURE_COOKIES=1` is set
   explicitly) — the env var is required, not automatic just because a proxy
   happens to terminate TLS. Schuldrad itself never terminates TLS — see § 1
   and [docs/en/deployment.md](docs/en/deployment.md) § 3a and § 4.
-* **A compromised server process.** The password lives in that process's
+- **A compromised server process.** The password lives in that process's
   memory for as long as it runs; anyone with code execution on the host or
   in the container reads it the same way they would read anything else the
   process holds.
@@ -114,12 +114,12 @@ fully-open default mode. A fourth item below is not a request check but a
 cookie attribute, relevant only once § 1a's password is on (in the default
 mode there is no session cookie to attach `SameSite` to):
 
-* **Content-Type.** A state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`)
+- **Content-Type.** A state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`)
   must be `application/json`. This alone defeats the classic browser CSRF
   trick of a `<form>` posting `text/plain`, which never triggers a CORS
   preflight and would otherwise reach the handler with attacker-controlled
   cross-site credentials attached.
-* **Origin.** For a state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`),
+- **Origin.** For a state-changing request (`POST`/`PUT`/`DELETE`/`PATCH`),
   if it carries an `Origin` header, that header must match the request's
   `Host`. Requests with no `Origin` at all — curl, scripts, server-to-server
   calls — are unaffected; browsers only omit `Origin` on requests a
@@ -127,7 +127,7 @@ mode there is no session cookie to attach `SameSite` to):
   state-changing methods: a `GET` with a mismatched `Origin` is never
   rejected by it (`GET` can't carry a state-changing side effect, so there's
   nothing here for the check to defend).
-* **Host allowlist.** Optional. Set `SCHULDRAD_ALLOWED_HOSTS` (comma-separated)
+- **Host allowlist.** Optional. Set `SCHULDRAD_ALLOWED_HOSTS` (comma-separated)
   to reject any request whose `Host` header isn't in the list. This is what
   closes DNS rebinding — an attacker page whose domain resolves to your
   server's address, tricking the browser's same-origin check into treating
@@ -136,7 +136,7 @@ mode there is no session cookie to attach `SameSite` to):
   legitimately reached by; setting it is what actually closes the hole, and
   is worth doing wherever the reachable hostnames are known ahead of time.
   See [docs/en/deployment.md](docs/en/deployment.md) § 3b.
-* **`SameSite=Strict` session cookie.** Set on `schuldrad_session` in
+- **`SameSite=Strict` session cookie.** Set on `schuldrad_session` in
   `src/server/auth.ts` — this cookie exists only when § 1a's password is
   enabled (`/api/auth/login` is `404` and issues no cookie otherwise); when
   it does exist, the browser never attaches it to a cross-site request in
@@ -168,7 +168,7 @@ memberCount, spinCount }]`, with no filter — and, unless `SCHULDRAD_PASSWORD`
 is set, unauthenticated. When the password is set, `/api/teams` is gated
 like every other `/api/*` route except `/api/health` and `/api/auth/*`, so
 it requires a valid session. Either way, this means a `teamId` is not a
-secret and must not be treated as one — for anyone who *can* reach the
+secret and must not be treated as one — for anyone who _can_ reach the
 endpoint, knowing a team's UUID grants no more access than not knowing it,
 because they can list all of them anyway. Do not build a workflow that
 relies on a team URL being hard to guess; the enumeration endpoint makes
@@ -184,34 +184,33 @@ inside the participant's own browser, against that browser's own
 controls that browser before the reveal — see
 [docs/en/fairness.md](docs/en/fairness.md) § 6a for the full mechanism.
 Concretely: static mode's fairness guarantee protects participants from
-*each other* and from onlookers, not from whoever is sitting at the
+_each other_ and from onlookers, not from whoever is sitting at the
 keyboard running the draw. If your team's guilt wheel needs to be fair
-*against its own operator*, use server mode, where the seed lives in a
+_against its own operator_, use server mode, where the seed lives in a
 database the operator's browser does not control.
 
 ## § 4 What is, and is not, protected
 
 **Protected:**
 
-* **Commit/reveal integrity against post-hoc tampering.** Once a
+- **Commit/reveal integrity against post-hoc tampering.** Once a
   `SpinCommitted` event is persisted, its `commitment` is a SHA-256 hash
   binding `serverSeed`, `nonce`, and every participant's weight. Nobody —
   including the operator — can alter the recorded weights or seed after
   the fact without the published commitment failing to verify. See
   [docs/en/fairness.md](docs/en/fairness.md).
-* **Event immutability.** The event store is append-only; nothing updates
+- **Event immutability.** The event store is append-only; nothing updates
   or deletes a row (see [docs/en/events.md](docs/en/events.md) § 2). A
   compromised server that rewrote a stored `SpinCommitted`/`SpinRevealed`
   pair would break that spin's own commit/reveal check (see
   [docs/en/fairness.md](docs/en/fairness.md) § 6) — this is per-spin
   tamper-evidence, not a hash chain across the whole event history, so it
   only catches tampering with the fields a commitment actually binds.
-* **Input validation.** All HTTP input is validated server-side —
+- **Input validation.** All HTTP input is validated server-side —
   `src/server/validate.ts` for most routes (see [ARCHITECTURE.md](ARCHITECTURE.md)
   for the exact length limits), and `assertPolicy`
   (`src/domain/fairness/policy.ts`) for the fairness-policy body.
-
-  * *Shape and size checks at the HTTP boundary.* Every path parameter
+  - _Shape and size checks at the HTTP boundary._ Every path parameter
     that names an entity (`teamId`, `memberId`, `poolId`, `spinId`) is
     checked against `id()`'s `^[A-Za-z0-9_-]{1,64}$` shape before it
     reaches a command handler, and the request body as a whole is capped
@@ -222,7 +221,7 @@ database the operator's browser does not control.
     is enforced by throwing and reusing the same malformed-JSON error
     path, not a distinct HTTP status.
 
-  * *Fairness-policy validation runs in both modes.* The `min`/`max` on
+  - _Fairness-policy validation runs in both modes._ The `min`/`max` on
     the policy form's number inputs are UI hints, not the validation
     boundary — they do not constrain a programmatic write. The actual
     enforcement is `assertPolicy`, called from `decide.changePolicy`
@@ -231,7 +230,7 @@ database the operator's browser does not control.
     body, and static mode via `src/web/sessionApi.ts`, which calls the
     same domain function directly against `localStorage`.
 
-  * *Names, reasons, and the client seed validate in one place.* Member
+  - _Names, reasons, and the client seed validate in one place._ Member
     names are length- and NUL-checked by `cleanName`
     (`src/domain/decisions.ts`), shared by every path that creates a
     name in either mode; the immunity reason, appeal reason, and
@@ -247,8 +246,8 @@ database the operator's browser does not control.
     static mode there is no such boundary — a client with page access
     can still write directly to its own `localStorage`.
 
-  * *What can be stored is identical; how a bad write is handled is
-    not.* `cleanReason`/`revealSpin` cap the same fields at the same
+  - _What can be stored is identical; how a bad write is handled is
+    not._ `cleanReason`/`revealSpin` cap the same fields at the same
     lengths in both modes, but server mode rejects an over-length
     reason or `clientSeed` outright (400 `field_too_long` from
     `str()`/`optionalStr()` in `src/server/validate.ts`, before the
@@ -258,9 +257,9 @@ database the operator's browser does not control.
     cannot lie to anyone else about a signed commitment (see
     [docs/en/fairness.md](docs/en/fairness.md) § 6).
 
-  * *One asymmetry remains, deliberately not closed:* static mode does
+  - _One asymmetry remains, deliberately not closed:_ static mode does
     not run the `id()` shape check (`^[A-Za-z0-9_-]{1,64}$`) that
-    server mode applies to every path parameter *and* to ID-shaped body
+    server mode applies to every path parameter _and_ to ID-shaped body
     fields (`memberIds` in `POST /api/teams/:teamId/pools` and `PUT
     .../pools/:poolId`, `spinId` and the optional `poolId` in `POST
     /api/teams/:teamId/spins`; `src/server/http.ts`). Every ID a normal UI action generates is
@@ -284,16 +283,16 @@ database the operator's browser does not control.
 
 **Not protected**, beyond what §§ 1–3 already say:
 
-* Confidentiality of team data from anyone who can reach the server *and*
+- Confidentiality of team data from anyone who can reach the server _and_
   knows the deployment password, if one is set (no per-team access control
   even with § 1a enabled — see § 2). Without § 1a, from anyone who can
   reach the server at all.
-* Availability — outside of § 1a's login rate limiting and a fixed cap of
+- Availability — outside of § 1a's login rate limiting and a fixed cap of
   100 concurrent SSE connections per team (`MAX_SSE_CLIENTS_PER_TEAM` in
   `src/server/http.ts`, returns 503 beyond it), there is no general request
   rate limiting; a server exposed to an untrusted network can still be
   flooded on any other route.
-* Anything about the underlying host, container runtime, SQLite/Postgres
+- Anything about the underlying host, container runtime, SQLite/Postgres
   instance, or Redis instance beyond what the Dockerfile itself does (runs
   as non-root, strips the npm CLI from the runtime image, applies OS
   security updates at build time — see

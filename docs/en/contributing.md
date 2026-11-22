@@ -2,15 +2,15 @@ Deutsch → [contributing.md](../de/contributing.md)
 
 # Contributing Regulation
 
-*Schuldrad Operations Bureau — Directorate of Personnel*
+_Schuldrad Operations Bureau — Directorate of Personnel_
 
 ## § 1 Toolchain
 
-* **Node ≥ 26**, no exceptions — the server runs unmodified `.ts` source
+- **Node ≥ 26**, no exceptions — the server runs unmodified `.ts` source
   directly under Node's native type-stripping. There is no build step at
   runtime and no bundler in production; a lower Node version simply cannot
   run the server.
-* **pnpm 11** as declared in `packageManager` in `package.json`. CI installs
+- **pnpm 11** as declared in `packageManager` in `package.json`. CI installs
   it via `pnpm/action-setup@v4` (`.github/workflows/pages.yml`,
   `.github/workflows/ci.yml`), not Corepack; the Dockerfile installs
   it explicitly (`npm install -g pnpm@11.24.0`) because the runtime image
@@ -21,16 +21,16 @@ Deutsch → [contributing.md](../de/contributing.md)
   packages exempted from pnpm's minimum-release-age gate — and is
   load-bearing enough that the Dockerfile copies it into the build image
   alongside `package.json` and the lockfile.
-* **Biome** for formatting and linting (`biome.json`) — one tool instead of
+- **Biome** for formatting and linting (`biome.json`) — one tool instead of
   ESLint + Prettier. `pnpm format` writes, `pnpm format:check` and
   `pnpm lint` only check (used in CI).
-* **TypeScript** via `tsc --noEmit` for type-checking only; nothing is
+- **TypeScript** via `tsc --noEmit` for type-checking only; nothing is
   compiled by `tsc` for the running server (see Node ≥ 26, above). Vite
   compiles the browser bundle.
-* **Vitest**, split into two projects (`vitest.config.ts`):
-  * `unit` — `src/domain/**/*.test.ts` and `src/web/**/*.test.ts`, pure
+- **Vitest**, split into two projects (`vitest.config.ts`):
+  - `unit` — `src/domain/**/*.test.ts` and `src/web/**/*.test.ts`, pure
     functions and browser-side code, no I/O.
-  * `integration` — `src/server/**/*.test.ts`, exercising the HTTP API and
+  - `integration` — `src/server/**/*.test.ts`, exercising the HTTP API and
     the real event stores.
 
   Run `pnpm test:unit` / `pnpm test:integration` individually, or `pnpm test`
@@ -38,7 +38,7 @@ Deutsch → [contributing.md](../de/contributing.md)
   against a real Postgres/Redis and skip themselves (not fail) unless
   `DATABASE_URL`/`REDIS_URL` are set — see `docker-compose.yml`'s
   `overengineered` profile for a local pair, or § 2 for CI's.
-* **Playwright** (`playwright.config.ts`) for end-to-end tests
+- **Playwright** (`playwright.config.ts`) for end-to-end tests
   (`tests/e2e`), run with `pnpm e2e`. It builds the production server and a
   static build — the static build itself uses `vite.config.ts`'s relative
   `base: './'`, so the `/wheeloffault/` subpath is applied only when it's
@@ -56,9 +56,9 @@ Deutsch → [contributing.md](../de/contributing.md)
   `mcr.microsoft.com/playwright` container CI's `e2e` job runs on), and
   `pnpm e2e` picks whichever suffix matches wherever it runs. To
   regenerate a baseline after a real visual change:
-  * macOS: `pnpm exec playwright test tests/e2e/visual.spec.ts --update-snapshots`
+  - macOS: `pnpm exec playwright test tests/e2e/visual.spec.ts --update-snapshots`
     directly.
-  * Linux: run the same command inside the matching container so the
+  - Linux: run the same command inside the matching container so the
     fonts match CI's, e.g.
     `docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work
     mcr.microsoft.com/playwright:v1.62.1-noble bash -c "<install Node ≥26
@@ -95,12 +95,12 @@ the Postgres/Redis-only tests that skip locally actually run in CI.
 `pnpm build` (and therefore `pnpm verify`, CI's `verify` job, and GitHub
 Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
 
-* **Language pairing.** Every doc in the registry at the top of
+- **Language pairing.** Every doc in the registry at the top of
   `scripts/build-docs.mjs` needs both an `en` and a `de` source file, unless
   its entry is marked `enOnly` (currently just `SECURITY.md`, which has no
   maintained translation). Adding a new doc means adding it to that
   registry with both files, or explicitly opting out with `enOnly`.
-* **Link and anchor checks.** A `.md`-to-`.md` link must resolve to a real
+- **Link and anchor checks.** A `.md`-to-`.md` link must resolve to a real
   file at that relative path and render with the right language prefix, and
   every rendered `href="#…"` must point at a heading id that actually
   exists on its target page. This catches a typo'd path and a link into a
@@ -128,8 +128,8 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   way: a language-switcher link with a dropped `../de/` (or `../en/`)
   prefix silently falls back to the current page's own language instead of
   erroring.
-* **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
-  constant *with an underscore* (`MAX_NAME`, not `PORT`) in a doc must
+- **Symbol guard.** A backticked call (`` `foo()` ``) or ALL_CAPS
+  constant _with an underscore_ (`MAX_NAME`, not `PORT`) in a doc must
   actually be exported from `src/` (or, for ALL_CAPS, be an
   `env.NAME`/`process.env.NAME` read) — catches a doc still claiming an API
   that was renamed or un-exported out from under it. It only checks call
@@ -138,11 +138,11 @@ Pages) runs `scripts/build-docs.mjs`, which fails the build on any of these:
   (`memberId`, `packageManager`, `PORT`, `HOST`, …). It is honest about
   being narrow, not exhaustive: it does not parse
   code fences as code, so an ordinary JS snippet in a fenced block (e.g.
-  `` JSON.parse(text) ``) can trip it just as easily as a real claim about
+  `JSON.parse(text)`) can trip it just as easily as a real claim about
   the codebase — either name the symbol without call-parens in prose, or add
   it to SYMBOL_IGNORE in `scripts/build-docs.mjs` with a one-line reason,
   the way the existing eight entries do.
-* **German line-final hyphen wraps.** `checkGermanHyphenWraps` scans every
+- **German line-final hyphen wraps.** `checkGermanHyphenWraps` scans every
   file in `docs/de/` plus `README.de.md` for a line outside a fenced code
   block that ends mid-word with a hyphen (e.g. a German compound broken
   across a hard line wrap) — that renders on the site as a visible stray

@@ -5,7 +5,7 @@ English → [fairness.md](../en/fairness.md) (kanonisch)
 
 # Fairness-Verordnung (Commit/Reveal)
 
-*Schuldrad-Betriebsamt — Direktion für Zufallsauswahl*
+_Schuldrad-Betriebsamt — Direktion für Zufallsauswahl_
 
 Diese Verordnung regelt das Ziehungsverfahren, mit dem Verantwortung
 zugewiesen wird. Sie ist bindend für den Server, den Browser-Verifier und
@@ -13,7 +13,7 @@ jeden Prüfer, der eine Ziehung von Hand nachrechnen möchte.
 
 ## § 1 Zweck
 
-Eine Ziehung („Spin“) muss ein Ergebnis haben, das feststeht, *bevor* sich
+Eine Ziehung („Spin“) muss ein Ergebnis haben, das feststeht, _bevor_ sich
 das Rad dreht, und das im Nachhinein von jedem, der den veröffentlichten
 Beweis besitzt, unabhängig nachgerechnet werden kann. Dies wird durch ein
 zweiphasiges Commit/Reveal-Protokoll erreicht, nicht durch ein Rad nach dem
@@ -32,14 +32,14 @@ Vor einer Ziehung berechnet der Server:
    dieser festen Reihenfolge, jeweils auf eine ganze Zahl gerundet, bevor
    der nächste läuft:
 
-   | Reihenfolge | Modifikator | Wirkung |
-   |---|---|---|
-   | 1 | `pity` | `+X %` pro Ziehung ohne Treffer seit der letzten Schuld dieses Mitglieds |
-   | 2 | `cooldown` | Gewicht `0` für `N` Ziehungen nach einem Treffer |
-   | 3 | `exhaustion` | `−X %` pro Treffer innerhalb der letzten `N` Ziehungen |
-   | 4 | `newcomer` | `×Faktor` für Mitglieder mit weniger als `N` Teilnahmen |
-   | 5 | `manual` | expliziter, von einem Bediener gesetzter Faktor pro Mitglied |
-   | 6 | `immunity` | Gewicht `0`, wenn eine Immunität aktiv ist (wird durch diesen Spin verbraucht) |
+   | Reihenfolge | Modifikator  | Wirkung                                                                        |
+   | ----------- | ------------ | ------------------------------------------------------------------------------ |
+   | 1           | `pity`       | `+X %` pro Ziehung ohne Treffer seit der letzten Schuld dieses Mitglieds       |
+   | 2           | `cooldown`   | Gewicht `0` für `N` Ziehungen nach einem Treffer                               |
+   | 3           | `exhaustion` | `−X %` pro Treffer innerhalb der letzten `N` Ziehungen                         |
+   | 4           | `newcomer`   | `×Faktor` für Mitglieder mit weniger als `N` Teilnahmen                        |
+   | 5           | `manual`     | expliziter, von einem Bediener gesetzter Faktor pro Mitglied                   |
+   | 6           | `immunity`   | Gewicht `0`, wenn eine Immunität aktiv ist (wird durch diesen Spin verbraucht) |
 
    Ist das Gewicht jedes Teilnehmers nach allen Modifikatoren `0` —
    aus beliebigem Grund, nicht nur cooldown (auch immunity, ein manueller
@@ -120,12 +120,12 @@ möglicherweise abweichende Client-Implementierung: beide Seiten laufen über
 dieselbe Commitment-/Digest-/Auswahl-Logik. Drei Prüfungen, alle müssen
 bestehen:
 
-* `commitmentMatches` — der veröffentlichte `serverSeed`, `nonce` und
+- `commitmentMatches` — der veröffentlichte `serverSeed`, `nonce` und
   `participants` hashen zum veröffentlichten `commitment`.
-* `digestMatches` — HMAC des veröffentlichten `commitment`, `clientSeed`
+- `digestMatches` — HMAC des veröffentlichten `commitment`, `clientSeed`
   und `nonce`, mit dem veröffentlichten `serverSeed` als Schlüssel, ergibt
   den veröffentlichten `digest`.
-* `selectionMatches` — die Auswahlregel aus § 4, angewendet auf den
+- `selectionMatches` — die Auswahlregel aus § 4, angewendet auf den
   veröffentlichten `digest` und die `participants`, ergibt die
   veröffentlichte `selectedMemberId`.
 
@@ -139,7 +139,7 @@ berechnet wurde und nicht nachträglich ausgetauscht wurde; und weil Events
 unveränderlich sind (siehe [events.md](events.md) § 2), kann ein
 gespeicherter Commit oder Reveal im Nachhinein nicht unbemerkt editiert
 werden — eine Änderung an `serverSeed`, `nonce` oder einem
-Teilnehmer-Gewicht lässt die Commitment-Prüfung *dieses einen Spins* fehlschlagen. Das ist
+Teilnehmer-Gewicht lässt die Commitment-Prüfung _dieses einen Spins_ fehlschlagen. Das ist
 Manipulationssicherheit pro Datensatz, keine Hash-Kette über die gesamte
 Event-Historie: Jedes Commitment bindet nur seinen eigenen Spin, nicht den
 vorangegangenen.
@@ -158,8 +158,8 @@ DevTools-Konsole schaut, daran, die Ziehung während des Ablaufs zu
 wird — es schützt aber niemanden vor der Person, die den Browser bedient.
 Wer Betreiber ist und zugleich den Browser kontrolliert, der den Commit
 ausgeführt hat, könnte im Prinzip einen ungünstigen `serverSeed` vor dem
-Reveal einsehen oder verwerfen. Der statische Modus ist fair *gegenüber
-Zuschauern*, nicht gegenüber seinem eigenen Betreiber. Der Serverbetrieb
+Reveal einsehen oder verwerfen. Der statische Modus ist fair _gegenüber
+Zuschauern_, nicht gegenüber seinem eigenen Betreiber. Der Serverbetrieb
 schließt diese Lücke: Der Seed liegt in einer Datenbank, die die Teilnehmer
 nicht kontrollieren (siehe [deployment.md](deployment.md) und
 [SECURITY.md](../../SECURITY.md)).

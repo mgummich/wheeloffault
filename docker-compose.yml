@@ -1,9 +1,9 @@
 services:
   schuldrad:
-    profiles: ['sqlite']
+    profiles: ["sqlite"]
     build: .
     ports:
-      - '127.0.0.1:3000:3000'
+      - "127.0.0.1:3000:3000"
     volumes:
       - schuldrad-data:/data
     # Optional single-password protection (server mode only, off by
@@ -17,10 +17,10 @@ services:
     #   SCHULDRAD_PASSWORD_FILE: /run/secrets/schuldrad_password
 
   schuldrad-overengineered:
-    profiles: ['overengineered']
+    profiles: ["overengineered"]
     build: .
     ports:
-      - '127.0.0.1:3000:3000'
+      - "127.0.0.1:3000:3000"
     environment:
       EVENT_STORE: postgres
       DATABASE_URL: postgres://schuldrad:schuldrad@postgres:5432/schuldrad
@@ -30,7 +30,7 @@ services:
       - redis
 
   postgres:
-    profiles: ['overengineered']
+    profiles: ["overengineered"]
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: schuldrad
@@ -40,7 +40,7 @@ services:
       - schuldrad-postgres:/var/lib/postgresql/data
 
   redis:
-    profiles: ['overengineered']
+    profiles: ["overengineered"]
     image: redis:7-alpine
 
 volumes:

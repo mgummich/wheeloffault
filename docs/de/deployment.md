@@ -5,14 +5,14 @@ English → [deployment.md](../en/deployment.md) (kanonisch)
 
 # Betriebs-Verordnung
 
-*Schuldrad-Betriebsamt — Direktion für Infrastruktur*
+_Schuldrad-Betriebsamt — Direktion für Infrastruktur_
 
 ## § 1 Zwei Modi, nicht geteilt
 
-| Modus | Build | Daten | Live-Sync | Vertrauensgrenze der Fairness |
-|---|---|---|---|---|
-| Statisch (GitHub Pages) | `pnpm build` | Browser-`localStorage` | keiner | siehe [fairness.md](fairness.md) § 6a — nur selbstprüfend |
-| Server (Docker/Node) | `pnpm build:server` | SQLite oder Postgres | SSE | Seed liegt serverseitig, für Teilnehmer unerreichbar |
+| Modus                   | Build               | Daten                  | Live-Sync | Vertrauensgrenze der Fairness                             |
+| ----------------------- | ------------------- | ---------------------- | --------- | --------------------------------------------------------- |
+| Statisch (GitHub Pages) | `pnpm build`        | Browser-`localStorage` | keiner    | siehe [fairness.md](fairness.md) § 6a — nur selbstprüfend |
+| Server (Docker/Node)    | `pnpm build:server` | SQLite oder Postgres   | SSE       | Seed liegt serverseitig, für Teilnehmer unerreichbar      |
 
 Die Modi sind unabhängige Produkte, gebaut aus derselben Quelle; die
 statischen Daten eines Teams und seine Serverdaten sind vollständig
@@ -69,14 +69,14 @@ eingecheckte `src/web/.env.server`), was den Client vom
 Profil, ein einfaches `docker compose up` ohne Profilangabe startet also
 nichts — eines muss explizit gewählt werden:
 
-* **`sqlite`** — ein einzelner `schuldrad`-Dienst, SQLite in einem
+- **`sqlite`** — ein einzelner `schuldrad`-Dienst, SQLite in einem
   benannten Volume. Das ist der empfohlene Pfad ohne Infrastruktur:
 
   ```bash
   docker compose --profile sqlite up --build
   ```
 
-* **`overengineered`** — `schuldrad-overengineered` plus
+- **`overengineered`** — `schuldrad-overengineered` plus
   `postgres:17-alpine` und `redis:7-alpine`, verdrahtet über
   `EVENT_STORE=postgres`, `DATABASE_URL` und `REDIS_URL`:
 
@@ -84,27 +84,27 @@ nichts — eines muss explizit gewählt werden:
   docker compose --profile overengineered up --build
   ```
 
-  Dies existiert, weil das erklärte Prinzip des Projekts lautet, dass *das
-  System* over-engineered sein darf, auch wenn der Code es nicht darf — es
+  Dies existiert, weil das erklärte Prinzip des Projekts lautet, dass _das
+  System_ over-engineered sein darf, auch wenn der Code es nicht darf — es
   ist keine Empfehlung für das Scrum-Rad eines Fünf-Personen-Teams. SQLite
   bleibt aus gutem Grund der empfohlene Pfad.
 
 ### Umgebungsvariablen
 
-| Variable | Standard | Bedeutung |
-|---|---|---|
-| `PORT` | `3000` | HTTP-Listen-Port |
-| `DATA_DIR` | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db` |
-| `HOST` | `127.0.0.1` | Bind-Adresse — siehe § 4 |
-| `WEB_DIR` | `dist/web` (Repository-Root, nicht Arbeitsverzeichnis) | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API) |
-| `EVENT_STORE` | `sqlite` | `sqlite` oder `postgres` |
-| `DATABASE_URL` | — | erforderlich bei `EVENT_STORE=postgres` |
-| `REDIS_URL` | — | optional; aktiviert instanzübergreifendes SSE-Fanout |
-| `SCHULDRAD_PASSWORD` | — | optionales Betriebspasswort — siehe § 3a |
-| `SCHULDRAD_PASSWORD_FILE` | — | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind; eine leere Datei lässt den Start fehlschlagen, statt Auth stillschweigend zu deaktivieren |
-| `SCHULDRAD_SECURE_COOKIES` | — | auf `1` setzen, um das `Secure`-Cookie-Attribut zu erzwingen — siehe § 3a |
-| `SCHULDRAD_TRUST_PROXY` | — | auf `1` setzen hinter einem Reverse Proxy, der `x-forwarded-for`/`x-forwarded-proto` überschreibt (nicht anhängt) — siehe § 3a und § 3b |
-| `SCHULDRAD_ALLOWED_HOSTS` | — | optionale, kommagetrennte `Host`-Allowlist für `/api/*`-Anfragen, schließt DNS-Rebinding — siehe § 3b |
+| Variable                   | Standard                                                            | Bedeutung                                                                                                                                                                                                                 |
+| -------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                     | `3000`                                                              | HTTP-Listen-Port                                                                                                                                                                                                          |
+| `DATA_DIR`                 | `data` (relativ zum Arbeitsverzeichnis); `/data` im Container-Image | Verzeichnis für `schuldrad.db`                                                                                                                                                                                            |
+| `HOST`                     | `127.0.0.1`                                                         | Bind-Adresse — siehe § 4                                                                                                                                                                                                  |
+| `WEB_DIR`                  | `dist/web` (Repository-Root, nicht Arbeitsverzeichnis)              | Verzeichnis, aus dem das statische Frontend ausgeliefert wird; leerer String deaktiviert die Frontend-Auslieferung (nur API)                                                                                              |
+| `EVENT_STORE`              | `sqlite`                                                            | `sqlite` oder `postgres`                                                                                                                                                                                                  |
+| `DATABASE_URL`             | —                                                                   | erforderlich bei `EVENT_STORE=postgres`                                                                                                                                                                                   |
+| `REDIS_URL`                | —                                                                   | optional; aktiviert instanzübergreifendes SSE-Fanout                                                                                                                                                                      |
+| `SCHULDRAD_PASSWORD`       | —                                                                   | optionales Betriebspasswort — siehe § 3a                                                                                                                                                                                  |
+| `SCHULDRAD_PASSWORD_FILE`  | —                                                                   | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind; eine leere Datei lässt den Start fehlschlagen, statt Auth stillschweigend zu deaktivieren |
+| `SCHULDRAD_SECURE_COOKIES` | —                                                                   | auf `1` setzen, um das `Secure`-Cookie-Attribut zu erzwingen — siehe § 3a                                                                                                                                                 |
+| `SCHULDRAD_TRUST_PROXY`    | —                                                                   | auf `1` setzen hinter einem Reverse Proxy, der `x-forwarded-for`/`x-forwarded-proto` überschreibt (nicht anhängt) — siehe § 3a und § 3b                                                                                   |
+| `SCHULDRAD_ALLOWED_HOSTS`  | —                                                                   | optionale, kommagetrennte `Host`-Allowlist für `/api/*`-Anfragen, schließt DNS-Rebinding — siehe § 3b                                                                                                                     |
 
 ## § 3a Optionaler Passwortschutz
 
@@ -247,15 +247,15 @@ einer, dessen Daten jeder in diesem Netz lesen und verändern könnte.
 
 Um den Server freizugeben:
 
-* **Im Container** ist `HOST=0.0.0.0` im Image gesetzt, damit das
+- **Im Container** ist `HOST=0.0.0.0` im Image gesetzt, damit das
   Port-Mapping (`-p Host:Container`) funktioniert; die tatsächliche
   Freigabe wird dann durch die Host-Adresse gesteuert, an die der
   veröffentlichte Port gebunden wird, z. B. `-p 127.0.0.1:3000:3000`
   (nur Loopback auf dem Host) versus `-p 3000:3000` (alle Interfaces).
-* **Auf Bare Metal** `HOST=0.0.0.0` nur setzen, wenn zusätzlich ein
+- **Auf Bare Metal** `HOST=0.0.0.0` nur setzen, wenn zusätzlich ein
   Reverse Proxy oder eine VPN-Grenze davor steht — nie an alle Interfaces
   in einem sonst offenen Netz binden.
-* **TLS** wird von Schuldrad selbst nicht terminiert; es gibt keine
+- **TLS** wird von Schuldrad selbst nicht terminiert; es gibt keine
   Zertifikatsbehandlung. Einen Reverse Proxy (nginx, Caddy, Traefik, den
   Load Balancer des Cloud-Anbieters) für die TLS-Terminierung davorsetzen,
   wenn der Server über etwas anderes als ein privates Netz oder einen

@@ -2,10 +2,10 @@ Deutsch → [motion.md](../de/motion.md)
 
 # Motion Regulation
 
-*Schuldrad Operations Bureau — Directorate of Signal & Rolling Stock*
+_Schuldrad Operations Bureau — Directorate of Signal & Rolling Stock_
 
 This regulation governs how a draw's already-decided result may be
-*revealed* to the platform. It binds every visualization
+_revealed_ to the platform. It binds every visualization
 (`src/web/wheel/Wheel.tsx`, `src/web/wheel/stages.tsx`) and the announcement
 that follows it (`src/web/RevealName.tsx`).
 
@@ -15,13 +15,13 @@ Motion is decoration. It never decides anything.
 
 The winner is fixed by the commit/reveal protocol
 (`docs/en/fairness.md`) before a single frame is drawn: the server commits
-to a seed and weights, then reveals a result, and only *then* does the
+to a seed and weights, then reveals a result, and only _then_ does the
 `draw` callback local to `SpinPage` (`src/web/views/SpinPage.tsx`) switch
 the phase to `animating` with that already-known result in hand
 (`src/web/draw.ts` → `performDraw`). Every visualization mounts with `result={null}` and only receives the
 finished `result` as a prop once the phase switches to `animating`
 (`src/web/views/SpinPage.tsx`), then spends the following seconds
-*performing* it — spinning a wheel to the winning segment, rolling a
+_performing_ it — spinning a wheel to the winning segment, rolling a
 timetable to the winning row, sweeping a needle to the winning position.
 None of them pick anything. If this ordering is ever inverted — if a
 visualization's own randomness or timing ever influenced who wins — that is
@@ -29,12 +29,12 @@ a fairness incident, not a motion bug.
 
 ## § 2 Duration scale
 
-| Tier | Token | Range | Used for |
-|---|---|---|---|
-| Indicator | `--dur-indicator` | 160ms | flap snaps (`sr-flap`, `BoardStage` and `TrainStage`) |
-| Mechanical latency | `--dur-latency` | 120ms | control acknowledgement (`SignalStage`'s arm/light transitions, `StampStage`'s border/transform) |
-| Mechanical settle | `--dur-settle` | 400ms | stamp impact (`sr-stamp`/`sr-stampin`) |
-| Theatrical reveal | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6.5s | the full draw performance, commit to announcement |
+| Tier               | Token                                   | Range | Used for                                                                                         |
+| ------------------ | --------------------------------------- | ----- | ------------------------------------------------------------------------------------------------ |
+| Indicator          | `--dur-indicator`                       | 160ms | flap snaps (`sr-flap`, `BoardStage` and `TrainStage`)                                            |
+| Mechanical latency | `--dur-latency`                         | 120ms | control acknowledgement (`SignalStage`'s arm/light transitions, `StampStage`'s border/transform) |
+| Mechanical settle  | `--dur-settle`                          | 400ms | stamp impact (`sr-stamp`/`sr-stampin`)                                                           |
+| Theatrical reveal  | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6.5s  | the full draw performance, commit to announcement                                                |
 
 The theatrical reveal is one constant shared by every non-wheel
 visualization and the wheel's own spin duration, so all seven read as the
@@ -104,7 +104,7 @@ overshoots and eases back rather than stopping dead:
   back (cubic overshoot formula in `ease()`).
 - The ticket stamp (`sr-stamp`/`sr-stampin` keyframes) lands oversized,
   compresses past 1×, then settles — ink weight landing on paper.
-- The default wheel curve (`standard`) is a damped ease-out with *no*
+- The default wheel curve (`standard`) is a damped ease-out with _no_
   overshoot: not every visualization needs a bounce, and forcing one
   everywhere would read as a cartoon spring rather than a railway
   mechanism.
@@ -122,7 +122,7 @@ result immediately:
   `finished` — the next frame renders the final pose, not an interpolated
   one.
 - Every other stage's `useNameTicker` derives `currentId` from `announced`
-  first: once announced, the displayed name *is* `result.reveal
+  first: once announced, the displayed name _is_ `result.reveal
   .selectedMemberId`, regardless of which tick the RAF loop had reached.
   (`LineStage` doesn't read `currentId` at all — it drives its needle
   straight from `result.reveal` — but it destructures the same `animating`
@@ -152,15 +152,15 @@ skip the announcement, it just skips the show beforehand.
 
 ## § 8 Per-visualization notes
 
-| Visualization | What it does, in these terms |
-|---|---|
-| **Wheel** (`Wheel.tsx`) | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary crossing (`lastSeg` starts at `-1`, so the pointer's initial segment — identified on the first animation frame, before any boundary is crossed — never kicks) — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5). |
-| **Split-flap board** (`BoardStage`) | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of each 16-cell row, then the same 0–84ms cascade repeats for the second 8 — so each row (there are two, the responsibility row and the name row, both built through the same `cell` helper) reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
-| **Signal** (`SignalStage`) | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red. |
-| **Ticket stamp** (`StampStage`) | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`. |
-| **Train arrival** (`TrainStage`) | Approaches on a front-loaded-then-flattening cubic-bezier that reads as braking; the destination sign ticks through names for the whole approach and lands on the winner exactly as the train stops, not after. |
-| **Timetable roll** (`TimetableStage`) | Rolls through several extra loops before landing on the result row, damped stop via the same braking-family bezier as the train. |
-| **Weight line** (`LineStage`) | Needle sweeps to the winner's position on the same damped-stop curve, holding there once announced. |
+| Visualization                         | What it does, in these terms                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Wheel** (`Wheel.tsx`)               | Spins via the JS-sampled `ease()` curves (§ 2a); a pointer "kick" (22° impulse decaying over 140ms) fires on every segment boundary crossing (`lastSeg` starts at `-1`, so the pointer's initial segment — identified on the first animation frame, before any boundary is crossed — never kicks) — a cheap per-tick tactile cue. Settle behavior depends on the user's chosen `spinStyle` (§ 5).               |
+| **Split-flap board** (`BoardStage`)   | Each flap snaps on `--dur-indicator`; tiles are staggered `(i % 8) * 12`ms — 0 to 84ms across the first 8 of each 16-cell row, then the same 0–84ms cascade repeats for the second 8 — so each row (there are two, the responsibility row and the name row, both built through the same `cell` helper) reads as independent mechanisms rather than one repainted string, restarting the cascade halfway across. |
+| **Signal** (`SignalStage`)            | Arm/light state changes cross `--dur-latency` before landing; a blink anticipates the final stop (§ 4) rather than snapping straight to red.                                                                                                                                                                                                                                                                    |
+| **Ticket stamp** (`StampStage`)       | Lift (anticipation) → fast impact → oversized-then-settled ink (§ 5), via `sr-stamp`.                                                                                                                                                                                                                                                                                                                           |
+| **Train arrival** (`TrainStage`)      | Approaches on a front-loaded-then-flattening cubic-bezier that reads as braking; the destination sign ticks through names for the whole approach and lands on the winner exactly as the train stops, not after.                                                                                                                                                                                                 |
+| **Timetable roll** (`TimetableStage`) | Rolls through several extra loops before landing on the result row, damped stop via the same braking-family bezier as the train.                                                                                                                                                                                                                                                                                |
+| **Weight line** (`LineStage`)         | Needle sweeps to the winner's position on the same damped-stop curve, holding there once announced.                                                                                                                                                                                                                                                                                                             |
 
 Wheel, Train, Timetable, and Line already implemented damped/braking curves
 before this regulation was written; only the Board's cascade stagger,

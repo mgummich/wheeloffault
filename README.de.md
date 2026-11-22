@@ -12,14 +12,14 @@ Selbst gehostetes, installierbares Schuldrad für das Scrum-Ritual
 **▶ App ausprobieren: <https://mgummich.github.io/wheeloffault/>** ·
 [Dokumentation](https://mgummich.github.io/wheeloffault/docs/)
 
-* **Nachvollziehbare Fairness** – Commit/Reveal mit SHA-256/HMAC, jede Ziehung
-  ist im Browser unabhängig nachrechenbar. Das Ergebnis steht fest, *bevor*
+- **Nachvollziehbare Fairness** – Commit/Reveal mit SHA-256/HMAC, jede Ziehung
+  ist im Browser unabhängig nachrechenbar. Das Ergebnis steht fest, _bevor_
   sich etwas dreht.
-* **Vollständige Historie** – Event Sourcing; Schuldberichte, Hall of Shame,
+- **Vollständige Historie** – Event Sourcing; Schuldberichte, Hall of Shame,
   Einsprüche, Immunitäten, Pools („Gleise“).
-* **Sieben Visualisierungen** – Drehscheibe, Zugeinfahrt, Fallblattanzeige,
+- **Sieben Visualisierungen** – Drehscheibe, Zugeinfahrt, Fallblattanzeige,
   Signal, Fahrkartenstempel, Fahrplan-Rolle, Gewichtslinie.
-* **PWA** – installierbar, App-Shell offline, `prefers-reduced-motion` respektiert.
+- **PWA** – installierbar, App-Shell offline, `prefers-reduced-motion` respektiert.
 
 Architektur: [ARCHITECTURE.md](ARCHITECTURE.md) (Englisch, kanonisch) ·
 [docs/de/architektur.md](docs/de/architektur.md) ·
@@ -31,10 +31,10 @@ Architektur: [ARCHITECTURE.md](ARCHITECTURE.md) (Englisch, kanonisch) ·
 
 ## Zwei Betriebsmodi
 
-| Modus | Build | Daten | Live-Sync zwischen Browsern |
-|---|---|---|---|
-| **GitHub Pages** (statisch) | `pnpm build` | `localStorage`, dieser Browser | – |
-| **Server** (Docker/Node) | `pnpm build:server` | SQLite (optional Postgres) | SSE |
+| Modus                       | Build               | Daten                          | Live-Sync zwischen Browsern |
+| --------------------------- | ------------------- | ------------------------------ | --------------------------- |
+| **GitHub Pages** (statisch) | `pnpm build`        | `localStorage`, dieser Browser | –                           |
+| **Server** (Docker/Node)    | `pnpm build:server` | SQLite (optional Postgres)     | SSE                         |
 
 Beide Modi teilen ihre Daten nicht miteinander.
 
@@ -49,13 +49,13 @@ Die Daten werden ausschließlich im `localStorage` dieses Browsers gespeichert,
 unter dem Schlüssel `schuldrad.sessionEvents.v1` (siehe
 `src/web/sessionApi.ts`):
 
-* Überlebt Reload, Tab-Schließen und Browser-Neustart: Teams,
+- Überlebt Reload, Tab-Schließen und Browser-Neustart: Teams,
   Teilnehmer, Ziehungen und Berichte bleiben in diesem Browser erhalten.
-* Nicht geteilt: andere Browser, Geräte oder Profile haben ihren eigenen,
+- Nicht geteilt: andere Browser, Geräte oder Profile haben ihren eigenen,
   unabhängigen Zustand. Private-/Inkognito-Fenster behalten ihren Zustand nur
   für die Lebensdauer dieses Fensters und verlieren ihn, sobald es
   geschlossen wird.
-* Es gibt keine Server-Datenbank und derzeit keinen Reset-Knopf in der App.
+- Es gibt keine Server-Datenbank und derzeit keinen Reset-Knopf in der App.
   Die Daten werden nur gelöscht, wenn die Website-Daten für diese Website im
   Browser gelöscht werden (Website-Einstellungen → Speicher löschen, bzw.
   Cookies/Website-Daten löschen) — das bloße Schließen des Tabs genügt

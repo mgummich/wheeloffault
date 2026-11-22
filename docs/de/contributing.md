@@ -5,15 +5,15 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
 
 # Mitwirkungs-Verordnung
 
-*Schuldrad-Betriebsamt — Direktion für Personal*
+_Schuldrad-Betriebsamt — Direktion für Personal_
 
 ## § 1 Werkzeugkette
 
-* **Node ≥ 26**, ohne Ausnahme — der Server führt unveränderten
+- **Node ≥ 26**, ohne Ausnahme — der Server führt unveränderten
   `.ts`-Quellcode direkt unter Nodes nativem Type-Stripping aus. Es gibt
   keinen Build-Schritt zur Laufzeit und keinen Bundler in Produktion; eine
   niedrigere Node-Version kann den Server schlicht nicht ausführen.
-* **pnpm 11** wie in `packageManager` in `package.json` deklariert. CI
+- **pnpm 11** wie in `packageManager` in `package.json` deklariert. CI
   installiert es über `pnpm/action-setup@v4` (`.github/workflows/pages.yml`,
   `.github/workflows/ci.yml`), nicht über Corepack; das Dockerfile
   installiert es explizit (`npm install -g pnpm@11.24.0`), weil
@@ -24,16 +24,16 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   mit Paketen, die von pnpms Mindest-Release-Alter-Prüfung ausgenommen sind
   — und ist so entscheidend, dass das Dockerfile sie neben `package.json` und dem
   Lockfile ins Build-Image kopiert.
-* **Biome** für Formatierung und Linting (`biome.json`) — ein Werkzeug
+- **Biome** für Formatierung und Linting (`biome.json`) — ein Werkzeug
   statt ESLint + Prettier. `pnpm format` schreibt, `pnpm format:check` und
   `pnpm lint` prüfen nur (so in CI verwendet).
-* **TypeScript** via `tsc --noEmit` nur zur Typprüfung; nichts wird von
+- **TypeScript** via `tsc --noEmit` nur zur Typprüfung; nichts wird von
   `tsc` für den laufenden Server kompiliert (siehe Node ≥ 26 oben). Vite
   kompiliert das Browser-Bundle.
-* **Vitest**, aufgeteilt in zwei Projekte (`vitest.config.ts`):
-  * `unit` — `src/domain/**/*.test.ts` und `src/web/**/*.test.ts`, pure
+- **Vitest**, aufgeteilt in zwei Projekte (`vitest.config.ts`):
+  - `unit` — `src/domain/**/*.test.ts` und `src/web/**/*.test.ts`, pure
     Funktionen und Browser-seitiger Code, kein I/O.
-  * `integration` — `src/server/**/*.test.ts`, prüft die HTTP-API und die
+  - `integration` — `src/server/**/*.test.ts`, prüft die HTTP-API und die
     echten Event-Stores.
 
   `pnpm test:unit` / `pnpm test:integration` einzeln ausführen oder
@@ -42,7 +42,7 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   überspringen sich selbst (kein Fehlschlag), solange `DATABASE_URL`/
   `REDIS_URL` nicht gesetzt sind — siehe das `overengineered`-Profil in
   `docker-compose.yml` für ein lokales Paar oder § 2 für das von CI.
-* **Playwright** (`playwright.config.ts`) für Ende-zu-Ende-Tests
+- **Playwright** (`playwright.config.ts`) für Ende-zu-Ende-Tests
   (`tests/e2e`), ausgeführt mit `pnpm e2e`. Es baut den Produktionsserver
   und einen statischen Build — der statische Build selbst nutzt das relative
   `base: './'` aus `vite.config.ts`, der Unterpfad `/wheeloffault/` wird
@@ -63,9 +63,9 @@ English → [contributing.md](../en/contributing.md) (kanonisch)
   auf dem CIs `e2e`-Job läuft), und `pnpm e2e` nimmt jeweils das passende
   Suffix. Um eine Baseline nach einer echten visuellen Änderung neu zu
   erzeugen:
-  * macOS: `pnpm exec playwright test tests/e2e/visual.spec.ts
+  - macOS: `pnpm exec playwright test tests/e2e/visual.spec.ts
     --update-snapshots` direkt ausführen.
-  * Linux: denselben Befehl im passenden Container ausführen, damit die
+  - Linux: denselben Befehl im passenden Container ausführen, damit die
     Schriften zu CI passen, z. B.
     `docker run --rm --platform linux/amd64 -v "$PWD":/work -w /work
     mcr.microsoft.com/playwright:v1.62.1-noble bash -c "<Node ≥26 und pnpm
@@ -106,13 +106,13 @@ Redis-Servicecontainer (dieselben Images wie im `overengineered`-Profil von
 Pages) führt `scripts/build-docs.mjs` aus, das den Build bei jedem der
 folgenden Punkte scheitern lässt:
 
-* **Sprachpaarung.** Jedes Dokument in der Registry am Anfang von
+- **Sprachpaarung.** Jedes Dokument in der Registry am Anfang von
   `scripts/build-docs.mjs` braucht sowohl eine `en`- als auch eine
   `de`-Quelldatei, außer der Eintrag ist mit `enOnly` markiert (derzeit nur
   `SECURITY.md`, das keine gepflegte Übersetzung hat). Ein neues Dokument
   hinzuzufügen heißt, es mit beiden Dateien in diese Registry
   einzutragen — oder explizit mit `enOnly` davon abzuweichen.
-* **Link- und Anker-Prüfung.** Ein `.md`-zu-`.md`-Link muss auf eine echte
+- **Link- und Anker-Prüfung.** Ein `.md`-zu-`.md`-Link muss auf eine echte
   Datei an diesem relativen Pfad verweisen und mit dem richtigen
   Sprachpräfix gerendert werden, und jedes gerenderte `href="#…"` muss auf
   eine Überschriften-ID zeigen, die auf der Zielseite tatsächlich existiert.
@@ -145,8 +145,8 @@ folgenden Punkte scheitern lässt:
   Ein Sprachwechsel-Link mit fehlendem `../de/`- (oder `../en/`-) Präfix
   fällt still auf die Sprache der aktuellen Seite zurück, statt einen
   Fehler auszulösen.
-* **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
-  ALL_CAPS-Konstante *mit Unterstrich* (`MAX_NAME`, nicht `PORT`) in einem
+- **Symbol-Wächter.** Ein Aufruf in Backticks (`` `foo()` ``) oder eine
+  ALL_CAPS-Konstante _mit Unterstrich_ (`MAX_NAME`, nicht `PORT`) in einem
   Dokument muss tatsächlich aus `src/` exportiert werden (bei ALL_CAPS
   alternativ ein `env.NAME`- oder `process.env.NAME`-Zugriff sein) — findet
   ein Dokument, das noch eine API behauptet, die umbenannt oder
@@ -156,12 +156,12 @@ folgenden Punkte scheitern lässt:
   `packageManager`, `PORT`, `HOST`, …). Er ist bewusst eng gefasst, nicht
   erschöpfend: Er parst Codeblöcke nicht als
   Code, ein gewöhnliches JS-Snippet in einem Codeblock (z. B.
-  `` JSON.parse(text) ``) kann ihn genauso auslösen wie eine echte Aussage
+  `JSON.parse(text)`) kann ihn genauso auslösen wie eine echte Aussage
   über die Codebasis — entweder das Symbol in der Prosa ohne
   Aufruf-Klammern nennen, oder es mit einer einzeiligen Begründung in
   SYMBOL_IGNORE in `scripts/build-docs.mjs` eintragen, wie es die
   bestehenden acht Einträge tun.
-* **Deutsche Zeilenend-Trennstriche.** `checkGermanHyphenWraps` durchsucht
+- **Deutsche Zeilenend-Trennstriche.** `checkGermanHyphenWraps` durchsucht
   jede Datei in `docs/de/` sowie `README.de.md` nach einer Zeile außerhalb
   eines Codeblocks, die mitten im Wort mit einem Bindestrich endet (z. B.
   ein deutsches Kompositum, das an einem harten Zeilenumbruch getrennt
