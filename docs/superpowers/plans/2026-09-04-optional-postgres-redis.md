@@ -15,6 +15,7 @@
 ### Task 1: Async EventStore Contract
 
 **Files:**
+
 - Modify: `src/server/eventStore.ts`
 - Modify: `src/server/commands.ts`
 - Modify: `src/server/http.ts`
@@ -29,6 +30,7 @@
 ### Task 2: Store Selection And Postgres Adapter
 
 **Files:**
+
 - Create: `src/server/postgresEventStore.ts`
 - Create: `src/server/store.ts`
 - Modify: `src/server/main.ts`
@@ -44,6 +46,7 @@
 ### Task 3: Optional Redis Broadcast Hub
 
 **Files:**
+
 - Create: `src/server/broadcast.ts`
 - Modify: `src/server/main.ts`
 - Modify: `package.json`
@@ -58,6 +61,7 @@
 ### Task 4: Runtime Docs And Container Dependencies
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `ARCHITECTURE.md`
 - Modify: `Dockerfile`

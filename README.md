@@ -9,14 +9,14 @@ deliberately over-professional wheel of responsibility.
 **▶ Try the app: <https://mgummich.github.io/wheeloffault/>** ·
 [Documentation](https://mgummich.github.io/wheeloffault/docs/)
 
-* **Auditable fairness** – commit/reveal with SHA-256/HMAC, every draw is
-  independently recomputable in the browser. The result is fixed *before*
+- **Auditable fairness** – commit/reveal with SHA-256/HMAC, every draw is
+  independently recomputable in the browser. The result is fixed _before_
   anything spins.
-* **Full history** – event sourcing; guilt reports, hall of shame, appeals,
+- **Full history** – event sourcing; guilt reports, hall of shame, appeals,
   immunities, pools ("Gleise", tracks).
-* **Seven visualizations** – wheel, train arrival, split-flap display,
+- **Seven visualizations** – wheel, train arrival, split-flap display,
   signal, ticket stamp, timetable roll, weight line.
-* **PWA** – installable, app shell works offline, respects
+- **PWA** – installable, app shell works offline, respects
   `prefers-reduced-motion`.
 
 Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) ·
@@ -28,10 +28,10 @@ Architecture: [ARCHITECTURE.md](ARCHITECTURE.md) ·
 
 ## Two operating modes
 
-| Mode | Build | Data | Live sync between browsers |
-|---|---|---|---|
-| **GitHub Pages** (static) | `pnpm build` | `localStorage`, this browser | – |
-| **Server** (Docker/Node) | `pnpm build:server` | SQLite (optionally Postgres) | SSE |
+| Mode                      | Build               | Data                         | Live sync between browsers |
+| ------------------------- | ------------------- | ---------------------------- | -------------------------- |
+| **GitHub Pages** (static) | `pnpm build`        | `localStorage`, this browser | –                          |
+| **Server** (Docker/Node)  | `pnpm build:server` | SQLite (optionally Postgres) | SSE                        |
 
 The two modes do not share data with each other.
 
@@ -45,12 +45,12 @@ workflow `.github/workflows/pages.yml` builds and deploys on every push to
 Data is stored exclusively in this browser's `localStorage`, under the key
 `schuldrad.sessionEvents.v1` (see `src/web/sessionApi.ts`):
 
-* Survives a reload, closing the tab, and restarting the browser: teams,
+- Survives a reload, closing the tab, and restarting the browser: teams,
   participants, draws, and reports stay in this browser.
-* Not shared: other browsers, devices, or profiles have their own,
+- Not shared: other browsers, devices, or profiles have their own,
   independent state. Private/incognito windows keep their own state for the
   life of that window and lose it when the window closes.
-* There is no server-side database and, as of this writing, no in-app reset.
+- There is no server-side database and, as of this writing, no in-app reset.
   The only way to discard the data is to clear this site's browser data
   (site settings → clear storage, or clearing cookies/site data for the
   Pages origin) — closing the tab is not enough.

@@ -5,10 +5,10 @@ English → [motion.md](../en/motion.md) (kanonisch)
 
 # Bewegungs-Verordnung
 
-*Schuldrad-Betriebsamt — Direktion für Signal- und Fahrzeugwesen*
+_Schuldrad-Betriebsamt — Direktion für Signal- und Fahrzeugwesen_
 
 Diese Verordnung regelt, wie die Plattform das bereits feststehende
-Ergebnis einer Ziehung *zeigt*. Sie bindet jede Visualisierung
+Ergebnis einer Ziehung _zeigt_. Sie bindet jede Visualisierung
 (`src/web/wheel/Wheel.tsx`, `src/web/wheel/stages.tsx`) und die
 anschließende Ansage (`src/web/RevealName.tsx`).
 
@@ -19,13 +19,13 @@ Bewegung ist Dekoration. Sie entscheidet nie etwas.
 Der Gewinner steht durch das Commit/Reveal-Protokoll
 ([fairness.md](fairness.md)) fest, bevor auch nur ein Bild gezeichnet wird: Der
 Server legt sich auf Seed und Gewichte fest, deckt dann ein Ergebnis auf, und
-erst *danach* schaltet der in `SpinPage` definierte `draw`-Callback
+erst _danach_ schaltet der in `SpinPage` definierte `draw`-Callback
 (`src/web/views/SpinPage.tsx`) die Phase auf `animating` — mit dem bereits
 bekannten Ergebnis in der Hand (`src/web/draw.ts` → `performDraw`). Jede
 Visualisierung wird mit `result={null}` gemountet und erhält das fertige
 `result` als Prop erst, wenn die Phase auf `animating` wechselt
 (`src/web/views/SpinPage.tsx`), und verbringt die folgenden Sekunden damit,
-es *aufzuführen* — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
+es _aufzuführen_ — ein Rad bis zum Gewinnsegment drehen, einen Fahrplan bis
 zur Gewinnzeile rollen, eine Nadel bis zur Gewinnposition schwenken. Keine
 davon wählt etwas aus. Sollte diese Reihenfolge jemals umgekehrt werden —
 sollte der Zufall oder das Timing einer Visualisierung selbst jemals
@@ -34,12 +34,12 @@ Bewegungsfehler.
 
 ## § 2 Dauerskala
 
-| Stufe | Token | Bereich | Verwendung |
-|---|---|---|---|
-| Indikator | `--dur-indicator` | 160 ms | Klapp-Schnappen (`sr-flap`, `BoardStage` und `TrainStage`) |
-| Mechanische Latenz | `--dur-latency` | 120 ms | Steuerungsquittung (Arm-/Licht-Übergänge in `SignalStage`, Rand/Transform in `StampStage`) |
-| Mechanisches Einrasten | `--dur-settle` | 400 ms | Stempelaufprall (`sr-stamp`/`sr-stampin`) |
-| Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5 s | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage |
+| Stufe                    | Token                                   | Bereich | Verwendung                                                                                 |
+| ------------------------ | --------------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
+| Indikator                | `--dur-indicator`                       | 160 ms  | Klapp-Schnappen (`sr-flap`, `BoardStage` und `TrainStage`)                                 |
+| Mechanische Latenz       | `--dur-latency`                         | 120 ms  | Steuerungsquittung (Arm-/Licht-Übergänge in `SignalStage`, Rand/Transform in `StampStage`) |
+| Mechanisches Einrasten   | `--dur-settle`                          | 400 ms  | Stempelaufprall (`sr-stamp`/`sr-stampin`)                                                  |
+| Theatralische Enthüllung | `DURATION_MS` (`src/web/wheel/anim.ts`) | 6,5 s   | die gesamte Ziehungs-Aufführung, vom Commit bis zur Ansage                                 |
 
 Die theatralische Enthüllung ist eine einzige Konstante, die sich alle
 sechs Nicht-Rad-Visualisierungen und die Ziehungsdauer des Rades teilen —
@@ -119,7 +119,7 @@ zu stoppen:
 - Der Ticketstempel (`sr-stamp`/`sr-stampin`-Keyframes) landet überdimensioniert,
   staucht sich unter 1× und rastet dann ein — Tintengewicht, das aufs
   Papier trifft.
-- Die Standard-Radkurve (`standard`) ist ein gedämpftes Ease-out *ohne*
+- Die Standard-Radkurve (`standard`) ist ein gedämpftes Ease-out _ohne_
   Überschwingen: Nicht jede Visualisierung braucht ein Federn, und ein
   erzwungenes Federn überall würde sich wie eine Cartoon-Feder statt wie
   ein Bahnmechanismus lesen.
@@ -137,7 +137,7 @@ auch nicht — es rastet sofort im bereits feststehenden Ergebnis ein:
   vorab berechnete Ziel setzt und `finished` markiert: Der nächste Frame
   zeigt die finale Pose, keine interpolierte.
 - Jede andere Visualisierung leitet `currentId` in ihrem `useNameTicker` zuerst aus
-  `announced` ab: Sobald angesagt wurde, *ist* der angezeigte Name
+  `announced` ab: Sobald angesagt wurde, _ist_ der angezeigte Name
   `result.reveal.selectedMemberId`, unabhängig davon, welchen Tick die
   RAF-Schleife erreicht hatte. (`LineStage` liest `currentId` gar nicht —
   sie steuert ihre Nadel direkt aus `result.reveal` — destrukturiert aber
@@ -169,15 +169,15 @@ reduzierte Bewegung überspringt nicht die Ansage, nur die Show davor.
 
 ## § 8 Hinweise je Visualisierung
 
-| Visualisierung | Was sie in diesen Begriffen tut |
-|---|---|
-| **Rad** (`Wheel.tsx`) | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein „Kick” des Zeigers (22°-Impuls, klingt über 140 ms ab) wird bei jeder Segmentgrenzüberquerung ausgelöst (`lastSeg` startet bei `-1`, sodass das anfängliche, im ersten Animationsframe identifizierte Segment — noch vor jeder Grenzüberquerung — nie kickt) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5). |
-| **Split-Flap-Tafel** (`BoardStage`) | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84 ms über die ersten 8 jeder 16-Zellen-Zeile hinweg, danach wiederholt sich dieselbe 0–84-ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
-| **Signal** (`SignalStage`) | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen. |
-| **Ticketstempel** (`StampStage`) | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`. |
-| **Zugeinfahrt** (`TrainStage`) | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bézier-Kurve, die sich als Bremsen liest; die Zielanzeige läuft während der gesamten Annäherung durch Namen und landet genau mit dem Halt des Zuges auf dem Gewinner, nicht erst danach. |
-| **Fahrplan-Rolle** (`TimetableStage`) | Rollt über mehrere Extra-Umläufe, bevor sie auf der Ergebniszeile landet — gedämpfter Stopp über dieselbe Brems-Kurvenfamilie wie der Zug. |
-| **Gewichtslinie** (`LineStage`) | Die Nadel schwenkt über dieselbe gedämpfte Stopp-Kurve zur Position des Gewinners und hält dort, sobald angesagt wurde. |
+| Visualisierung                        | Was sie in diesen Begriffen tut                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rad** (`Wheel.tsx`)                 | Dreht über die JS-berechneten `ease()`-Kurven (§ 2a); ein „Kick” des Zeigers (22°-Impuls, klingt über 140 ms ab) wird bei jeder Segmentgrenzüberquerung ausgelöst (`lastSeg` startet bei `-1`, sodass das anfängliche, im ersten Animationsframe identifizierte Segment — noch vor jeder Grenzüberquerung — nie kickt) — ein günstiger, taktil wirkender Reiz pro Tick. Das Einrasten hängt vom gewählten `spinStyle` ab (§ 5).                                                     |
+| **Split-Flap-Tafel** (`BoardStage`)   | Jede Klappe schnappt binnen `--dur-indicator`; die Kacheln sind um `(i % 8) * 12`ms versetzt — 0 bis 84 ms über die ersten 8 jeder 16-Zellen-Zeile hinweg, danach wiederholt sich dieselbe 0–84-ms-Kaskade für die zweiten 8 —, sodass jede Zeile (es gibt zwei — die Zuständigkeits- und die Namenszeile, beide über denselben `cell`-Helfer aufgebaut) wie unabhängige Mechanismen statt wie ein neu gezeichneter String wirkt, wobei die Kaskade auf halber Strecke neu beginnt. |
+| **Signal** (`SignalStage`)            | Arm-/Lichtwechsel durchlaufen `--dur-latency`, bevor sie einrasten; ein Blinken antizipiert den finalen Stopp (§ 4), statt direkt auf Rot zu springen.                                                                                                                                                                                                                                                                                                                              |
+| **Ticketstempel** (`StampStage`)      | Anheben (Antizipation) → schneller Aufprall → überdimensionierte, dann eingerastete Tinte (§ 5), via `sr-stamp`.                                                                                                                                                                                                                                                                                                                                                                    |
+| **Zugeinfahrt** (`TrainStage`)        | Nähert sich über eine vorn beschleunigende, dann abflachende kubische Bézier-Kurve, die sich als Bremsen liest; die Zielanzeige läuft während der gesamten Annäherung durch Namen und landet genau mit dem Halt des Zuges auf dem Gewinner, nicht erst danach.                                                                                                                                                                                                                      |
+| **Fahrplan-Rolle** (`TimetableStage`) | Rollt über mehrere Extra-Umläufe, bevor sie auf der Ergebniszeile landet — gedämpfter Stopp über dieselbe Brems-Kurvenfamilie wie der Zug.                                                                                                                                                                                                                                                                                                                                          |
+| **Gewichtslinie** (`LineStage`)       | Die Nadel schwenkt über dieselbe gedämpfte Stopp-Kurve zur Position des Gewinners und hält dort, sobald angesagt wurde.                                                                                                                                                                                                                                                                                                                                                             |
 
 Rad, Zug, Fahrplan und Linie hatten gedämpfte Brems-Kurven bereits vor
 dieser Verordnung; nur die Kaskaden-Verzögerung der Tafel, das

@@ -29,25 +29,25 @@
     "status": "node scripts/status.mjs"
   },
   "dependencies": {
-    "pg": "^8.23.0",
-    "react": "^19.2.8",
-    "react-dom": "^19.2.8",
-    "redis": "^6.2.1"
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "redis": "^6.3.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.5.12",
-    "@playwright/test": "^1.62.1",
-    "@types/node": "^26.4.1",
+    "@biomejs/biome": "^2.6.8",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
-    "@types/react": "^19.2.18",
-    "@types/react-dom": "^19.2.7",
-    "@vitejs/plugin-react": "^6.1.1",
-    "concurrently": "^9.2.0",
-    "fast-check": "^4.9.0",
-    "marked": "^18.0.11",
-    "typescript": "^5.9.3",
-    "vite": "^8.2.2",
-    "vitest": "^5.0.0"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.3.0",
+    "concurrently": "^10.0.7",
+    "fast-check": "^4.10.3",
+    "marked": "^18.2.1",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.8",
+    "vitest": "^5.1.1"
   },
   "packageManager": "pnpm@11.24.0"
 }

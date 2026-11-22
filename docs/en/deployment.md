@@ -2,14 +2,14 @@ Deutsch → [deployment.md](../de/deployment.md)
 
 # Deployment Regulation
 
-*Schuldrad Operations Bureau — Directorate of Infrastructure*
+_Schuldrad Operations Bureau — Directorate of Infrastructure_
 
 ## § 1 Two modes, not shared
 
-| Mode | Build | Data | Live sync | Fairness trust boundary |
-|---|---|---|---|---|
-| Static (GitHub Pages) | `pnpm build` | browser `localStorage` | none | see [fairness.md](fairness.md) § 6a — self-auditing only |
-| Server (Docker/Node) | `pnpm build:server` | SQLite or Postgres | SSE | seed lives server-side, unreachable from participants |
+| Mode                  | Build               | Data                   | Live sync | Fairness trust boundary                                  |
+| --------------------- | ------------------- | ---------------------- | --------- | -------------------------------------------------------- |
+| Static (GitHub Pages) | `pnpm build`        | browser `localStorage` | none      | see [fairness.md](fairness.md) § 6a — self-auditing only |
+| Server (Docker/Node)  | `pnpm build:server` | SQLite or Postgres     | SSE       | seed lives server-side, unreachable from participants    |
 
 The modes are independent products built from the same source; a team's
 static-mode data and its server-mode data are entirely separate and never
@@ -63,42 +63,48 @@ checked-in `src/web/.env.server`), which switches the client from the
 `docker-compose.yml` defines two profiles. Every service declares a
 profile, so a bare `docker compose up` starts nothing — you must pick one:
 
-* **`sqlite`** — a single `schuldrad` service, SQLite in a named volume.
+- **`sqlite`** — a single `schuldrad` service, SQLite in a named volume.
   This is the recommended, no-infrastructure path:
 
   ```bash
   docker compose --profile sqlite up --build
   ```
 
-* **`overengineered`** — `schuldrad-overengineered` plus `postgres:17-alpine`
-  and `redis:7-alpine`, wired via `EVENT_STORE=postgres`, `DATABASE_URL`,
+- **`overengineered`** — `schuldrad-overengineered` plus `postgres:19-alpine`
+  and `redis:8-alpine`, wired via `EVENT_STORE=postgres`, `DATABASE_URL`,
   and `REDIS_URL`:
 
   ```bash
   docker compose --profile overengineered up --build
   ```
 
-  This exists because the project's stated principle is that *the system*
+  This exists because the project's stated principle is that _the system_
   is allowed to be over-engineered even though the code must not be — it is
   not a recommendation for a five-person team's Scrum wheel. SQLite remains
   the recommended path for a reason.
 
+  Upgrading from the earlier `postgres:17-alpine` profile: Postgres 19
+  cannot read a 17 data directory, and the volume now mounts at
+  `/var/lib/postgresql`. Dump first (`docker compose exec postgres
+  pg_dump -U schuldrad schuldrad > backup.sql`), remove the
+  `schuldrad-postgres` volume, start again and restore with `psql`.
+
 ### Environment variables
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `PORT` | `3000` | HTTP listen port |
-| `DATA_DIR` | `data` (relative to cwd); `/data` in the container image | directory for `schuldrad.db` |
-| `HOST` | `127.0.0.1` | bind address — see § 4 |
-| `WEB_DIR` | `dist/web` (repo root, not cwd) | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only) |
-| `EVENT_STORE` | `sqlite` | `sqlite` or `postgres` |
-| `DATABASE_URL` | — | required when `EVENT_STORE=postgres` |
-| `REDIS_URL` | — | optional; enables cross-instance SSE fanout |
-| `SCHULDRAD_PASSWORD` | — | optional deployment password — see § 3a |
-| `SCHULDRAD_PASSWORD_FILE` | — | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set; an empty file fails startup rather than silently disabling auth |
-| `SCHULDRAD_SECURE_COOKIES` | — | set to `1` to force the `Secure` cookie attribute — see § 3a |
-| `SCHULDRAD_TRUST_PROXY` | — | set to `1` behind a reverse proxy that overwrites (not appends to) `x-forwarded-for`/`x-forwarded-proto` — see § 3a and § 3b |
-| `SCHULDRAD_ALLOWED_HOSTS` | — | optional comma-separated `Host` allowlist for `/api/*` requests, closes DNS rebinding — see § 3b |
+| Variable                   | Default                                                  | Meaning                                                                                                                                                                         |
+| -------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                     | `3000`                                                   | HTTP listen port                                                                                                                                                                |
+| `DATA_DIR`                 | `data` (relative to cwd); `/data` in the container image | directory for `schuldrad.db`                                                                                                                                                    |
+| `HOST`                     | `127.0.0.1`                                              | bind address — see § 4                                                                                                                                                          |
+| `WEB_DIR`                  | `dist/web` (repo root, not cwd)                          | directory the static frontend is served from; set to an empty string to disable serving the frontend (API-only)                                                                 |
+| `EVENT_STORE`              | `sqlite`                                                 | `sqlite` or `postgres`                                                                                                                                                          |
+| `DATABASE_URL`             | —                                                        | required when `EVENT_STORE=postgres`                                                                                                                                            |
+| `REDIS_URL`                | —                                                        | optional; enables cross-instance SSE fanout                                                                                                                                     |
+| `SCHULDRAD_PASSWORD`       | —                                                        | optional deployment password — see § 3a                                                                                                                                         |
+| `SCHULDRAD_PASSWORD_FILE`  | —                                                        | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set; an empty file fails startup rather than silently disabling auth |
+| `SCHULDRAD_SECURE_COOKIES` | —                                                        | set to `1` to force the `Secure` cookie attribute — see § 3a                                                                                                                    |
+| `SCHULDRAD_TRUST_PROXY`    | —                                                        | set to `1` behind a reverse proxy that overwrites (not appends to) `x-forwarded-for`/`x-forwarded-proto` — see § 3a and § 3b                                                    |
+| `SCHULDRAD_ALLOWED_HOSTS`  | —                                                        | optional comma-separated `Host` allowlist for `/api/*` requests, closes DNS rebinding — see § 3b                                                                                |
 
 ## § 3a Optional password protection
 
@@ -230,15 +236,15 @@ network could read and mutate.
 
 To expose the server:
 
-* **Inside a container**, `HOST=0.0.0.0` is set in the image so the port
+- **Inside a container**, `HOST=0.0.0.0` is set in the image so the port
   mapping (`-p host:container`) works; the exposure is then controlled by
   what host address you bind the published port to, e.g.
   `-p 127.0.0.1:3000:3000` (loopback-only on the host) versus
   `-p 3000:3000` (all interfaces).
-* **On bare metal**, set `HOST=0.0.0.0` only if you also put a reverse
+- **On bare metal**, set `HOST=0.0.0.0` only if you also put a reverse
   proxy or VPN boundary in front — never bind to all interfaces on an
   otherwise-open network.
-* **TLS** is not terminated by Schuldrad itself; it has no certificate
+- **TLS** is not terminated by Schuldrad itself; it has no certificate
   handling. Put a reverse proxy (nginx, Caddy, Traefik, your cloud
   provider's load balancer) in front for TLS termination if the server is
   reached over anything other than a private network or VPN tunnel that

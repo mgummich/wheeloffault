@@ -2,7 +2,7 @@ Deutsch → [events.md](../de/events.md)
 
 # Event Contract
 
-*Schuldrad Operations Bureau — Directorate of Records*
+_Schuldrad Operations Bureau — Directorate of Records_
 
 `src/domain/events.ts` defines the persisted contract for Schuldrad's event
 store. This document is the operating rules for that contract: what may
@@ -16,25 +16,25 @@ One event stream per team (`streamId` = team id). Every event carries
 stored — `streamId`, `version` (1-based, gap-free per stream), and
 `position` (global, monotonic across all streams).
 
-| # | Type | Payload |
-|---|---|---|
-| 1 | `TeamCreated` | `{ teamId, name }` |
-| 2 | `MemberJoined` | `{ memberId, name }` |
-| 3 | `MemberDeactivated` | `{ memberId }` |
-| 4 | `MemberReactivated` | `{ memberId }` |
-| 5 | `PoolCreated` | `{ poolId, name }` |
-| 6 | `PoolMembershipChanged` | `{ poolId, memberIds }` |
-| 7 | `PoolRenamed` | `{ poolId, name }` |
-| 8 | `PoolDeleted` | `{ poolId }` |
-| 9 | `FairnessPolicyChanged` | `{ policy }` |
-| 10 | `SpinCommitted` | `{ spinId, poolId, nonce, commitment, participants: [{memberId, weight}], modifiers: [{name, factors}], serverSeed }` |
-| 11 | `SpinRevealed` | `{ spinId, serverSeed, clientSeed, digest, selectedMemberId }` |
-| 12 | `GuiltAppealed` | `{ spinId, reason }` |
-| 13 | `AppealUpheld` | `{ spinId }` |
-| 14 | `AppealRejected` | `{ spinId }` |
-| 15 | `ImmunityGranted` | `{ memberId, reason }` |
-| 16 | `ImmunityConsumed` | `{ memberId, spinId }` |
-| 17 | `ImmunityRevoked` | `{ memberId }` |
+| #   | Type                    | Payload                                                                                                               |
+| --- | ----------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| 1   | `TeamCreated`           | `{ teamId, name }`                                                                                                    |
+| 2   | `MemberJoined`          | `{ memberId, name }`                                                                                                  |
+| 3   | `MemberDeactivated`     | `{ memberId }`                                                                                                        |
+| 4   | `MemberReactivated`     | `{ memberId }`                                                                                                        |
+| 5   | `PoolCreated`           | `{ poolId, name }`                                                                                                    |
+| 6   | `PoolMembershipChanged` | `{ poolId, memberIds }`                                                                                               |
+| 7   | `PoolRenamed`           | `{ poolId, name }`                                                                                                    |
+| 8   | `PoolDeleted`           | `{ poolId }`                                                                                                          |
+| 9   | `FairnessPolicyChanged` | `{ policy }`                                                                                                          |
+| 10  | `SpinCommitted`         | `{ spinId, poolId, nonce, commitment, participants: [{memberId, weight}], modifiers: [{name, factors}], serverSeed }` |
+| 11  | `SpinRevealed`          | `{ spinId, serverSeed, clientSeed, digest, selectedMemberId }`                                                        |
+| 12  | `GuiltAppealed`         | `{ spinId, reason }`                                                                                                  |
+| 13  | `AppealUpheld`          | `{ spinId }`                                                                                                          |
+| 14  | `AppealRejected`        | `{ spinId }`                                                                                                          |
+| 15  | `ImmunityGranted`       | `{ memberId, reason }`                                                                                                |
+| 16  | `ImmunityConsumed`      | `{ memberId, spinId }`                                                                                                |
+| 17  | `ImmunityRevoked`       | `{ memberId }`                                                                                                        |
 
 Members are never deleted, only deactivated/reactivated. Pools are
 deletable, but a deleted pool's draw history remains in the events that
@@ -59,7 +59,7 @@ The rules that follow from it:
    because nothing errors.
 4. **A spin's outcome is never rewritten.** An upheld appeal
    (`AppealUpheld`) does not delete or alter `SpinCommitted`/`SpinRevealed`;
-   it is a new event layered on top that changes how projections *count*
+   it is a new event layered on top that changes how projections _count_
    the spin (excluded from hit/expectation statistics — see
    [ARCHITECTURE.md](../../ARCHITECTURE.md) § 3), not what happened.
 
@@ -75,11 +75,11 @@ scattered across every reader.
 
 What belongs in `upcast`, and what does not:
 
-* **Belongs:** giving an old event a default for a field that did not exist
+- **Belongs:** giving an old event a default for a field that did not exist
   when it was written (e.g. a new optional field that projections now read
   unconditionally — upcast fills it in so projections don't need an
   `?? default` at every call site).
-* **Does not belong:** business logic, validation, or anything that depends
+- **Does not belong:** business logic, validation, or anything that depends
   on other events in the stream. `upcast` sees one event in isolation.
 
 ## § 4 Adding a migration
@@ -95,10 +95,10 @@ dialect, below). Most changes only need one.
 2. Update the event-producing decision function
    (`src/domain/decisions.ts` / `src/domain/fairness/spin.ts`) to always
    set the new field going forward.
-3. If projections need the field on *old* events too, give `upcast` a case
+3. If projections need the field on _old_ events too, give `upcast` a case
    for that event type that supplies a default.
 4. Never touch the type or payload shape of an event already described in
-   § 1 in a way that changes what an *old, stored* instance means.
+   § 1 in a way that changes what an _old, stored_ instance means.
 
 ### Storage-level: SQLite and Postgres
 

@@ -9,10 +9,33 @@ permissions:
   contents: read
 
 jobs:
+  # Dependabot can't update image tags inside workflow files, so the tags are
+  # read from files it does update: docker-compose.yml (Postgres/Redis) and
+  # the lockfile's @playwright/test version (the Playwright container).
+  images:
+    runs-on: ubuntu-latest
+    outputs:
+      postgres: ${{ steps.read.outputs.postgres }}
+      redis: ${{ steps.read.outputs.redis }}
+      playwright: ${{ steps.read.outputs.playwright }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: read
+        run: |
+          set -eu
+          postgres=$(sed -n 's/^ *image: *\(postgres:.*\)/\1/p' docker-compose.yml)
+          redis=$(sed -n 's/^ *image: *\(redis:.*\)/\1/p' docker-compose.yml)
+          pw=$(grep -A2 "^      '@playwright/test':" pnpm-lock.yaml | sed -n 's/^ *version: //p')
+          test -n "$postgres" && test -n "$redis" && test -n "$pw"
+          echo "postgres=$postgres" >> "$GITHUB_OUTPUT"
+          echo "redis=$redis" >> "$GITHUB_OUTPUT"
+          echo "playwright=mcr.microsoft.com/playwright:v$pw-noble" >> "$GITHUB_OUTPUT"
+
   verify:
     runs-on: ubuntu-latest
+    needs: images
     # Postgres/Redis service containers, same images as docker-compose.yml's
-    # `overengineered` profile: real coverage for postgresEventStore.ts and
+    # `overengineered` profile (read by the `images` job): real coverage for postgresEventStore.ts and
     # the Redis broadcast hub, which the SQLite-only unit tests can't reach.
     # Health-checked so `test:integration` never races a container that
     # hasn't finished starting. Extending `verify` rather than adding a new
@@ -21,7 +44,7 @@ jobs:
     # service block and two env vars needs to change.
     services:
       postgres:
-        image: postgres:17-alpine
+        image: ${{ needs.images.outputs.postgres }}
         env:
           POSTGRES_DB: schuldrad
           POSTGRES_USER: schuldrad
@@ -34,7 +57,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
       redis:
-        image: redis:7-alpine
+        image: ${{ needs.images.outputs.redis }}
         ports:
           - 6379:6379
         options: >-
@@ -43,9 +66,9 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
@@ -59,7 +82,7 @@ jobs:
           DATABASE_URL: postgres://schuldrad:schuldrad@localhost:5432/schuldrad
           REDIS_URL: redis://localhost:6379
       - run: pnpm build
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: dist
           path: dist
@@ -72,12 +95,12 @@ jobs:
     runs-on: ubuntu-latest
     # Same Playwright container as `e2e`: `pnpm status` reruns the E2E suite,
     # visual baselines included, so it needs the same font rendering.
-    container: mcr.microsoft.com/playwright:v1.62.1-noble
-    needs: [verify, e2e]
+    container: ${{ needs.images.outputs.playwright }}
+    needs: [images, verify, e2e]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
@@ -97,9 +120,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
@@ -112,23 +135,23 @@ jobs:
     # with no pixel threshold, so the fonts here must match the ones they were
     # generated with: this image, pinned to the @playwright/test version.
     # A bare runner renders text a few hundred pixels differently and fails.
-    container: mcr.microsoft.com/playwright:v1.62.1-noble
-    needs: verify
+    container: ${{ needs.images.outputs.playwright }}
+    needs: [images, verify]
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: dist
           path: dist
       - run: pnpm exec playwright install chromium
       - run: pnpm e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
@@ -138,9 +161,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: verify
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
+      - uses: actions/checkout@v7
+      - uses: docker/setup-buildx-action@v4
+      - uses: docker/build-push-action@v7
         with:
           context: .
           load: true
@@ -157,10 +180,10 @@ jobs:
         with:
           image-ref: schuldrad:ci
           format: table
-          exit-code: '1'
+          exit-code: "1"
           severity: CRITICAL,HIGH
           ignore-unfixed: true
-      - uses: anchore/sbom-action@v0.24.2
+      - uses: anchore/sbom-action@v0.24.3
         with:
           image: schuldrad:ci
           artifact-name: sbom.spdx.json

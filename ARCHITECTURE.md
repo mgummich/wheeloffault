@@ -25,11 +25,11 @@ Browser (PWA, React)                       Server (Node 26, no framework)
 
 A single npm package, three source folders:
 
-| Folder        | Runs in         | May import from | Contents |
-|---------------|------------------|------------------|----------|
-| `src/domain`  | Browser + Node   | only `src/domain` | Events, state building, fairness, projections, public HTTP views (`views.ts`). Pure functions, no I/O. |
-| `src/server`  | Node             | `src/domain`     | HTTP server, event store (SQLite or Postgres, § 7), command handlers, SSE. |
-| `src/web`     | Browser          | `src/domain`     | React UI, animation, service worker, verifier UI. |
+| Folder       | Runs in        | May import from   | Contents                                                                                               |
+| ------------ | -------------- | ----------------- | ------------------------------------------------------------------------------------------------------ |
+| `src/domain` | Browser + Node | only `src/domain` | Events, state building, fairness, projections, public HTTP views (`views.ts`). Pure functions, no I/O. |
+| `src/server` | Node           | `src/domain`      | HTTP server, event store (SQLite or Postgres, § 7), command handlers, SSE.                             |
+| `src/web`    | Browser        | `src/domain`      | React UI, animation, service worker, verifier UI.                                                      |
 
 `src/web` uses `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
 `spinView`) both for the HTTP response shapes and for session mode — no
@@ -94,39 +94,39 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
                                                          Projections from replay()
 ```
 
-* `replay(events): TeamState` in `src/domain/team.ts` folds the stream into
+- `replay(events): TeamState` in `src/domain/team.ts` folds the stream into
   a state. No snapshotting: a team has a few thousand events, which SQLite
   reads in milliseconds.
-* Decision functions (`addMembers`, `commitSpin`, `revealSpin`, …) take
+- Decision functions (`addMembers`, `commitSpin`, `revealSpin`, …) take
   `(state, input)` and throw `DomainError` on invalid transitions. Most
   return `Event[]` synchronously; `commitSpin` and `revealSpin`
   (`src/domain/fairness/spin.ts`) are async and return
   `Promise<CommitResult>` (`{ events, spinId }`) and
   `Promise<DomainEvent[]>` respectively.
-* Per command, the server: loads the stream → decides → appends with
+- Per command, the server: loads the stream → decides → appends with
   `expectedVersion = state.version`. On conflict (someone was faster) →
   reload the stream, decide the command again, up to 3 attempts.
 
 ### Concurrency & idempotency
 
-* `events(stream_id, version)` is `UNIQUE`. Two concurrent writers can
+- `events(stream_id, version)` is `UNIQUE`. Two concurrent writers can
   never both write version n+1.
-* Spin IDs come from the client (UUID). `commitSpin` with an already
+- Spin IDs come from the client (UUID). `commitSpin` with an already
   existing spin ID is a no-op that returns the existing spin. A retry
   therefore never creates two official draws.
-* At most one spin per team is "committed but not revealed". A further
+- At most one spin per team is "committed but not revealed". A further
   commit is rejected with `409` and the open spin's ID; the client resumes
   the open spin.
-* `revealSpin` with an identical `clientSeed` is idempotent; a `clientSeed`
+- `revealSpin` with an identical `clientSeed` is idempotent; a `clientSeed`
   differing after a successful reveal → `409` — but the comparison runs on
   the seed truncated to 200 chars (`spin.ts`), so two seeds sharing the same
   200-char prefix compare equal and are treated as the same reveal.
-* Crash between commit and reveal: the commit is persisted, the team sees
+- Crash between commit and reveal: the commit is persisted, the team sees
   "draw in progress" after reload and can finish it. No winner without a
   persisted `SpinRevealed`. A second browser that wants to finish the open
   spin with its own `clientSeed` gets `409` and takes over the already
   persisted result.
-* An overturned spin (appeal upheld) counts statistically as if it never
+- An overturned spin (appeal upheld) counts statistically as if it never
   happened: neither a hit nor an expected value.
 
 ## 4. Fairness protocol (commit/reveal)

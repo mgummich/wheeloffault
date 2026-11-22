@@ -29,11 +29,11 @@ Browser (PWA, React)                       Server (Node 26, kein Framework)
 
 Ein einziges npm-Paket, drei Quellordner:
 
-| Ordner        | Läuft in        | Darf importieren aus | Inhalt |
-|---------------|-----------------|----------------------|--------|
-| `src/domain`  | Browser + Node  | nur `src/domain`     | Events, Zustandsaufbau, Fairness, Projektionen, öffentliche HTTP-Ansichten (`views.ts`). Pure Funktionen, keine I/O. |
-| `src/server`  | Node            | `src/domain`         | HTTP-Server, Event-Store (SQLite oder Postgres, § 7), Command-Handler, SSE. |
-| `src/web`     | Browser         | `src/domain`         | React-Oberfläche, Animation, Service Worker, Verifier-UI. |
+| Ordner       | Läuft in       | Darf importieren aus | Inhalt                                                                                                               |
+| ------------ | -------------- | -------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `src/domain` | Browser + Node | nur `src/domain`     | Events, Zustandsaufbau, Fairness, Projektionen, öffentliche HTTP-Ansichten (`views.ts`). Pure Funktionen, keine I/O. |
+| `src/server` | Node           | `src/domain`         | HTTP-Server, Event-Store (SQLite oder Postgres, § 7), Command-Handler, SSE.                                          |
+| `src/web`    | Browser        | `src/domain`         | React-Oberfläche, Animation, Service Worker, Verifier-UI.                                                            |
 
 `src/web` nutzt `src/domain/views.ts` (`TeamView`, `SpinView`, `teamView`,
 `spinView`) sowohl für die HTTP-Antwortformen als auch für den Session-Modus
@@ -99,39 +99,39 @@ Command  ──▶  decide(state, command)  ──▶  Event[]  ──▶  appen
                                                          Projektionen aus replay()
 ```
 
-* `replay(events): TeamState` in `src/domain/team.ts` faltet den Stream zu
+- `replay(events): TeamState` in `src/domain/team.ts` faltet den Stream zu
   einem Zustand. Kein Snapshotting: ein Team hat einige tausend Events, das
   ist in SQLite in Millisekunden gelesen.
-* Entscheidungsfunktionen (`addMembers`, `commitSpin`, `revealSpin`, …)
+- Entscheidungsfunktionen (`addMembers`, `commitSpin`, `revealSpin`, …)
   nehmen `(state, input)` entgegen und werfen `DomainError` bei ungültigen
   Übergängen. Die meisten geben synchron `Event[]` zurück; `commitSpin`
   und `revealSpin` (`src/domain/fairness/spin.ts`) sind async und geben
   `Promise<CommitResult>` (`{ events, spinId }`) bzw.
   `Promise<DomainEvent[]>` zurück.
-* Der Server macht pro Command: Stream laden → entscheiden → mit
+- Der Server macht pro Command: Stream laden → entscheiden → mit
   `expectedVersion = state.version` anhängen. Konflikt (jemand war schneller)
   → Stream neu laden, Command erneut entscheiden, maximal 3 Versuche.
 
 ### Nebenläufigkeit & Idempotenz
 
-* `events(stream_id, version)` ist `UNIQUE`. Zwei konkurrierende Writer können
+- `events(stream_id, version)` ist `UNIQUE`. Zwei konkurrierende Writer können
   nie beide Version n+1 schreiben.
-* Spin-IDs kommen vom Client (UUID). `commitSpin` mit einer bereits
+- Spin-IDs kommen vom Client (UUID). `commitSpin` mit einer bereits
   existierenden Spin-ID ist ein No-Op, das den bestehenden Spin zurückgibt.
   Ein Retry erzeugt also nie zwei offizielle Ziehungen.
-* Pro Team ist höchstens ein Spin „committed, aber nicht revealed“. Ein
+- Pro Team ist höchstens ein Spin „committed, aber nicht revealed“. Ein
   weiterer Commit wird mit `409` und der offenen Spin-ID abgelehnt; der
   Client setzt den offenen Spin fort.
-* `revealSpin` mit identischem `clientSeed` ist idempotent; ein nach
+- `revealSpin` mit identischem `clientSeed` ist idempotent; ein nach
   erfolgtem Reveal abweichender `clientSeed` → `409` — der Vergleich läuft
   aber auf dem auf 200 Zeichen gekürzten Seed (`spin.ts`); zwei Seeds mit
   identischem 200-Zeichen-Präfix gelten also als gleich.
-* Absturz zwischen Commit und Reveal: Der Commit ist persistiert, das Team
+- Absturz zwischen Commit und Reveal: Der Commit ist persistiert, das Team
   sieht nach Reload „Ziehung läuft“ und kann sie abschließen. Kein
   Gewinner ohne persistiertes `SpinRevealed`. Ein zweiter Browser, der den
   offenen Spin mit eigenem `clientSeed` abschließen will, bekommt `409` und
   übernimmt das bereits persistierte Ergebnis.
-* Ein aufgehobener Spin (Einspruch stattgegeben) zählt statistisch als nicht
+- Ein aufgehobener Spin (Einspruch stattgegeben) zählt statistisch als nicht
   geschehen: weder Treffer noch Erwartungswert.
 
 ## 4. Fairness-Protokoll (Commit/Reveal)

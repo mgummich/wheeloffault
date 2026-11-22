@@ -3,12 +3,12 @@
     {
       "name": "format:check (pnpm format:check)",
       "status": "pass",
-      "details": "Checked 102 files."
+      "details": "Checked 124 files."
     },
     {
       "name": "lint (pnpm lint)",
       "status": "pass",
-      "details": "Checked 104 files. Found 0 warnings."
+      "details": "Checked 126 files. Found 0 warnings."
     },
     {
       "name": "typecheck (pnpm typecheck)",
