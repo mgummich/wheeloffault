@@ -26,22 +26,29 @@ services:
       DATABASE_URL: postgres://schuldrad:schuldrad@postgres:5432/schuldrad
       REDIS_URL: redis://redis:6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
 
   postgres:
     profiles: ["overengineered"]
-    image: postgres:17-alpine
+    image: postgres:19-alpine
     environment:
       POSTGRES_DB: schuldrad
       POSTGRES_USER: schuldrad
       POSTGRES_PASSWORD: schuldrad
+    # The app connects once at boot; without this it races initdb's restart.
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "schuldrad", "-d", "schuldrad"]
+      interval: 2s
+      retries: 15
     volumes:
-      - schuldrad-postgres:/var/lib/postgresql/data
+      - schuldrad-postgres:/var/lib/postgresql
 
   redis:
     profiles: ["overengineered"]
-    image: redis:7-alpine
+    image: redis:8-alpine
 
 volumes:
   schuldrad-data:

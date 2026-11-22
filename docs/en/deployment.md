@@ -70,8 +70,8 @@ profile, so a bare `docker compose up` starts nothing — you must pick one:
   docker compose --profile sqlite up --build
   ```
 
-- **`overengineered`** — `schuldrad-overengineered` plus `postgres:17-alpine`
-  and `redis:7-alpine`, wired via `EVENT_STORE=postgres`, `DATABASE_URL`,
+- **`overengineered`** — `schuldrad-overengineered` plus `postgres:19-alpine`
+  and `redis:8-alpine`, wired via `EVENT_STORE=postgres`, `DATABASE_URL`,
   and `REDIS_URL`:
 
   ```bash
@@ -82,6 +82,12 @@ profile, so a bare `docker compose up` starts nothing — you must pick one:
   is allowed to be over-engineered even though the code must not be — it is
   not a recommendation for a five-person team's Scrum wheel. SQLite remains
   the recommended path for a reason.
+
+  Upgrading from the earlier `postgres:17-alpine` profile: Postgres 19
+  cannot read a 17 data directory, and the volume now mounts at
+  `/var/lib/postgresql`. Dump first (`docker compose exec postgres
+  pg_dump -U schuldrad schuldrad > backup.sql`), remove the
+  `schuldrad-postgres` volume, start again and restore with `psql`.
 
 ### Environment variables
 

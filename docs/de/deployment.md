@@ -77,7 +77,7 @@ nichts — eines muss explizit gewählt werden:
   ```
 
 - **`overengineered`** — `schuldrad-overengineered` plus
-  `postgres:17-alpine` und `redis:7-alpine`, verdrahtet über
+  `postgres:19-alpine` und `redis:8-alpine`, verdrahtet über
   `EVENT_STORE=postgres`, `DATABASE_URL` und `REDIS_URL`:
 
   ```bash
@@ -88,6 +88,12 @@ nichts — eines muss explizit gewählt werden:
   System_ over-engineered sein darf, auch wenn der Code es nicht darf — es
   ist keine Empfehlung für das Scrum-Rad eines Fünf-Personen-Teams. SQLite
   bleibt aus gutem Grund der empfohlene Pfad.
+
+  Upgrade vom früheren `postgres:17-alpine`-Profil: Postgres 19 kann ein
+  17er-Datenverzeichnis nicht lesen, und das Volume hängt jetzt unter
+  `/var/lib/postgresql`. Vorher sichern (`docker compose exec postgres
+  pg_dump -U schuldrad schuldrad > backup.sql`), das Volume
+  `schuldrad-postgres` entfernen, neu starten und mit `psql` einspielen.
 
 ### Umgebungsvariablen
 
