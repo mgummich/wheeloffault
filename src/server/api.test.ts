@@ -490,6 +490,21 @@ describe('static fallback', () => {
     }
   });
 
+  it('forbids framing and MIME sniffing on shell and API responses', async () => {
+    const ctx = await bootStatic();
+    try {
+      for (const path of ['/', '/api/health']) {
+        const res = await fetch(`${ctx.base}${path}`);
+        expect(res.headers.get('x-frame-options')).toBe('DENY');
+        expect(res.headers.get('content-security-policy')).toBe("frame-ancestors 'none'");
+        expect(res.headers.get('x-content-type-options')).toBe('nosniff');
+      }
+    } finally {
+      await new Promise<void>((r) => ctx.http.server.close(() => r()));
+      ctx.store.close();
+    }
+  });
+
   it('404s a missing asset instead of falling back to the SPA shell', async () => {
     const ctx = await bootStatic();
     try {

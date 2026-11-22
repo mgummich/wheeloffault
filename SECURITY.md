@@ -53,9 +53,11 @@ event feed on that process.
 The rate limiter keys on the connecting socket's IP address, which is the
 reverse proxy's IP if you run one — meaning by default every request
 through the same proxy shares one limit. Set `SCHULDRAD_TRUST_PROXY=1` to
-key on `x-forwarded-for` instead, but only behind a proxy that overwrites
-that header rather than appending to it, or clients can spoof their way
-around the limit. See
+key on the last `x-forwarded-for` entry instead — the one your proxy wrote,
+so client-supplied entries before it are ignored whether the proxy
+overwrites or appends — but only behind exactly one proxy you control, or
+clients can send the header directly and spoof their way around the limit.
+See
 [docs/en/deployment.md](docs/en/deployment.md) § 3a. This does not add
 anti-DoS machinery beyond that — a single IP behind a shared proxy that
 you choose not to unmask can still lock the login for everyone behind it;

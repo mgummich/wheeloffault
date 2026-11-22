@@ -382,6 +382,10 @@ export function createHttpServer(
   });
 
   async function handle(req: Req, res: Res) {
+    // Every response: no framing (clickjacking the open default mode), no MIME sniffing.
+    res.setHeader('x-content-type-options', 'nosniff');
+    res.setHeader('x-frame-options', 'DENY');
+    res.setHeader('content-security-policy', "frame-ancestors 'none'");
     try {
       let url: URL;
       try {

@@ -23,7 +23,7 @@
     {
       "name": "test:integration (pnpm test:integration)",
       "status": "pass",
-      "details": "7 test files, 56 tests passed."
+      "details": "7 test files, 58 tests passed."
     },
     {
       "name": "build (pnpm build)",
