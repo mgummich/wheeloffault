@@ -16,12 +16,13 @@ import { stripVTControlCharacters } from 'node:util';
 // in lines like "Test Files  24 passed": when a tool decides to colourise
 // (vitest does inside CI's Playwright container, but not on a bare runner)
 // the escape sequences land in the middle of those matches and every
-// extraction throws.
+// extraction throws. stderr is merged in because Biome 2.6 prints its
+// "Checked N files" summary there.
 function run(cmd) {
   try {
     return {
       ok: true,
-      out: stripVTControlCharacters(execSync(cmd, { encoding: 'utf8', stdio: 'pipe' })),
+      out: stripVTControlCharacters(execSync(`${cmd} 2>&1`, { encoding: 'utf8', stdio: 'pipe' })),
     };
   } catch (err) {
     return { ok: false, out: stripVTControlCharacters(`${err.stdout ?? ''}${err.stderr ?? ''}`) };
