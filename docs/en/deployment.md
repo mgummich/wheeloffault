@@ -103,7 +103,7 @@ profile, so a bare `docker compose up` starts nothing — you must pick one:
 | `SCHULDRAD_PASSWORD`       | —                                                        | optional deployment password — see § 3a                                                                                                                                         |
 | `SCHULDRAD_PASSWORD_FILE`  | —                                                        | optional; path to a file holding the password (Docker secret) — wins over `SCHULDRAD_PASSWORD` if both are set; an empty file fails startup rather than silently disabling auth |
 | `SCHULDRAD_SECURE_COOKIES` | —                                                        | set to `1` to force the `Secure` cookie attribute — see § 3a                                                                                                                    |
-| `SCHULDRAD_TRUST_PROXY`    | —                                                        | set to `1` behind a reverse proxy that overwrites (not appends to) `x-forwarded-for`/`x-forwarded-proto` — see § 3a and § 3b                                                    |
+| `SCHULDRAD_TRUST_PROXY`    | —                                                        | set to `1` only behind exactly one reverse proxy that sets `x-forwarded-for`/`x-forwarded-proto` — see § 3a and § 3b                                                            |
 | `SCHULDRAD_ALLOWED_HOSTS`  | —                                                        | optional comma-separated `Host` allowlist for `/api/*` requests, closes DNS rebinding — see § 3b                                                                                |
 
 ## § 3a Optional password protection
@@ -152,9 +152,12 @@ front and controls it. If you terminate TLS at a proxy, set both
 `SCHULDRAD_SECURE_COOKIES=1` yourself.
 
 `SCHULDRAD_TRUST_PROXY=1` also switches login rate-limiting to key on the
-first entry of `x-forwarded-for` instead of the socket's IP — set it only
-behind a reverse proxy that overwrites (not appends to) that header, since
-otherwise a client can inject their own value and dodge the limit.
+last entry of `x-forwarded-for` instead of the socket's IP — the entry your
+proxy itself wrote, whether it overwrites the header
+(`proxy_set_header X-Forwarded-For $remote_addr;`) or appends to it
+(`$proxy_add_x_forwarded_for`). Anything a client put earlier in the header
+is ignored. Set it only when exactly one proxy you control sits in front:
+without one, a client can send the header directly and dodge the limit.
 
 Sessions slide their expiry on use (12h) but always expire after 7 days of
 elapsed time regardless of activity.

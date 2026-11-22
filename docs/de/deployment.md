@@ -109,7 +109,7 @@ nichts — eines muss explizit gewählt werden:
 | `SCHULDRAD_PASSWORD`       | —                                                                   | optionales Betriebspasswort — siehe § 3a                                                                                                                                                                                  |
 | `SCHULDRAD_PASSWORD_FILE`  | —                                                                   | optional; Pfad zu einer Datei mit dem Passwort (Docker-Secret) — hat Vorrang vor `SCHULDRAD_PASSWORD`, wenn beide gesetzt sind; eine leere Datei lässt den Start fehlschlagen, statt Auth stillschweigend zu deaktivieren |
 | `SCHULDRAD_SECURE_COOKIES` | —                                                                   | auf `1` setzen, um das `Secure`-Cookie-Attribut zu erzwingen — siehe § 3a                                                                                                                                                 |
-| `SCHULDRAD_TRUST_PROXY`    | —                                                                   | auf `1` setzen hinter einem Reverse Proxy, der `x-forwarded-for`/`x-forwarded-proto` überschreibt (nicht anhängt) — siehe § 3a und § 3b                                                                                   |
+| `SCHULDRAD_TRUST_PROXY`    | —                                                                   | auf `1` setzen nur hinter genau einem Reverse Proxy, der `x-forwarded-for`/`x-forwarded-proto` setzt — siehe § 3a und § 3b                                                                                                |
 | `SCHULDRAD_ALLOWED_HOSTS`  | —                                                                   | optionale, kommagetrennte `Host`-Allowlist für `/api/*`-Anfragen, schließt DNS-Rebinding — siehe § 3b                                                                                                                     |
 
 ## § 3a Optionaler Passwortschutz
@@ -160,10 +160,13 @@ terminiert, ist sowohl `SCHULDRAD_TRUST_PROXY=1` zu setzen als auch,
 falls der Proxy diesen Header nicht selbst setzt, `SCHULDRAD_SECURE_COOKIES=1`.
 
 `SCHULDRAD_TRUST_PROXY=1` stellt außerdem das Login-Rate-Limiting auf den
-ersten Eintrag von `x-forwarded-for` statt auf die Socket-IP um — nur
-hinter einem Reverse Proxy setzen, der diesen Header überschreibt (nicht
-anhängt), sonst kann ein Client sich einen eigenen Wert einschleusen und
-das Limit umgehen.
+letzten Eintrag von `x-forwarded-for` statt auf die Socket-IP um — den
+Eintrag, den der eigene Proxy geschrieben hat, egal ob er den Header
+überschreibt (`proxy_set_header X-Forwarded-For $remote_addr;`) oder
+anhängt (`$proxy_add_x_forwarded_for`). Was ein Client weiter vorne in den
+Header schreibt, wird ignoriert. Nur setzen, wenn genau ein eigener Proxy
+davor steht: ohne Proxy kann ein Client den Header direkt senden und das
+Limit umgehen.
 
 Sitzungen verlängern sich bei Nutzung gleitend (12 h), laufen aber
 unabhängig von der Aktivität nach 7 Tagen endgültig ab.

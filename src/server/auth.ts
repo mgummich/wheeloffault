@@ -156,15 +156,16 @@ export function createAuth(
 
 /**
  * Client IP for rate-limit keying. Only trusts `x-forwarded-for` when
- * SCHULDRAD_TRUST_PROXY=1 — set this only behind a reverse proxy that
- * overwrites (not appends to) that header, otherwise any client can spoof
- * their rate-limit identity.
+ * SCHULDRAD_TRUST_PROXY=1, and then only its last entry — the one our own
+ * proxy wrote. Earlier entries are client-supplied whenever the proxy appends
+ * (nginx's `$proxy_add_x_forwarded_for`), so trusting them would let any
+ * client spoof their rate-limit identity.
  */
 export function clientIp(req: IncomingMessage, env: NodeJS.ProcessEnv): string {
   if (env.SCHULDRAD_TRUST_PROXY === '1') {
     const xff = req.headers['x-forwarded-for'];
-    const first = (Array.isArray(xff) ? xff[0] : xff)?.split(',')[0]?.trim();
-    if (first) return first;
+    const last = (Array.isArray(xff) ? xff.at(-1) : xff)?.split(',').at(-1)?.trim();
+    if (last) return last;
   }
   return req.socket.remoteAddress ?? 'unknown';
 }

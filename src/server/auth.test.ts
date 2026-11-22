@@ -119,6 +119,11 @@ describe('clientIp / TRUST_PROXY gating', () => {
     expect(clientIp(req, { SCHULDRAD_TRUST_PROXY: '1' })).toBe('1.2.3.4');
   });
 
+  it('keys on the proxy-written last x-forwarded-for entry, not a spoofed first one', () => {
+    const req = fakeReq({ 'x-forwarded-for': '6.6.6.6, 1.2.3.4' });
+    expect(clientIp(req, { SCHULDRAD_TRUST_PROXY: '1' })).toBe('1.2.3.4');
+  });
+
   it('Secure cookie flag follows x-forwarded-proto only when TRUST_PROXY is set', () => {
     const auth = createAuth({ SCHULDRAD_PASSWORD: 'geheim' });
     const trustedAuth = createAuth({
