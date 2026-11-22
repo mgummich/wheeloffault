@@ -72,7 +72,7 @@ jobs:
     runs-on: ubuntu-latest
     # Same Playwright container as `e2e`: `pnpm status` reruns the E2E suite,
     # visual baselines included, so it needs the same font rendering.
-    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    container: mcr.microsoft.com/playwright:v1.65.1-noble
     needs: [verify, e2e]
     steps:
       - uses: actions/checkout@v4
@@ -112,7 +112,7 @@ jobs:
     # with no pixel threshold, so the fonts here must match the ones they were
     # generated with: this image, pinned to the @playwright/test version.
     # A bare runner renders text a few hundred pixels differently and fails.
-    container: mcr.microsoft.com/playwright:v1.62.1-noble
+    container: mcr.microsoft.com/playwright:v1.65.1-noble
     needs: verify
     steps:
       - uses: actions/checkout@v4
@@ -157,7 +157,7 @@ jobs:
         with:
           image-ref: schuldrad:ci
           format: table
-          exit-code: '1'
+          exit-code: "1"
           severity: CRITICAL,HIGH
           ignore-unfixed: true
       - uses: anchore/sbom-action@v0.24.2
